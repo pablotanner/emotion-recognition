@@ -17,6 +17,22 @@ FACS Intensity: AU01_r (676) to AU45_r (692)
 FACS Presense: AU01_c (693) to AU45_c (710)
 """
 
+
+def format_landmarks(landmarks):
+    # Calculate the midpoint of the array
+    midpoint = len(landmarks) // 2
+
+    # Split the array into two halves
+    first_half = landmarks[:midpoint]
+    second_half = landmarks[midpoint:]
+
+    # Create a new array by alternating elements from the two halves
+    new_array = [None] * (len(landmarks))
+    new_array[::2] = first_half
+    new_array[1::2] = second_half
+
+    return new_array
+
 # extract landmark and Facial Unit data from the open face csv files
 def extract_open_face_data(data_path):
     csv_files = []
@@ -35,12 +51,15 @@ def extract_open_face_data(data_path):
                 if line_count == 0:
                     line_count += 1
                 else:
-                    # get the landmarks
-                    landmarks = row[296:432]
+                    # get the parsed float landmarks (format_landmarks() is used to "fix" coordinate order of the landmarks)
+                    temp_landmarks = row[296:432]
+                    landmarks = np.array(format_landmarks(temp_landmarks)).astype(float)
+
                     # get the facial unit intensity
-                    facs_intensity = row[676:693]
-                    # get the facial unit presence
-                    facs_presence = row[693:711]
+                    facs_intensity = np.array(row[676:693]).astype(float)
+
+                    # get the facial unit presence (chaining necessary to convert to int)
+                    facs_presence = np.array(row[693:711]).astype(float).astype(int)
 
                     # save the data as .npy file
                     np.save(f"../data/features/{index}_landmarks", landmarks)
@@ -48,7 +67,6 @@ def extract_open_face_data(data_path):
                     np.save(f"../data/features/{index}_facs_presence", facs_presence)
 
                     line_count += 1
-
 
 
 path_to_data = "C:/Users/41763/Desktop/OpenFace_2.2.0_win_x64/processed"
