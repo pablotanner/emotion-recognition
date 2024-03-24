@@ -163,3 +163,6 @@ cython_debug/
 data/annotations
 data/features
 data/images
+
+# Stores model joblib (trained models)
+model/store

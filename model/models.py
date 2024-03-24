@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from model.evaluate import evaluate_results
+from joblib import dump, load
+import os
 
 class BaseModel:
     def __init__(self):
@@ -17,6 +19,15 @@ class BaseModel:
     def evaluate(self, X_test, y_test):
         evaluate_results(y_test, self.predict(X_test))
 
+    def save_model(self, name):
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, f"store\\{name}.joblib")
+        dump(self.model, filename)
+
+    def load_model(self, name):
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, f"store\\{name}.joblib")
+        self.model = load(filename)
 
 class SVM(BaseModel):
     def __init__(self, C=1.0, kernel='rbf'):
