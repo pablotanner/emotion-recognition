@@ -1,7 +1,7 @@
-from model.models import RandomForestModel, SVM
+from model.models import RandomForestModel, SVM, MLP
 from model.prepare_data import prepare_data, split_data
 
-X, y = prepare_data(fake_features=False, use_affect_net_lnd=False, use_landmarks=False, use_facs_intensity=True, use_facs_presence=True)
+X, y = prepare_data(fake_features=False, use_affect_net_lnd=False, use_landmarks=True, use_facs_intensity=True, use_facs_presence=True)
 
 # Splitting the dataset into training and testing sets
 X_train, X_test, y_train, y_test = split_data(X, y, use_scaler=True)
@@ -62,5 +62,24 @@ def compare_svm_kernels():
     print("SVM RBF:")
     svm_rbf.evaluate(X_test, y_test)
 
-svm, random_forest = initialize_models()
+def compare_mlp_solvers():
+    # Init the models
+    mlp_adam = MLP(solver='adam')
+    mlp_lbfgs = MLP(solver='lbfgs')
+    mlp_sgd = MLP(solver='sgd')
+
+    # Train the models
+    mlp_adam.train(X_train, y_train)
+    mlp_lbfgs.train(X_train, y_train)
+    mlp_sgd.train(X_train, y_train)
+
+    # Evaluate the models
+    print("MLP Adam:")
+    mlp_adam.evaluate(X_test, y_test)
+
+    print("MLP LBFGS:")
+    mlp_lbfgs.evaluate(X_test, y_test)
+
+    print("MLP SGD:")
+    mlp_sgd.evaluate(X_test, y_test)
 

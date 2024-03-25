@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from model.evaluate import evaluate_results
@@ -56,4 +57,27 @@ class RandomForestModel(BaseModel):
         plt.xlabel("Number of Trees")
         plt.ylabel("Accuracy")
         plt.title("Performance vs Number of Trees")
+        plt.show()
+
+class MLP(BaseModel):
+    def __init__(self, hidden_layer_sizes=(200,), activation='relu', solver='adam', alpha=0.0001, batch_size='auto', learning_rate='constant', learning_rate_init=0.001, max_iter=200):
+        super().__init__()
+        self.model = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, activation=activation, solver=solver, alpha=alpha, batch_size=batch_size, learning_rate=learning_rate, learning_rate_init=learning_rate_init, max_iter=max_iter)
+
+    # Currently best performance (accuracy) at 200 hidden layers
+    @staticmethod
+    def mlp_performance(X_train, X_test, y_train, y_test):
+        test_scores = []
+
+        hidden_layer_sizes_options = [(100,), (200,), (300,), (400,), (500,)]
+        for hidden_layer_sizes in hidden_layer_sizes_options:
+            clf = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, max_iter=200)
+            clf.fit(X_train, y_train)
+            test_score = clf.score(X_test, y_test)
+            test_scores.append(test_score)
+
+        plt.plot(hidden_layer_sizes_options, test_scores)
+        plt.xlabel("Hidden Layer Sizes")
+        plt.ylabel("Accuracy")
+        plt.title("Performance vs Hidden Layer Sizes")
         plt.show()
