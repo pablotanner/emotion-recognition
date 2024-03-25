@@ -17,3 +17,14 @@
 #### FAU Presence + FAU Intensity (35 features)
 - SVM Linear 38.78%, RBF 42.28%
 - RF 42.67% 
+
+
+## 25.03.2024
+### New Features + Classifiers
+#### Landmark Distances
+I extracted the landmark distances from the landmark coordinates but this means a feature dimension of +2000 just for the  distances, reached 41.25% with SVM (linear), 38.52% with RF
+
+#### Distances + FAU Presence + FAU Intensity
+- SVM RBF 43.06%
+- SVM Linear 44.36%
+- MLP SGD 42.67%

@@ -33,6 +33,29 @@ def format_landmarks(landmarks):
 
     return new_array
 
+def calculate_landmark_distances(landmarks):
+    num_landmarks = len(landmarks) // 2
+    distances = np.zeros((num_landmarks, num_landmarks))
+
+    for i in range(num_landmarks):
+        x1, y1 = landmarks[2 * i], landmarks[2 * i + 1]
+        for j in range(i + 1, num_landmarks):
+            x2, y2 = landmarks[2 * j], landmarks[2 * j + 1]
+            distance = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+            distances[i, j] = distances[j, i] = distance
+
+    return distances
+
+def flatten_distances(distances):
+    num_landmarks = distances.shape[0]
+    flattened_distances = []
+    for i in range(num_landmarks):
+        for j in range(i+1, num_landmarks):
+            flattened_distances.append(distances[i, j])
+    return flattened_distances
+
+
+
 # extract landmark and Facial Unit data from the open face csv files
 def extract_open_face_data(data_path):
     csv_files = []
@@ -55,6 +78,8 @@ def extract_open_face_data(data_path):
                     temp_landmarks = row[296:432]
                     landmarks = np.array(format_landmarks(temp_landmarks)).astype(float)
 
+                    landmark_distances = np.array(flatten_distances(calculate_landmark_distances(landmarks))).astype(float)
+
                     # get the facial unit intensity
                     facs_intensity = np.array(row[676:693]).astype(float)
 
@@ -65,10 +90,11 @@ def extract_open_face_data(data_path):
                     np.save(f"../data/features/{index}_landmarks", landmarks)
                     np.save(f"../data/features/{index}_facs_intensity", facs_intensity)
                     np.save(f"../data/features/{index}_facs_presence", facs_presence)
+                    np.save(f"../data/features/{index}_landmark_distances", landmark_distances)
 
                     line_count += 1
 
 
 path_to_data = "C:/Users/41763/Desktop/OpenFace_2.2.0_win_x64/processed"
 
-#extract_open_face_data(path_to_data)
+extract_open_face_data(path_to_data)

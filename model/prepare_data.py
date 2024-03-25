@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 
 
-def prepare_data(fake_features=False, use_landmarks=True, use_facs_intensity=True, use_facs_presence=True, use_affect_net_lnd=False):
+def prepare_data(fake_features=False, use_scaler=True, use_landmarks=False, use_landmark_distances=False, use_facs_intensity=False, use_facs_presence=False, use_affect_net_lnd=False):
     num_samples = 5496
     X = []
     y = []
@@ -22,6 +22,11 @@ def prepare_data(fake_features=False, use_landmarks=True, use_facs_intensity=Tru
             else:
                 landmarks = np.array([])
 
+            if use_landmark_distances:
+                landmark_distances = np.load(f"../data/features/{i}_landmark_distances.npy")
+            else:
+                landmark_distances = np.array([])
+
             if use_facs_intensity:
                 facs_intensity = np.load(f"../data/features/{i}_facs_intensity.npy")
             else:
@@ -33,7 +38,7 @@ def prepare_data(fake_features=False, use_landmarks=True, use_facs_intensity=Tru
                 facs_presence = np.array([])
 
             # Combine the features
-            features = np.concatenate((landmarks, an_landmarks, facs_intensity, facs_presence)).astype(float)
+            features = np.concatenate((facs_intensity, landmark_distances ,landmarks, an_landmarks, facs_presence)).astype(float)
 
             if fake_features:
                 # Generate fake features by randomizing
@@ -49,8 +54,6 @@ def prepare_data(fake_features=False, use_landmarks=True, use_facs_intensity=Tru
 
                 features = np.concatenate((landmarks_fake, facs_intensity_fake, facs_presence_fake)).astype(float)
 
-
-
         except FileNotFoundError:
             continue
 
@@ -58,17 +61,21 @@ def prepare_data(fake_features=False, use_landmarks=True, use_facs_intensity=Tru
         X.append(features)
         y.append(int(emotion))
 
-    return np.array(X), np.array(y)
+    # Convert the lists to numpy arrays
+    X = np.array(X)
+    y = np.array(y)
 
-
-def split_data(X, y, use_scaler=False):
+    # Apply feature scaling
     if use_scaler:
-        # Standardizing the data
         scaler = StandardScaler()
-        X_final = scaler.fit_transform(X)
-    else:
-        X_final = X
+        X = scaler.fit_transform(X)
 
+
+
+    return X, y
+
+
+def split_data(X, y):
     # Splitting the dataset into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X_final, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     return X_train, X_test, y_train, y_test

@@ -1,25 +1,36 @@
+from sklearn.linear_model import LogisticRegression
+
 from model.models import RandomForestModel, SVM, MLP
 from model.prepare_data import prepare_data, split_data
 
-X, y = prepare_data(fake_features=False, use_affect_net_lnd=False, use_landmarks=True, use_facs_intensity=True, use_facs_presence=True)
+X, y = prepare_data(use_facs_presence=True, use_facs_intensity=True)
 
 # Splitting the dataset into training and testing sets
-X_train, X_test, y_train, y_test = split_data(X, y, use_scaler=True)
+X_train, X_test, y_train, y_test = split_data(X, y)
 
 
 # Find optimal number of trees for Random Forest
 # RandomForestModel.tree_performance(X_train, X_test, y_train, y_test)
 
+# Find optimal number of neurons for MLP
+# MLP.mlp_performance(X_train, X_test, y_train, y_test)
+
+
+"""
+Initializes Models, in general I try to save the models trained with FACS presence and intensity features 
+(great accuracy with few features)
+"""
 def initialize_models():
     # For each model, check if it already exists in the store, if not, train it and save it
     svm = SVM(C=1.0, kernel='linear')
+    mlp = MLP(solver='sgd', max_iter=1000, hidden_layer_sizes=(400,))
     random_forest = RandomForestModel(n_estimators=200, max_depth=10)
 
     try:
-        svm.load_model('svm')
+        svm.load_model('svm-linear')
     except FileNotFoundError:
         svm.train(X_train, y_train)
-        svm.save_model('svm')
+        svm.save_model('svm-linear')
 
     try:
         random_forest.load_model('random_forest')
@@ -27,7 +38,13 @@ def initialize_models():
         random_forest.train(X_train, y_train)
         random_forest.save_model('random_forest')
 
-    return svm, random_forest
+    try:
+        mlp.load_model('mlp-sgd')
+    except FileNotFoundError:
+        mlp.train(X_train, y_train)
+        mlp.save_model('mlp-sgd')
+
+    return svm, random_forest, mlp
 
 
 def compare_svm_rf(svm, random_forest):
@@ -62,11 +79,14 @@ def compare_svm_kernels():
     print("SVM RBF:")
     svm_rbf.evaluate(X_test, y_test)
 
-def compare_mlp_solvers():
+"""
+When only using FACS Features, SGD is  best with 41.76% 
+"""
+def compare_mlp_solvers(hidden_layer_sizes=(400,)):
     # Init the models
-    mlp_adam = MLP(solver='adam')
-    mlp_lbfgs = MLP(solver='lbfgs')
-    mlp_sgd = MLP(solver='sgd')
+    mlp_adam = MLP(solver='adam', hidden_layer_sizes=hidden_layer_sizes)
+    mlp_lbfgs = MLP(solver='lbfgs', hidden_layer_sizes=hidden_layer_sizes)
+    mlp_sgd = MLP(solver='sgd', hidden_layer_sizes=hidden_layer_sizes)
 
     # Train the models
     mlp_adam.train(X_train, y_train)
@@ -83,3 +103,5 @@ def compare_mlp_solvers():
     print("MLP SGD:")
     mlp_sgd.evaluate(X_test, y_test)
 
+
+#svm, random_forest, mlp = initialize_models()

@@ -71,7 +71,7 @@ class MLP(BaseModel):
 
         hidden_layer_sizes_options = [(100,), (200,), (300,), (400,), (500,)]
         for hidden_layer_sizes in hidden_layer_sizes_options:
-            clf = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, max_iter=200)
+            clf = MLPClassifier(solver="sgd",hidden_layer_sizes=hidden_layer_sizes, max_iter=200, random_state=42)
             clf.fit(X_train, y_train)
             test_score = clf.score(X_test, y_test)
             test_scores.append(test_score)
