@@ -1,11 +1,10 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.decomposition import PCA
 
 
 def prepare_data(fake_features=False, use_scaler=True, use_landmarks=False, use_landmark_distances=False, use_facs_intensity=False, use_facs_presence=False, use_affect_net_lnd=False):
-    num_samples = 5496
+    num_samples = 5496 # There's not actually that many images in the dataset (2999), but the annotations are numbered up to 5496
     X = []
     y = []
     for i in range(num_samples):

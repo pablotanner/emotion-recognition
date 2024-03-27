@@ -160,9 +160,10 @@ cython_debug/
 .idea/
 
 # Data set files and extracted features
-data/annotations
-data/features
-data/images
+data/annotations/*
+data/features/*
+data/images/*
+data/embeddings/*
 
 # Stores model joblib (trained models)
 model/store

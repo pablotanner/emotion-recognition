@@ -3,7 +3,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 # Image Index (0 - 4xxx)
-INDEX = 2
+INDEX = 3464
 
 def show_landmarks(index, use_affect_net=True):
     base_path = "../data"
