@@ -1,9 +1,10 @@
+import numpy as np
 from sklearn.linear_model import LogisticRegression
 
 from model.models import RandomForestModel, SVM, MLP
 from model.prepare_data import prepare_data, split_data
 
-X, y = prepare_data(use_facs_presence=True, use_facs_intensity=True)
+X, y = prepare_data(use_rigid=True, use_nonrigid=True, use_facs_presence=True, use_facs_intensity=True)
 
 # Splitting the dataset into training and testing sets
 X_train, X_test, y_train, y_test = split_data(X, y)
@@ -105,3 +106,14 @@ def compare_mlp_solvers(hidden_layer_sizes=(400,)):
 
 
 #svm, random_forest, mlp = initialize_models()
+
+#svm.evaluate(X_test, y_test)
+
+rf = RandomForestModel(n_estimators=200, max_depth=10)
+
+rf.train(X_train, y_train)
+
+rf.evaluate(X_test, y_test)
+
+compare_svm_kernels()
+

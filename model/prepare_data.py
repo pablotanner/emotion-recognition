@@ -3,7 +3,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
 
-def prepare_data(fake_features=False, use_scaler=True, use_landmarks=False, use_landmark_distances=False, use_facs_intensity=False, use_facs_presence=False, use_affect_net_lnd=False):
+def prepare_data(fake_features=False, use_scaler=True, use_rigid=False, use_nonrigid=False, use_landmarks=False, use_landmark_distances=False, use_facs_intensity=False, use_facs_presence=False, use_affect_net_lnd=False):
     num_samples = 5496 # There's not actually that many images in the dataset (2999), but the annotations are numbered up to 5496
     X = []
     y = []
@@ -21,6 +21,16 @@ def prepare_data(fake_features=False, use_scaler=True, use_landmarks=False, use_
             else:
                 landmarks = np.array([])
 
+            if use_rigid:
+                rigid = np.load(f"../data/features/{i}_rigid_face_shape.npy")
+            else:
+                rigid = np.array([])
+
+            if use_nonrigid:
+                nonrigid = np.load(f"../data/features/{i}_nonrigid_face_shape.npy")
+            else:
+                nonrigid = np.array([])
+
             if use_landmark_distances:
                 landmark_distances = np.load(f"../data/features/{i}_landmark_distances.npy")
             else:
@@ -37,7 +47,7 @@ def prepare_data(fake_features=False, use_scaler=True, use_landmarks=False, use_
                 facs_presence = np.array([])
 
             # Combine the features
-            features = np.concatenate((facs_intensity, landmark_distances ,landmarks, an_landmarks, facs_presence)).astype(float)
+            features = np.concatenate((facs_intensity, rigid, nonrigid, landmark_distances ,landmarks, an_landmarks, facs_presence)).astype(float)
 
             if fake_features:
                 # Generate fake features by randomizing

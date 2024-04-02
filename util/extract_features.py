@@ -95,6 +95,35 @@ def extract_open_face_data(data_path):
                     line_count += 1
 
 
+
 path_to_data = "C:/Users/41763/Desktop/OpenFace_2.2.0_win_x64/processed"
 
-extract_open_face_data(path_to_data)
+def extract_pdm_data(data_path):
+    csv_files = []
+    for file in os.listdir(data_path):
+        if file.endswith(".csv"):
+            csv_files.append(file)
+
+    # for file in csv_files, save landmark and facial unit data to dictionary (skip first row in csv)
+    for file in csv_files:
+        file_path = f"{data_path}/{file}"
+        index = file.split(".")[0]
+        with open(file_path, mode='r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            line_count = 0
+            for row in csv_reader:
+                if line_count == 0:
+                    line_count += 1
+                else:
+                    rigid_face_shape = np.array(row[636:642]).astype(float)
+                    np.save(f"../data/features/{index}_rigid_face_shape", rigid_face_shape)
+
+                    nonrigid_face_shape = np.array(row[642:676]).astype(float)
+                    np.save(f"../data/features/{index}_nonrigid_face_shape", nonrigid_face_shape)
+
+                    line_count += 1
+
+
+extract_pdm_data(path_to_data)
+
+#extract_open_face_data(path_to_data)

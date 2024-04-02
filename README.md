@@ -28,3 +28,10 @@ I extracted the landmark distances from the landmark coordinates but this means 
 - SVM RBF 43.06%
 - SVM Linear 44.36%
 - MLP SGD 42.67%
+
+## 02.04.2024
+### New Features: PDM Parameters with rigid and non-rigid face shape
+Extracted the PDM parameters using OpenFace, reaching new highest accuracies with only 75 features.
+- SVM 45%
+- MLP SGD 45.78%
+
