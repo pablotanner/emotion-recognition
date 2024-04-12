@@ -1,6 +1,6 @@
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from model.evaluate import evaluate_results
 from model.models import RandomForestModel, SVM, MLP
 from model.prepare_data import prepare_data, split_data
 
@@ -22,7 +22,7 @@ Initializes Models, in general I try to save the models trained with FACS presen
 (great accuracy with few features)
 """
 def initialize_models():
-    # For each model, check if it already exists in the store, if not, train it and save it
+    # For each models, check if it already exists in the store, if not, train it and save it
     svm = SVM(C=1.0, kernel='linear')
     mlp = MLP(solver='sgd', max_iter=1000, hidden_layer_sizes=(400,))
     random_forest = RandomForestModel(n_estimators=200, max_depth=10)
@@ -104,16 +104,16 @@ def compare_mlp_solvers(hidden_layer_sizes=(400,)):
     print("MLP SGD:")
     mlp_sgd.evaluate(X_test, y_test)
 
+"""
+Boosted Ranom Forest
 
-#svm, random_forest, mlp = initialize_models()
+base_rf_clf = RandomForestClassifier(n_estimators=200, random_state=42)
+adaboost_rf_clf = AdaBoostClassifier(base_estimator=base_rf_clf, n_estimators=50, random_state=42)
 
-#svm.evaluate(X_test, y_test)
+adaboost_rf_clf.fit(X_train, y_train)
 
-rf = RandomForestModel(n_estimators=200, max_depth=10)
+y_pred = adaboost_rf_clf.predict(X_test)
 
-rf.train(X_train, y_train)
+evaluate_results(y_test, y_pred)
 
-rf.evaluate(X_test, y_test)
-
-compare_svm_kernels()
-
+"""

@@ -165,5 +165,5 @@ data/features/*
 data/images/*
 data/embeddings/*
 
-# Stores model joblib (trained models)
-model/store
+# Stores models joblib (trained models)
+models/store

@@ -2,9 +2,11 @@ import matplotlib.pyplot as plt
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
-from model.evaluate import evaluate_results
 from joblib import dump, load
 import os
+
+from src.evaluation.evaluate import evaluate_results
+
 
 class BaseModel:
     def __init__(self):
@@ -22,12 +24,12 @@ class BaseModel:
 
     def save_model(self, name):
         dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, f"store\\{name}.joblib")
+        filename = os.path.join(dirname, f"../../models/store/{name}.joblib")
         dump(self.model, filename)
 
     def load_model(self, name):
         dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, f"store\\{name}.joblib")
+        filename = os.path.join(dirname, f"../../models/store/{name}.joblib")
         self.model = load(filename)
 
 class SVM(BaseModel):

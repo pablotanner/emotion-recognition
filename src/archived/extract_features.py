@@ -123,7 +123,41 @@ def extract_pdm_data(data_path):
 
                     line_count += 1
 
+def get_confidence_distribution(data_path):
+    csv_files = []
+    for file in os.listdir(data_path):
+        if file.endswith(".csv"):
+            csv_files.append(file)
 
-extract_pdm_data(path_to_data)
+    confidence_distribution = {}
+    for file in csv_files:
+        file_path = f"{data_path}/{file}"
+        index = file.split(".")[0]
+        with open(file_path, mode='r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            line_count = 0
+            for row in csv_reader:
+                if line_count == 0:
+                    line_count += 1
+                else:
+                    confidence = float(row[1])
+                    if confidence not in confidence_distribution:
+                        confidence_distribution[confidence] = 0
+                    confidence_distribution[confidence] += 1
+                    line_count += 1
+
+    return confidence_distribution
+
+def visualize_distribution(data):
+    import matplotlib.pyplot as plt
+
+    plt.bar(data.keys(), data.values())
+    plt.xlabel("Confidence")
+    plt.ylabel("Count")
+    plt.title("Confidence Distribution")
+    plt.show()
+
+confidence_distribution = get_confidence_distribution(path_to_data)
+#extract_pdm_data(path_to_data)
 
 #extract_open_face_data(path_to_data)

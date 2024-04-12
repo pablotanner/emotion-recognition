@@ -3,10 +3,10 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 # Image Index (0 - 4xxx)
-INDEX = 3464
+INDEX = 1
 
 def show_landmarks(index, use_affect_net=True):
-    base_path = "../data"
+    base_path = "../../data"
     lnd_path = f"{base_path}/features/{index}_landmarks.npy"
     image_path = f"{base_path}/images/{index}.jpg"
 
@@ -25,5 +25,5 @@ def show_landmarks(index, use_affect_net=True):
 show_landmarks(INDEX, use_affect_net=False)
 show_landmarks(INDEX, use_affect_net=True)
 
-affect_net = np.load(f"../data/annotations/{INDEX}_lnd.npy")
-open_face = np.load(f"../data/features/{INDEX}_landmarks.npy")
+affect_net = np.load(f"../../data/annotations/{INDEX}_lnd.npy")
+open_face = np.load(f"../../data/features/{INDEX}_landmarks.npy")
