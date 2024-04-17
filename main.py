@@ -8,8 +8,9 @@ data_loader = DataLoader("./data")
 
 feature_fuser = FeatureFuser(
     data_loader.features,
-    include=['facs_intensity','landmarks', 'nonrigid_face_shape'],
-    fusion_strategy=CompositeFusionStrategy([KernelTransformerStrategy(), StandardScalerStrategy()])
+    #include=['facs_intensity','landmarks', 'nonrigid_face_shape'],
+    include=['facs_intensity','landmark_distances', 'facs_presence'],
+    fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
 )
 
 y = data_loader.emotions

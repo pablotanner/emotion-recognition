@@ -62,15 +62,16 @@ class FusionStrategy:
         """ Scale or transform features after initial processing. """
         raise NotImplementedError
 
-
+# This is terrible
 class KernelTransformerStrategy(FusionStrategy):
     def preprocess_features(self, features):
         return features  # Kernel transformation might be considered a form of postprocessing
 
     def postprocess_features(self, features):
-        # Applying an RBF kernel as an example
-        from sklearn.metrics.pairwise import rbf_kernel
-        return rbf_kernel(features, gamma=0.1)
+        from sklearn.kernel_approximation import RBFSampler
+        rbf_feature = RBFSampler(gamma=1, random_state=1)
+        return rbf_feature.fit_transform(features)
+
 
 class StandardScalerStrategy(FusionStrategy):
     def preprocess_features(self, features):
