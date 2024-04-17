@@ -1,18 +1,23 @@
-import numpy as np
-from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from src.data_processing.data_loader import DataLoader
-from src.data_processing.feature_fuser import FeatureFuser
+from src.data_processing.feature_fuser import FeatureFuser, CompositeFusionStrategy, KernelTransformerStrategy, StandardScalerStrategy
 from src.model_training.data_splitter import DataSplitter
 from src.model_training.emotion_recognition_models import SVM, MLP, RandomForestModel
+from src.util.visualize_feature_importance import show_feature_importance
 
 data_loader = DataLoader("./data")
 
-feature_fuser = FeatureFuser(data_loader.features, include=['facs_presence', 'facs_intensity','nonrigid_face_shape', 'rigid_face_shape'])
+feature_fuser = FeatureFuser(
+    data_loader.features,
+    include=['facs_intensity','landmarks', 'nonrigid_face_shape'],
+    fusion_strategy=CompositeFusionStrategy([KernelTransformerStrategy(), StandardScalerStrategy()])
+)
 
 y = data_loader.emotions
-X = feature_fuser.fuse_features(use_scaler=False, use_pca=False)
+X = feature_fuser.fuse_features()
+
 
 data_splitter = DataSplitter(X, y, test_size=0.2)
+
 # Splitting the dataset into training and testing sets
 X_train, X_test, y_train, y_test = data_splitter.split_data()
 
@@ -119,12 +124,10 @@ evaluate_results(y_test, y_pred)
 
 """
 
-#svm, random_forest, mlp = initialize_models()
-
-
 svm = SVM(C=1.0, kernel='linear')
 
 svm.train(X_train, y_train)
 
 svm.evaluate(X_test, y_test)
+
 
