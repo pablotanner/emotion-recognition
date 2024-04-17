@@ -16,6 +16,7 @@ class DataLoader:
         self._landmark_distances = []
         self._rigid_face_shape = []
         self._nonrigid_face_shape = []
+        self._landmarks_3d = []
 
         self.features = {
             "landmarks": self._landmarks,
@@ -23,7 +24,8 @@ class DataLoader:
             "facs_presence": self._facs_presence,
             "landmark_distances": self._landmark_distances,
             "rigid_face_shape": self._rigid_face_shape,
-            "nonrigid_face_shape": self._nonrigid_face_shape
+            "nonrigid_face_shape": self._nonrigid_face_shape,
+            "landmarks_3d": self._landmarks_3d
         }
 
         self.load_features()
@@ -60,6 +62,7 @@ class DataLoader:
             landmark_distances = np.load(f"{self.data_dir}/features/{file_id}_landmark_distances.npy")
             rigid_face_shape = np.load(f"{self.data_dir}/features/{file_id}_rigid_face_shape.npy")
             nonrigid_face_shape = np.load(f"{self.data_dir}/features/{file_id}_nonrigid_face_shape.npy")
+            landmarks_3d = np.load(f"{self.data_dir}/features/{file_id}_landmarks_3d.npy")
 
             self._landmarks.append(landmarks)
             self._facs_intensity.append(facs_intensity)
@@ -67,4 +70,5 @@ class DataLoader:
             self._landmark_distances.append(landmark_distances)
             self._rigid_face_shape.append(rigid_face_shape)
             self._nonrigid_face_shape.append(nonrigid_face_shape)
+            self._landmarks_3d.append(landmarks_3d)
 

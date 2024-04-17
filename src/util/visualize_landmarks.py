@@ -3,7 +3,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 # Image Index (0 - 4xxx)
-INDEX = 1
+INDEX = 3
 
 def show_landmarks(index, use_affect_net=True):
     base_path = "../../data"
@@ -22,8 +22,8 @@ def show_landmarks(index, use_affect_net=True):
 
 
 # Show landmarks (OpenFace vs AffectNet)
-show_landmarks(INDEX, use_affect_net=False)
+#show_landmarks(INDEX, use_affect_net=False)
 show_landmarks(INDEX, use_affect_net=True)
 
-affect_net = np.load(f"../../data/annotations/{INDEX}_lnd.npy")
-open_face = np.load(f"../../data/features/{INDEX}_landmarks.npy")
+#affect_net = np.load(f"../../data/annotations/{INDEX}_lnd.npy")
+#open_face = np.load(f"../../data/features/{INDEX}_landmarks.npy")

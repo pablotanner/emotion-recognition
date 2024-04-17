@@ -29,6 +29,10 @@ def preprocess_nonrigid_face_shape(nonrigid_face_shape):
 def preprocess_landmark_distances(landmark_distances):
     return landmark_distances
 
+def preprocess_landmarks_3d(landmarks_3d):
+    return landmarks_3d
+
+
 
 class Feature:
     def __init__(self, name, data):
@@ -48,6 +52,8 @@ class Feature:
             return preprocess_nonrigid_face_shape(self.data)
         if self.name == 'landmark_distances':
             return preprocess_landmark_distances(self.data)
+        if self.name == 'landmarks_3d':
+            return preprocess_landmarks_3d(self.data)
 
     def __str__(self):
         return f"{self.name}: {self.data}"

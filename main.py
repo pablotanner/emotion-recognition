@@ -8,9 +8,8 @@ data_loader = DataLoader("./data")
 
 feature_fuser = FeatureFuser(
     data_loader.features,
-    #include=['facs_intensity','landmarks', 'nonrigid_face_shape'],
-    include=['facs_intensity','landmark_distances', 'facs_presence'],
-    fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
+    include=['nonrigid_face_shape','landmarks_3d','facs_intensity'],
+    #fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
 )
 
 y = data_loader.emotions
@@ -125,10 +124,12 @@ evaluate_results(y_test, y_pred)
 
 """
 
+#compare_svm_kernels()
+
+
 svm = SVM(C=1.0, kernel='linear')
 
 svm.train(X_train, y_train)
 
 svm.evaluate(X_test, y_test)
-
 

@@ -74,6 +74,12 @@ def extract_open_face_data(data_path):
                 if line_count == 0:
                     line_count += 1
                 else:
+                    """
+                    First Check if Confidence/Success is high enough, if it isn't, skip the data
+                    """
+
+
+
                     # get the parsed float landmarks (format_landmarks() is used to "fix" coordinate order of the landmarks)
                     temp_landmarks = row[296:432]
                     landmarks = np.array(format_landmarks(temp_landmarks)).astype(float)
@@ -116,10 +122,33 @@ def extract_pdm_data(data_path):
                     line_count += 1
                 else:
                     rigid_face_shape = np.array(row[636:642]).astype(float)
-                    np.save(f"../data/features/{index}_rigid_face_shape", rigid_face_shape)
+                    np.save(f"../../data/features/{index}_rigid_face_shape", rigid_face_shape)
 
                     nonrigid_face_shape = np.array(row[642:676]).astype(float)
-                    np.save(f"../data/features/{index}_nonrigid_face_shape", nonrigid_face_shape)
+                    np.save(f"../../data/features/{index}_nonrigid_face_shape", nonrigid_face_shape)
+
+                    line_count += 1
+
+
+def extract_3d_landmarks(data_path):
+    csv_files = []
+    for file in os.listdir(data_path):
+        if file.endswith(".csv"):
+            csv_files.append(file)
+
+    # for file in csv_files, save landmark and facial unit data to dictionary (skip first row in csv)
+    for file in csv_files:
+        file_path = f"{data_path}/{file}"
+        index = file.split(".")[0]
+        with open(file_path, mode='r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            line_count = 0
+            for row in csv_reader:
+                if line_count == 0:
+                    line_count += 1
+                else:
+                    landmarks_3d = np.array(row[432:636]).astype(float)
+                    np.save(f"../../data/features/{index}_landmarks_3d", landmarks_3d)
 
                     line_count += 1
 
@@ -157,7 +186,9 @@ def visualize_distribution(data):
     plt.title("Confidence Distribution")
     plt.show()
 
-confidence_distribution = get_confidence_distribution(path_to_data)
+#confidence_distribution = get_confidence_distribution(path_to_data)
 #extract_pdm_data(path_to_data)
 
 #extract_open_face_data(path_to_data)
+
+#extract_3d_landmarks(path_to_data)
