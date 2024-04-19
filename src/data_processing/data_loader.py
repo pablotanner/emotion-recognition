@@ -2,6 +2,8 @@ import os
 
 import numpy as np
 
+from src.algorithms.standardize_3d_landmarks import standardize_3d_landmarks
+
 
 class DataLoader:
     def __init__(self, data_dir: str):
@@ -62,7 +64,11 @@ class DataLoader:
             landmark_distances = np.load(f"{self.data_dir}/features/{file_id}_landmark_distances.npy")
             rigid_face_shape = np.load(f"{self.data_dir}/features/{file_id}_rigid_face_shape.npy")
             nonrigid_face_shape = np.load(f"{self.data_dir}/features/{file_id}_nonrigid_face_shape.npy")
+
+            # Load and standardize 3d landmarks
             landmarks_3d = np.load(f"{self.data_dir}/features/{file_id}_landmarks_3d.npy")
+            pose = np.load(f"{self.data_dir}/features/{file_id}_pose.npy")
+            standardized_3d_landmarks = standardize_3d_landmarks(landmarks_3d, pose)
 
             self._landmarks.append(landmarks)
             self._facs_intensity.append(facs_intensity)
@@ -70,5 +76,9 @@ class DataLoader:
             self._landmark_distances.append(landmark_distances)
             self._rigid_face_shape.append(rigid_face_shape)
             self._nonrigid_face_shape.append(nonrigid_face_shape)
-            self._landmarks_3d.append(landmarks_3d)
+            self._landmarks_3d.append(standardized_3d_landmarks)
+
+
+
+
 

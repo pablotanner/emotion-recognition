@@ -129,7 +129,7 @@ def compare_landmarks(index1, index2, use_standardization=False):
     visualize_landmark_difference(landmarks1, landmarks2)
 
 
-def standardize_landmarks(landmarks, pose):
+def standardize_3d_landmarks(landmarks, pose):
     """
     Standardize the landmarks by applying the pose transformation. First reshapes, then standardizes, then reshapes back.
     """
