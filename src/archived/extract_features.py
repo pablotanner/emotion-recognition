@@ -152,6 +152,28 @@ def extract_3d_landmarks(data_path):
 
                     line_count += 1
 
+def extract_pose(data_path):
+    csv_files = []
+    for file in os.listdir(data_path):
+        if file.endswith(".csv"):
+            csv_files.append(file)
+
+    # for file in csv_files, save landmark and facial unit data to dictionary (skip first row in csv)
+    for file in csv_files:
+        file_path = f"{data_path}/{file}"
+        index = file.split(".")[0]
+        with open(file_path, mode='r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            line_count = 0
+            for row in csv_reader:
+                if line_count == 0:
+                    line_count += 1
+                else:
+                    pose = np.array(row[290:296]).astype(float)
+                    # pose_Tx, pose_Ty, pose_Tz, pose_Rx, pose_Ry, pose_Rz
+                    np.save(f"../../data/features/{index}_pose", pose)
+                    line_count += 1
+
 def get_confidence_distribution(data_path):
     csv_files = []
     for file in os.listdir(data_path):
@@ -192,3 +214,6 @@ def visualize_distribution(data):
 #extract_open_face_data(path_to_data)
 
 #extract_3d_landmarks(path_to_data)
+
+extract_pose(path_to_data)
+
