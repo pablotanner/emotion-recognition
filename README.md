@@ -35,3 +35,6 @@ Extracted the PDM parameters using OpenFace, reaching new highest accuracies wit
 - SVM 45%
 - MLP SGD 45.78%
 
+## 19.04.2024
+### Standardize 3D Landmarks
+- Standardized 3D landmarks in terms of rotation and positioned, reached 46.17% with SVM Linear in combination with FAU intensity and nonrigid-shape (NO STANDARDSCALER)

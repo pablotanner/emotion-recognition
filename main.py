@@ -8,7 +8,7 @@ data_loader = DataLoader("./data")
 
 feature_fuser = FeatureFuser(
     data_loader.features,
-    include=['nonrigid_face_shape','landmarks_3d','facs_intensity'],
+    include=['nonrigid_face_shape','landmarks_3d','facs_intensity','facs_presence'],
     #fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
 )
 
