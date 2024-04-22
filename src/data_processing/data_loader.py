@@ -10,7 +10,7 @@ class DataLoader:
         self.data_dir = data_dir
         self._ids = list(self.check_features().keys())
 
-        self.emotions = self.load_annotations()
+        self.emotions = np.array(self.load_annotations()).astype(int)
 
         self._landmarks = []
         self._facs_intensity = []

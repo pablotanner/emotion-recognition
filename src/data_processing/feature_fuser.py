@@ -5,26 +5,28 @@ from sklearn.preprocessing import StandardScaler
 
 def preprocess_landmarks(landmarks):
     # Normalize to range from 0 to 1
-    max_value = max(np.array(landmarks).flatten())
-    return landmarks / max_value
+    #max_value = max(np.array(landmarks).flatten())
+    #return landmarks / max_value
+    return landmarks
 
 def preprocess_facs_intensity(facs_intensity):
     # Increase weight of the features
-    return np.array(facs_intensity) * 10
+    return np.array(facs_intensity) # * 10
 
 def preprocess_facs_presence(facs_presence):
-    return np.array(facs_presence) * 10
+    return np.array(facs_presence) # * 10
 
 def preprocess_rigid_face_shape(rigid_face_shape):
     # Normalize to range from 0 to 1
-    max_value = max(np.array(rigid_face_shape).flatten())
-
-    return rigid_face_shape / max_value
+    #max_value = max(np.array(rigid_face_shape).flatten())
+    #return rigid_face_shape / max_value
+    return rigid_face_shape
 
 def preprocess_nonrigid_face_shape(nonrigid_face_shape):
     # Normalize to range from 0 to 1
-    max_value = max(np.array(nonrigid_face_shape).flatten())
-    return nonrigid_face_shape / max_value
+    #max_value = max(np.array(nonrigid_face_shape).flatten())
+    #return nonrigid_face_shape / max_value
+    return nonrigid_face_shape
 
 def preprocess_landmark_distances(landmark_distances):
     return landmark_distances
@@ -117,18 +119,32 @@ class FeatureFuser:
         self.features = features_dict
         self.include = include if include is not None else []
         self.fusion_strategy = fusion_strategy if fusion_strategy else NoPostProcessing()
+        self.feature_names = []
 
 
-    def fuse_features(self):
+    def get_fused_features(self, important_feature_names=None):
         processed_features = []
-
 
         for feature_name, feature_data in self.features.items():
             if feature_name not in self.include:
                 continue
 
+            feature_names = [f"{feature_name}_{i}" for i in range(len(feature_data[0]))]
+
+            if important_feature_names:
+                # Get indices of important features, remove others from feature data
+                important_indices = [i for i, name in enumerate(feature_names) if name in important_feature_names]
+                # Remove unimportant features
+                feature_data = np.array(feature_data)[:, important_indices]
+                # Update feature names
+                feature_names = [feature_names[i] for i in important_indices]
+
+
             feature = Feature(feature_name, feature_data)
             processed_features.append(feature.preprocess())
+
+
+            self.feature_names.extend(feature_names)
 
 
         fused_features = np.concatenate(processed_features, axis=1)
@@ -151,4 +167,3 @@ class FeatureFuser:
         """
 
         return fused_features
-

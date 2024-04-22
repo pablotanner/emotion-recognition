@@ -1,19 +1,31 @@
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+
+from model_explanation import select_features, get_important_features
 from src.data_processing.data_loader import DataLoader
-from src.data_processing.feature_fuser import FeatureFuser, CompositeFusionStrategy, KernelTransformerStrategy, StandardScalerStrategy
+from src.data_processing.feature_fuser import FeatureFuser, CompositeFusionStrategy, StandardScalerStrategy
+from src.evaluation.evaluate import evaluate_results
 from src.model_training.data_splitter import DataSplitter
 from src.model_training.emotion_recognition_models import SVM, MLP, RandomForestModel
-from src.util.visualize_feature_importance import show_feature_importance
 
 data_loader = DataLoader("./data")
 
+feature_scores = np.load('feature_scores.npy', allow_pickle=True).item()
+
+
 feature_fuser = FeatureFuser(
     data_loader.features,
-    include=['nonrigid_face_shape','landmarks_3d','facs_intensity','facs_presence'],
-    #fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
+    include=['nonrigid_face_shape','landmarks_3d','facs_intensity'],
+    fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
 )
 
+# Has best results with 35 threshold (46.43% with SVM Linear)
+important_feature_names = get_important_features(threshold=35)
+
 y = data_loader.emotions
-X = feature_fuser.fuse_features()
+
+# If important_feature_names is provided, only the features from the list will be used
+X = feature_fuser.get_fused_features(important_feature_names=important_feature_names)
 
 
 data_splitter = DataSplitter(X, y, test_size=0.2)
@@ -124,12 +136,11 @@ evaluate_results(y_test, y_pred)
 
 """
 
-#compare_svm_kernels()
 
+#feature_scores = select_features(rf, feature_fuser.feature_names, X_train, y_train, X_test, y_test)
 
 svm = SVM(C=1.0, kernel='linear')
 
 svm.train(X_train, y_train)
 
 svm.evaluate(X_test, y_test)
-
