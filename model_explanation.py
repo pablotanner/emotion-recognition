@@ -31,19 +31,14 @@ def extract_important_features(explanation, predicted_index):
         return '_' in text
 
     # Get the feature names (the one with underline)
-    good_features, bad_features = [], []
+    feature_scores = {}
 
     for feature, value in feature_list:
         feature_name = list(filter(contains_underline, feature.split()))[0]
         value = math.ceil(1000*value)
-        if value >= 0:
-            for i in range(value):
-                good_features.append(feature_name)
-        else:
-            for i in range(-value):
-                bad_features.append(feature_name)
+        feature_scores[feature_name] = value
 
-    return good_features, bad_features
+    return feature_scores
 
 
 def select_features(trained_model, feature_names, X_train, y_train, X_test, y_test):
@@ -56,28 +51,19 @@ def select_features(trained_model, feature_names, X_train, y_train, X_test, y_te
 
     for i in range(len(X_test)):
         explanation, predicted_index = explain_index(i, explainer, trained_model, X_test, y_test, class_names, show=False)
-        good_features, bad_features = extract_important_features(explanation, predicted_index)
-        good_features = np.array(good_features).flatten()
-        bad_features = np.array(bad_features).flatten()
+        features = extract_important_features(explanation, predicted_index)
 
-        print(f"Good features: {good_features}")
-        print(f"Bad features: {bad_features}")
+        print(f"Feature Scores {i}: {feature_scores}")
 
-        for feature in good_features:
+        for feature, score in features.items():
             if feature in feature_scores:
-                feature_scores[feature] += 1
+                feature_scores[feature] += score
             else:
-                feature_scores[feature] = 1
-        for feature in bad_features:
-            if feature in feature_scores:
-                feature_scores[feature] -= 1
-            else:
-                feature_scores[feature] = -1
-
+                feature_scores[feature] = score
     return feature_scores
 
 
-def get_important_features(threshold=0):
-    feature_scores = np.load('feature_scores.npy', allow_pickle=True).item()
+def get_important_features(path, threshold=0):
+    feature_scores = np.load(path, allow_pickle=True).item()
     important_features = [feature for feature, score in feature_scores.items() if score >= threshold]
     return important_features

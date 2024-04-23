@@ -1,5 +1,8 @@
+import argparse
+
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.svm import SVC
 
 from model_explanation import select_features, get_important_features
 from src.data_processing.data_loader import DataLoader
@@ -8,139 +11,32 @@ from src.evaluation.evaluate import evaluate_results
 from src.model_training.data_splitter import DataSplitter
 from src.model_training.emotion_recognition_models import SVM, MLP, RandomForestModel
 
-data_loader = DataLoader("./data")
 
-feature_scores = np.load('feature_scores.npy', allow_pickle=True).item()
 
+data_loader = DataLoader("./data", "./data")
+
+#feature_scores = np.load('feature_scores_int_nonrigid_3d.npy', allow_pickle=True).item()
 
 feature_fuser = FeatureFuser(
     data_loader.features,
-    include=['nonrigid_face_shape','landmarks_3d','facs_intensity'],
+    include=['landmark_distances'],
     fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
 )
 
 # Has best results with 35 threshold (46.43% with SVM Linear)
-important_feature_names = get_important_features(threshold=35)
+#important_feature_names = get_important_features(path='feature_scores_int_nonrigid_3d.npy', threshold=35)
 
 y = data_loader.emotions
 
 # If important_feature_names is provided, only the features from the list will be used
-X = feature_fuser.get_fused_features(important_feature_names=important_feature_names)
-
+X = feature_fuser.get_fused_features()  # important_feature_names=important_feature_names)
 
 data_splitter = DataSplitter(X, y, test_size=0.2)
 
 # Splitting the dataset into training and testing sets
 X_train, X_test, y_train, y_test = data_splitter.split_data()
 
+svm = SVC(kernel='linear', probability=True)
+svm.fit(X_train, y_train)
 
-
-"""
-Initializes Models, in general I try to save the models trained with FACS presence and intensity features 
-(great accuracy with few features)
-"""
-def initialize_models():
-    # For each models, check if it already exists in the store, if not, train it and save it
-    svm = SVM(C=1.0, kernel='linear')
-    mlp = MLP(solver='sgd', max_iter=1000, hidden_layer_sizes=(400,))
-    random_forest = RandomForestModel(n_estimators=200, max_depth=10)
-
-    try:
-        svm.load_model('svm-linear')
-    except FileNotFoundError:
-        svm.train(X_train, y_train)
-        svm.save_model('svm-linear')
-
-    try:
-        random_forest.load_model('random_forest')
-    except FileNotFoundError:
-        random_forest.train(X_train, y_train)
-        random_forest.save_model('random_forest')
-
-    try:
-        mlp.load_model('mlp-sgd')
-    except FileNotFoundError:
-        mlp.train(X_train, y_train)
-        mlp.save_model('mlp-sgd')
-
-    return svm, random_forest, mlp
-
-
-def compare_svm_rf(svm, random_forest):
-    # Evaluate the models
-    print("SVM:")
-    svm.evaluate(X_test, y_test)
-
-    print("Random Forest:")
-    random_forest.evaluate(X_test, y_test)
-
-"""
-Linear is has best accuracy with 44.75%
-"""
-def compare_svm_kernels():
-    # Init the models
-    svm_linear = SVM(C=1.0, kernel='linear')
-    svm_poly = SVM(C=1.0, kernel='poly')
-    svm_rbf = SVM(C=1.0, kernel='rbf')
-
-    # Train the models
-    svm_linear.train(X_train, y_train)
-    svm_poly.train(X_train, y_train)
-    svm_rbf.train(X_train, y_train)
-
-    # Evaluate the models
-    print("SVM Linear:")
-    svm_linear.evaluate(X_test, y_test)
-
-    print("SVM Poly:")
-    svm_poly.evaluate(X_test, y_test)
-
-    print("SVM RBF:")
-    svm_rbf.evaluate(X_test, y_test)
-
-"""
-When only using FACS Features, SGD is  best with 41.76% 
-"""
-def compare_mlp_solvers(hidden_layer_sizes=(400,)):
-    # Init the models
-    mlp_adam = MLP(solver='adam', hidden_layer_sizes=hidden_layer_sizes)
-    mlp_lbfgs = MLP(solver='lbfgs', hidden_layer_sizes=hidden_layer_sizes)
-    mlp_sgd = MLP(solver='sgd', hidden_layer_sizes=hidden_layer_sizes)
-
-    # Train the models
-    mlp_adam.train(X_train, y_train)
-    mlp_lbfgs.train(X_train, y_train)
-    mlp_sgd.train(X_train, y_train)
-
-    # Evaluate the models
-    print("MLP Adam:")
-    mlp_adam.evaluate(X_test, y_test)
-
-    print("MLP LBFGS:")
-    mlp_lbfgs.evaluate(X_test, y_test)
-
-    print("MLP SGD:")
-    mlp_sgd.evaluate(X_test, y_test)
-
-"""
-Boosted Random Forest
-
-base_rf_clf = RandomForestClassifier(n_estimators=200, random_state=42)
-adaboost_rf_clf = AdaBoostClassifier(base_estimator=base_rf_clf, n_estimators=50, random_state=42)
-
-adaboost_rf_clf.fit(X_train, y_train)
-
-y_pred = adaboost_rf_clf.predict(X_test)
-
-evaluate_results(y_test, y_pred)
-
-"""
-
-
-#feature_scores = select_features(rf, feature_fuser.feature_names, X_train, y_train, X_test, y_test)
-
-svm = SVM(C=1.0, kernel='linear')
-
-svm.train(X_train, y_train)
-
-svm.evaluate(X_test, y_test)
+feature_scores = select_features(svm, feature_fuser.feature_names, X_train, y_train, X_test, y_test)
