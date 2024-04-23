@@ -7,8 +7,8 @@ import os
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Extract OpenFace data from CSV files.')
-parser.add_argument('input_folder', type=str, help='Path to the input folder containing CSV files.')
-parser.add_argument('output_folder', type=str, help='Path to the output folder where extracted data will be stored as .npy')
+parser.add_argument('-input_folder', type=str, help='Path to the input folder containing CSV files.')
+parser.add_argument('-output_folder', type=str, help='Path to the output folder where extracted data will be stored as .npy')
 args = parser.parse_args()
 
 

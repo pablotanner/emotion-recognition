@@ -16,7 +16,7 @@ class DataLoader:
         self._landmarks = []
         self._facs_intensity = []
         self._facs_presence = []
-        self._landmark_distances = []
+        #self._landmark_distances = []
         self._rigid_face_shape = []
         self._nonrigid_face_shape = []
         self._landmarks_3d = []
@@ -25,7 +25,7 @@ class DataLoader:
             "landmarks": self._landmarks,
             "facs_intensity": self._facs_intensity,
             "facs_presence": self._facs_presence,
-            "landmark_distances": self._landmark_distances,
+            #"landmark_distances": self._landmark_distances,
             "rigid_face_shape": self._rigid_face_shape,
             "nonrigid_face_shape": self._nonrigid_face_shape,
             "landmarks_3d": self._landmarks_3d
@@ -62,7 +62,7 @@ class DataLoader:
             landmarks = np.load(f"{self.features_dir}/features/{file_id}_landmarks.npy")
             facs_intensity = np.load(f"{self.features_dir}/features/{file_id}_facs_intensity.npy")
             facs_presence = np.load(f"{self.features_dir}/features/{file_id}_facs_presence.npy")
-            landmark_distances = np.load(f"{self.features_dir}/features/{file_id}_landmark_distances.npy")
+            #landmark_distances = np.load(f"{self.features_dir}/features/{file_id}_landmark_distances.npy")
             rigid_face_shape = np.load(f"{self.features_dir}/features/{file_id}_rigid_face_shape.npy")
             nonrigid_face_shape = np.load(f"{self.features_dir}/features/{file_id}_nonrigid_face_shape.npy")
 
@@ -74,7 +74,7 @@ class DataLoader:
             self._landmarks.append(landmarks)
             self._facs_intensity.append(facs_intensity)
             self._facs_presence.append(facs_presence)
-            self._landmark_distances.append(landmark_distances)
+            #self._landmark_distances.append(landmark_distances)
             self._rigid_face_shape.append(rigid_face_shape)
             self._nonrigid_face_shape.append(nonrigid_face_shape)
             self._landmarks_3d.append(standardized_3d_landmarks)
