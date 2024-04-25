@@ -4,13 +4,15 @@ from lime import lime_tabular
 import math
 
 
-def createExplainer(X_train, y_train, feature_names, class_names):
+def create_explainer(X_train, y_train, feature_names):
+    class_names = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']
     explainer = lime.lime_tabular.LimeTabularExplainer(training_data=X_train, training_labels=y_train,
                                                        class_names=class_names, feature_names=feature_names)
     return explainer
 
 
-def explain_index(index, explainer, model, X_test, y_test, class_names, show=False):
+def explain_index(index, explainer, model, X_test, y_test, show=False):
+    class_names = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']
     sample = X_test[index]
     explanation = explainer.explain_instance(sample, model.predict_proba, num_features=10, top_labels=7)
     predicted_index = model.predict(X_test)[index]
@@ -26,7 +28,6 @@ def explain_index(index, explainer, model, X_test, y_test, class_names, show=Fal
 def extract_important_features(explanation, predicted_index):
     # Given as " ('facs_intensity_8 <= 0.00', 0.026830424167673558)", we need to get out facs_intensity_8
     feature_list = explanation.as_list(label=predicted_index)
-
     def contains_underline(text):
         return '_' in text
 
@@ -42,15 +43,14 @@ def extract_important_features(explanation, predicted_index):
 
 
 def select_features(trained_model, feature_names, X_train, y_train, X_test, y_test):
-    class_names = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']
 
     # Initialize the explainer
-    explainer = createExplainer(X_train, y_train, feature_names, class_names)
+    explainer = create_explainer(X_train, y_train, feature_names)
 
     feature_scores = {}
 
     for i in range(len(X_test)):
-        explanation, predicted_index = explain_index(i, explainer, trained_model, X_test, y_test, class_names, show=False)
+        explanation, predicted_index = explain_index(i, explainer, trained_model, X_test, y_test, show=False)
         features = extract_important_features(explanation, predicted_index)
 
         print(f"Feature Scores {i}: {feature_scores}")

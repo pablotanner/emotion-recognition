@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import SVC
 
-from model_explanation import select_features, get_important_features
+from src.feature_importance.model_explanation import select_features, get_important_features
 from src.data_processing.data_loader import DataLoader
 from src.data_processing.feature_fuser import FeatureFuser, CompositeFusionStrategy, StandardScalerStrategy
 from src.evaluation.evaluate import evaluate_results
@@ -40,8 +40,9 @@ data_splitter = DataSplitter(X, y, test_size=0.2)
 X_train, X_test, y_train, y_test = data_splitter.split_data()
 
 
-svm = SVM(kernel='linear')
-svm.train(X_train, y_train)
-svm.evaluate(X_test, y_test)
+#svm = SVM(kernel='linear')
+#svm.train(X_train, y_train)
+#svm.evaluate(X_test, y_test)
 
 
+svm = SVC(kernel='linear')
