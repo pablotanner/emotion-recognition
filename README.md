@@ -38,3 +38,17 @@ Extracted the PDM parameters using OpenFace, reaching new highest accuracies wit
 ## 19.04.2024
 ### Standardize 3D Landmarks
 - Standardized 3D landmarks in terms of rotation and positioned, reached 46.17% with SVM Linear in combination with FAU intensity and nonrigid-shape (NO STANDARDSCALER)
+
+## 25.04.2024
+### Ran tests using Embeddings extracted from various Face Recognition Models
+| Model           | Accuracy (LFW) | EmoRec Accuracy (AffectNet) | Embedding Size |
+|-----------------|----------------|-----------------------------|----------------|
+| VGG-Face        | 98.9%          | 34.88%                      | 4096           |
+| Facenet         | 99.2%          | 32.00%                      | 128            |
+| Facenet512      | 99.6%          | 26.38%                      | 512            |
+| OpenFace        | 92.9%          | 26.12%                      | 129            |
+| DeepFace (FB)   | 97.35%         | 32.38%                      | 4096           |
+| DeepID          | 97.4%          | 20.75%                      | 160            |
+| ArcFace         | 99.5%          | 32.00%                      | 512            |
+| SFace           | 99.5%          | 32.75%                      | 128            |
+Seems to be a positive correlation between how a model performs in FaceRec and how well its extracted embeddings perform in EmoRec 

@@ -45,10 +45,3 @@ svm.train(X_train, y_train)
 svm.evaluate(X_test, y_test)
 
 
-
-"""
-svm = SVC(kernel='linear', probability=True)
-svm.fit(X_train, y_train)
-feature_scores = select_features(svm, feature_fuser.feature_names, X_train, y_train, X_test, y_test)
-
-"""
