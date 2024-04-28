@@ -8,9 +8,9 @@ import os
 import numpy as np
 
 class EmbeddingLoader:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, make_compatible=False):
         self.data_dir = data_dir
-        self._ids = list(self.check_features().keys())
+        self._ids = list(self.check_features(make_compatible).keys())
         self.emotions = np.array(self.load_annotations()).astype(int)
 
         self._vgg_face = []
@@ -41,10 +41,13 @@ class EmbeddingLoader:
             emotions.append(np.load(f"{self.data_dir}/annotations/{sample}_exp.npy"))
         return emotions
 
-    def check_features(self):
+    def check_features(self, make_compatible):
         # Make sure that for each image, we have all feature types
         all_ids = {}
-        for file in os.listdir(self.data_dir + "/embeddings"):
+        path = self.data_dir + "/embeddings"
+        if make_compatible:
+            path = self.data_dir + "/features"
+        for file in os.listdir(path):
             if file.endswith(".npy"):
                 file_id = file.split("_")[0]
                 if file_id not in all_ids:

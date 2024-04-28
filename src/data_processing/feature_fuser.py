@@ -141,11 +141,14 @@ class FeatureFuser:
 
 
             feature = Feature(feature_name, feature_data)
-            processed_features.append(feature.preprocess())
 
+            preprocessed_features = feature.preprocess()
+            #scaler = StandardScaler()
+            #scaled_features = scaler.fit_transform(preprocessed_features)
+            #processed_features.append(scaled_features)
+            processed_features.append(preprocessed_features)
 
             self.feature_names.extend(feature_names)
-
 
         fused_features = np.concatenate(processed_features, axis=1)
 
