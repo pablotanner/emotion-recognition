@@ -32,7 +32,17 @@ def preprocess_landmark_distances(landmark_distances):
     return landmark_distances
 
 def preprocess_landmarks_3d(landmarks_3d):
+    # use PCA to reduce dimensionality
+    #pca = PCA(n_components=0.95, svd_solver='full')
+    #return pca.fit_transform(landmarks_3d)
     return landmarks_3d
+
+def preprocess_hog(hog):
+    # use PCA to reduce dimensionality
+    #pca = PCA(n_components=0.95, svd_solver='full')
+    #return pca.fit_transform(hog)
+    return hog
+
 
 
 
@@ -57,7 +67,7 @@ class Feature:
         if self.name == 'landmarks_3d':
             return preprocess_landmarks_3d(self.data)
         if self.name == 'hog':
-            return self.data
+            return preprocess_hog(self.data)
 
     def __str__(self):
         return f"{self.name}: {self.data}"
