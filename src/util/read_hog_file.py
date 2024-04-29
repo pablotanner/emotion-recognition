@@ -35,7 +35,7 @@ def read_hog_file(filename, batch_size=5000):
             num_bytes_to_read = num_floats_to_read * 4
         except:
             print(f"Error reading {filename}")
-            return None, None
+            return False, None
 
         while True:
             bytes = f.read(num_bytes_to_read)
@@ -72,6 +72,9 @@ def batch_read_hog_files(hog_file_directory):
     for hog_file in hog_files:
         path = os.path.join(hog_file_directory, hog_file)
         is_valid, feature_vectors = read_hog_file(path)
+        if is_valid is False:
+            continue
+        np.save("../../data/features/" + hog_file.split(".")[0] + "_hog.npy", feature_vectors)
         hog_data.append(feature_vectors)
     return hog_data
 

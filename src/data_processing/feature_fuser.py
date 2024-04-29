@@ -56,6 +56,8 @@ class Feature:
             return preprocess_landmark_distances(self.data)
         if self.name == 'landmarks_3d':
             return preprocess_landmarks_3d(self.data)
+        if self.name == 'hog':
+            return self.data
 
     def __str__(self):
         return f"{self.name}: {self.data}"

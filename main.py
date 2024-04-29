@@ -27,7 +27,9 @@ y = data_loader.emotions
 # If important_feature_names is provided, only the features from the list will be used
 X = feature_fuser.get_fused_features()
 
-X = select_important_features(X, y, n_top_features=50)
+
+X, top_indices = select_important_features(X, y, n_top_features=50)
+top_feature_names = [feature_fuser.feature_names[i] for i in top_indices]
 
 data_splitter = DataSplitter(X, y, test_size=0.2)
 
@@ -44,7 +46,7 @@ X_train, X_test = data_splitter.scale_data(X_train, X_test)
 svm = SVC(C=1, gamma='scale', kernel='rbf', probability=True)
 rf = RandomForestClassifier(n_estimators=100, max_depth=20, min_samples_split=10)
 mlp = MLPClassifier(hidden_layer_sizes=(100, 50),solver='sgd', learning_rate_init=0.001, activation='tanh')
-models = [svm, mlp]
+models = [svm, mlp, rf]
 
 # Perform score fusion
 perform_score_fusion(X_train, X_test, y_train, y_test, models=models)
