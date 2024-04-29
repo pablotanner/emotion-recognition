@@ -23,4 +23,4 @@ def select_important_features(X, y, n_top_features=50):
     # Reduce X to top features
     X_reduced = X[:, top_features_indices]
 
-    return X_reduced #, top_features_indices
+    return X_reduced , top_features_indices
