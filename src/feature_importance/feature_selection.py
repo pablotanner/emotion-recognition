@@ -4,14 +4,20 @@ from sklearn.feature_selection import SelectFromModel, SequentialFeatureSelector
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 
+def select_embedded_adaboost(X, y, n_top_features=50):
+    clf = AdaBoostClassifier(n_estimators=50, random_state=42)
+    clf = clf.fit(X, y)
+
+    model = SelectFromModel(clf, prefit=True, max_features=n_top_features, threshold=-np.inf)
+
+    X_new = model.transform(X)
+
+
+    return X_new
 
 def select_features_adaboost(X, y, n_top_features=50):
     # Initialize AdaBoost with decision stumps
-    ada = AdaBoostClassifier(
-        estimator=DecisionTreeClassifier(max_depth=1),
-        n_estimators=50,
-        random_state=42
-    )
+    ada = AdaBoostClassifier(n_estimators=50, random_state=42)
 
     # Fit AdaBoost model
     ada.fit(X, y)
@@ -50,6 +56,17 @@ def select_features_adaboost_new(X_train, X_test, y, n_top_features=50):
     X_test_reduced = X_test[:, top_features_indices]
 
     return X_train_reduced, X_test_reduced, top_features_indices
+
+def select_features_tree_based_before(X, y, max_features=50):
+    clf = ExtraTreesClassifier(n_estimators=50, random_state=42)
+    clf = clf.fit(X, y)
+
+    model = SelectFromModel(clf, prefit=True, max_features=max_features, threshold=-np.inf)
+
+    X_new = model.transform(X)
+
+    return X_new
+
 
 # Embedded approach
 def select_features_tree_based(X_train, X_test, y_train, max_features=50):

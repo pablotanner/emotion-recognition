@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import ndarray
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import balanced_accuracy_score
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 
@@ -20,10 +21,11 @@ def perform_score_fusion(X_train, X_test, y_train, y_test, models=default_models
     average_probs = np.mean(probabilities, axis=0)
     final_predictions: ndarray[int] = np.argmax(average_probs, axis=1)
 
-    # First Give individual accuracies
+    # For each model, print the balanced accuracy
     for model in models:
-        print(f"{model.__class__.__name__} accuracy: {model.score(X_test, y_test)}")
-
+        y_pred = model.predict(X_test)
+        bal_acc = balanced_accuracy_score(y_test, y_pred)
+        print(f"{model.__class__.__name__} balanced accuracy: {bal_acc}")
     # Then give Evaluation
     evaluate_results(y_test, final_predictions)
 
