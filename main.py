@@ -1,11 +1,13 @@
 import numpy as np
+from keras import Sequential
+from keras.src.layers import Dense
+from keras.src.utils import to_categorical
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, ExtraTreesClassifier, \
     AdaBoostClassifier
 from sklearn.feature_selection import SelectKBest, SelectFromModel, RFE, VarianceThreshold, f_classif, chi2, \
     mutual_info_classif, SelectFpr, f_regression, SelectFwe
-from sklearn.metrics import accuracy_score
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import KNeighborsClassifier
+
+
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.svm import SVC
@@ -21,7 +23,7 @@ from src.evaluation.evaluate import evaluate_results
 from src.model_training.data_splitter import DataSplitter
 from src.model_training.grid_search import run_grid_search
 
-from src.model_training.score_fusion import perform_score_fusion, perform_score_fusion_new
+from src.model_training.score_fusion import perform_score_fusion_basic, perform_score_fusion
 
 data_loader = DataLoader("./data", "./data")
 
@@ -52,7 +54,7 @@ Experiments using AdaBoost for feature selection, first selects top n features, 
 def adaboost_experiment(X, y, variant="before"):
     if variant == "before":
         X_selected, top_indices = select_features_adaboost(X, y, n_top_features=40)
-        top_feature_names = [feature_fuser.feature_names[i] for i in top_indices]
+        #top_feature_names = [feature_fuser.feature_names[i] for i in top_indices]
 
         data_splitter = DataSplitter(X_selected, y, test_size=0.2)
 
@@ -183,6 +185,15 @@ def embedded_experiment(X, y, variant="after"):
 
 X_train, X_test, y_train, y_test = None, None, None, None
 
+def create_neural_network(input_dim):
+    model = Sequential([
+        Dense(64, activation='relu', input_shape=(input_dim,)),
+        Dense(32, activation='relu'),
+        Dense(8, activation='softmax') # 8 classes
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.__setattr__("__name__", "Sequential")
+    return model
 
 start_time = time.time()
 
@@ -204,9 +215,13 @@ elif EXPERIMENT == "embedded":
 # Initialize models using parameters from grid search (grid_search_results.npy)
 # NO HOG
 svm = SVC(C=1, gamma='scale', kernel='rbf', probability=True, random_state=42)
+svm.__setattr__("__name__", "SVM")
 rf = RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=5, random_state=42)
+rf.__setattr__("__name__", "RandomForest")
 mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='tanh', random_state=42)
-
+mlp.__setattr__("__name__", "MLP")
+nn = create_neural_network
+nn.__setattr__("__name__", "Sequential")
 
 # WITH HOG
 #svm = SVC(C=0.1, gamma='scale', kernel='linear', probability=True, random_state=42)
@@ -214,7 +229,7 @@ mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', le
 #mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='relu', random_state=42)
 
 
-models = [svm, mlp, rf]
+models = [nn]
 
 print(20 * "=" + f" {EXPERIMENT} " + 20 * "=")
 
@@ -222,9 +237,24 @@ print(20 * "=" + f" {EXPERIMENT} " + 20 * "=")
 X = np.concatenate((X_train, X_test), axis=0)
 y = np.concatenate((y_train, y_test), axis=0)
 
+
+# Convert labels to one hot encoding
+#y_train = to_categorical(y_train, num_classes=8)
+#y_test = to_categorical(y_test, num_classes=8)
+
+#nn.fit(X_train, y_train, epochs=50, batch_size=32, verbose=1)
+
+#y_pred = nn.predict(X_test)
+#y_pred = np.argmax(y_pred, axis=1)
+
+# Convert one hot encoding to labels
+#y_test = np.argmax(y_test, axis=1)
+
+#evaluate_results(y_test, y_pred)
+
 # Perform score fusion
 #perform_score_fusion(X_train, X_test, y_train, y_test, models=models)
-perform_score_fusion_new(X,y, models=models, n_splits=5, technique='average')
+perform_score_fusion(X,y, models=models, n_splits=5, technique='average')
 
 
 # Perform grid search
