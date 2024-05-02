@@ -29,7 +29,8 @@ def run_grid_search(X_train, y_train):
                 'hidden_layer_sizes': [(50,), (100,), (100, 50)],
                 'activation': ['relu', 'tanh'],
                 'solver': ['adam', 'sgd'],
-                'learning_rate_init': [0.001, 0.01]
+                'learning_rate_init': [0.001, 0.01],
+                'max_iter': [200, 300, 400]
             }
         }
     }
@@ -37,7 +38,7 @@ def run_grid_search(X_train, y_train):
     results = []
 
     for model_name, mp in models_params.items():
-        grid_search = GridSearchCV(mp['model'], mp['params'], cv=5, verbose=2, n_jobs=-1)
+        grid_search = GridSearchCV(mp['model'], mp['params'], cv=5, verbose=2, n_jobs=-1, scoring='balanced_accuracy')
         grid_search.fit(X_train, y_train)
         best_parameters = grid_search.best_params_
         best_score = grid_search.best_score_

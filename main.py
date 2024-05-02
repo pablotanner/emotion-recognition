@@ -5,6 +5,7 @@ from sklearn.feature_selection import SelectKBest, SelectFromModel, RFE, Varianc
     mutual_info_classif, SelectFpr, f_regression, SelectFwe
 from sklearn.metrics import accuracy_score
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.svm import SVC
@@ -20,7 +21,7 @@ from src.evaluation.evaluate import evaluate_results
 from src.model_training.data_splitter import DataSplitter
 from src.model_training.grid_search import run_grid_search
 
-from src.model_training.score_fusion import perform_score_fusion
+from src.model_training.score_fusion import perform_score_fusion, perform_score_fusion_new
 
 data_loader = DataLoader("./data", "./data")
 
@@ -186,7 +187,7 @@ X_train, X_test, y_train, y_test = None, None, None, None
 start_time = time.time()
 
 
-EXPERIMENT = "filter"
+EXPERIMENT = "adaboost"
 
 if EXPERIMENT == "no_selection":
     X_train, X_test, y_train, y_test = no_selection_experiment(X, y)
@@ -195,7 +196,7 @@ elif EXPERIMENT == "adaboost":
 elif EXPERIMENT == "filter":
     X_train, X_test, y_train, y_test = filter_experiment(X, y, selection_method="f_classif")
 elif EXPERIMENT == "wrapper":
-    X_train, X_test, y_train, y_test = wrapper_experiment(X, y, transformer="sequential")
+    X_train, X_test, y_train, y_test = wrapper_experiment(X, y, transformer="rfe")
 elif EXPERIMENT == "embedded":
     X_train, X_test, y_train, y_test = embedded_experiment(X, y, variant="before")
 
@@ -203,8 +204,9 @@ elif EXPERIMENT == "embedded":
 # Initialize models using parameters from grid search (grid_search_results.npy)
 # NO HOG
 svm = SVC(C=1, gamma='scale', kernel='rbf', probability=True, random_state=42)
-rf = RandomForestClassifier(n_estimators=200, max_depth=20, min_samples_split=10, random_state=42)
+rf = RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=5, random_state=42)
 mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='tanh', random_state=42)
+
 
 # WITH HOG
 #svm = SVC(C=0.1, gamma='scale', kernel='linear', probability=True, random_state=42)
@@ -212,15 +214,21 @@ mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', le
 #mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='relu', random_state=42)
 
 
-models = [svm, mlp,rf]
+models = [svm, mlp, rf]
 
 print(20 * "=" + f" {EXPERIMENT} " + 20 * "=")
+
+# Join the training and testing data
+X = np.concatenate((X_train, X_test), axis=0)
+y = np.concatenate((y_train, y_test), axis=0)
+
 # Perform score fusion
-perform_score_fusion(X_train, X_test, y_train, y_test, models=models)
+#perform_score_fusion(X_train, X_test, y_train, y_test, models=models)
+perform_score_fusion_new(X,y, models=models, n_splits=5, technique='average')
 
 
 # Perform grid search
-# results = run_grid_search(X_train, y_train)
+#results = run_grid_search(X_train, y_train)
 
 
 print("--- %s seconds ---" % (time.time() - start_time))
