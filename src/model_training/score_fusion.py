@@ -59,7 +59,7 @@ def perform_score_fusion(X, y, models, technique='average', n_splits=5):
 
                 # Handle neural network training
                 y_train_nn = to_categorical(y_train, num_classes=8)
-                model.fit(X_train, y_train_nn, epochs=50, batch_size=32, verbose=1)
+                model.fit(X_train, y_train_nn, epochs=50, batch_size=32, verbose=0)
                 proba = model.predict(X_test)
                 pred = np.argmax(proba, axis=1)
             else:
@@ -69,6 +69,9 @@ def perform_score_fusion(X, y, models, technique='average', n_splits=5):
 
             probabilities.append(proba)
             predictions.append(pred)
+
+            print(f"{model.__class__.__name__} balanced accuracy: {balanced_accuracy_score(y_test, pred)}")
+            evaluate_results(y_test, pred)
 
             # Evaluate individual model performance
             acc = balanced_accuracy_score(original_y_test, pred)

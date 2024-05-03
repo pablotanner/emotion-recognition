@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
 import joblib  # For saving the best model parameters
-
+import numpy as np
 def run_grid_search(X_train, y_train):
 
     models_params = {
@@ -12,7 +14,9 @@ def run_grid_search(X_train, y_train):
             'params': {
                 'n_estimators': [10, 50, 100, 200],
                 'max_depth': [None, 10, 20, 30],
-                'min_samples_split': [2, 5, 10]
+                'min_samples_split': [2, 5, 10],
+                'min_samples_leaf': [1, 2, 4],
+                'max_features': ['auto', 'sqrt', 'log2']
             }
         },
         'SVC': {
@@ -34,6 +38,22 @@ def run_grid_search(X_train, y_train):
             }
         }
     }
+    """
+        models_params = {
+        'RandomForestClassifier': {
+            'model': RandomForestClassifier(random_state=42),
+            'params': {
+                'n_estimators': [10, 50, 100, 200],
+                'max_depth': [None, 10, 20, 30],
+                'min_samples_split': [2, 5, 10],
+                'min_samples_leaf': [1, 2, 4],
+                'max_features': ['auto', 'sqrt', 'log2']
+            }
+        },
+    }
+    
+    """
+
 
     results = []
 
@@ -47,13 +67,14 @@ def run_grid_search(X_train, y_train):
             'best_score': best_score,
             'best_params': best_parameters
         })
-        try:
-            # Optionally save the best model parameters
-            joblib.dump(grid_search.best_estimator_, f'../../models/{model_name}_best_params.pkl')
-        except:
-            print(f"Error saving {model_name} best parameters")
 
     for result in results:
         print(f"{result['model']} best score: {result['best_score']}")
         print(f"{result['model']} best parameters: {result['best_params']}")
+
+    # Get Date and Time
+    now = datetime.now()
+    dt_string = now.strftime("%d-%m-%Y_%H-%M-%S")
+    # Optionally save the best model parameters
+    np.save("grid_search_" + dt_string + ".npy", results)
     return results

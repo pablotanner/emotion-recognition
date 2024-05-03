@@ -1,6 +1,6 @@
 import numpy as np
 from keras import Sequential
-from keras.src.layers import Dense
+from keras.src.layers import Dense, Dropout
 from keras.src.utils import to_categorical
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, ExtraTreesClassifier, \
     AdaBoostClassifier
@@ -30,7 +30,7 @@ data_loader = DataLoader("./data", "./data")
 
 feature_fuser = FeatureFuser(
     data_loader.features,
-    include=['nonrigid_face_shape', 'landmarks_3d', 'facs_intensity'],
+    include=['nonrigid_face_shape', 'landmarks_3d', 'facs_intensity', 'hog'],
     #fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
 )
 y = data_loader.emotions
@@ -187,8 +187,10 @@ X_train, X_test, y_train, y_test = None, None, None, None
 
 def create_neural_network(input_dim):
     model = Sequential([
-        Dense(64, activation='relu', input_shape=(input_dim,)),
-        Dense(32, activation='relu'),
+        Dense(128, activation='relu', input_shape=(input_dim,)),
+        Dropout(0.5),
+        Dense(64, activation='relu'),
+        Dropout(0.5),
         Dense(8, activation='softmax') # 8 classes
     ])
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
@@ -198,12 +200,12 @@ def create_neural_network(input_dim):
 start_time = time.time()
 
 
-EXPERIMENT = "adaboost"
+EXPERIMENT = "filter"
 
 if EXPERIMENT == "no_selection":
     X_train, X_test, y_train, y_test = no_selection_experiment(X, y)
 elif EXPERIMENT == "adaboost":
-    X_train, X_test, y_train, y_test = adaboost_experiment(X, y, variant="before")
+    X_train, X_test, y_train, y_test = adaboost_experiment(X, y, variant="embedded")
 elif EXPERIMENT == "filter":
     X_train, X_test, y_train, y_test = filter_experiment(X, y, selection_method="f_classif")
 elif EXPERIMENT == "wrapper":
@@ -214,22 +216,28 @@ elif EXPERIMENT == "embedded":
 
 # Initialize models using parameters from grid search (grid_search_results.npy)
 # NO HOG
-svm = SVC(C=1, gamma='scale', kernel='rbf', probability=True, random_state=42)
-svm.__setattr__("__name__", "SVM")
-rf = RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=5, random_state=42)
-rf.__setattr__("__name__", "RandomForest")
-mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='tanh', random_state=42)
-mlp.__setattr__("__name__", "MLP")
+#svm = SVC(C=1, gamma='scale', kernel='rbf', probability=True, random_state=42)
+#rf = RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=10, random_state=42)
+#mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='tanh', random_state=42)
 nn = create_neural_network
-nn.__setattr__("__name__", "Sequential")
 
 # WITH HOG
 #svm = SVC(C=0.1, gamma='scale', kernel='linear', probability=True, random_state=42)
 #rf = RandomForestClassifier(n_estimators=200, max_depth=20, min_samples_split=10, random_state=42)
 #mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='relu', random_state=42)
 
+# WITH HOG (FILTER, FULL PCA)
+svm = SVC(C=1, gamma='scale', kernel='rbf', probability=True, random_state=42)
+rf = RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=5, random_state=42)
+mlp = MLPClassifier(hidden_layer_sizes=(50,), max_iter=200, solver='sgd', learning_rate_init=0.001, activation='tanh', random_state=42)
 
-models = [nn]
+svm.__setattr__("__name__", "SVM")
+rf.__setattr__("__name__", "RandomForest")
+mlp.__setattr__("__name__", "MLP")
+nn.__setattr__("__name__", "Sequential")
+
+
+models = [nn, svm, rf, mlp]
 
 print(20 * "=" + f" {EXPERIMENT} " + 20 * "=")
 
@@ -238,27 +246,13 @@ X = np.concatenate((X_train, X_test), axis=0)
 y = np.concatenate((y_train, y_test), axis=0)
 
 
-# Convert labels to one hot encoding
-#y_train = to_categorical(y_train, num_classes=8)
-#y_test = to_categorical(y_test, num_classes=8)
-
-#nn.fit(X_train, y_train, epochs=50, batch_size=32, verbose=1)
-
-#y_pred = nn.predict(X_test)
-#y_pred = np.argmax(y_pred, axis=1)
-
-# Convert one hot encoding to labels
-#y_test = np.argmax(y_test, axis=1)
-
-#evaluate_results(y_test, y_pred)
-
 # Perform score fusion
 #perform_score_fusion(X_train, X_test, y_train, y_test, models=models)
-perform_score_fusion(X,y, models=models, n_splits=5, technique='average')
+perform_score_fusion(X,y, models=models, n_splits=5, technique='majority_vote')
 
 
 # Perform grid search
-#results = run_grid_search(X_train, y_train)
+#results = run_grid_search(X, y)
 
 
 print("--- %s seconds ---" % (time.time() - start_time))

@@ -33,15 +33,15 @@ def preprocess_landmark_distances(landmark_distances):
 
 def preprocess_landmarks_3d(landmarks_3d):
     # use PCA to reduce dimensionality
-    #pca = PCA(n_components=0.95, svd_solver='full')
-    #return pca.fit_transform(landmarks_3d)
-    return landmarks_3d
+    pca = PCA(n_components=0.95, svd_solver='full')
+    return pca.fit_transform(landmarks_3d)
+    #return landmarks_3d
 
 def preprocess_hog(hog):
     # use PCA to reduce dimensionality
-    #pca = PCA(n_components=0.95, svd_solver='full')
-    #return pca.fit_transform(hog)
-    return hog
+    pca = PCA(n_components=0.95, svd_solver='full')
+    return pca.fit_transform(hog)
+    #return hog
 
 
 
