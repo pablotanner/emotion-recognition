@@ -1,29 +1,21 @@
 import numpy as np
 from keras import Sequential
 from keras.src.layers import Dense, Dropout
-from keras.src.utils import to_categorical
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, ExtraTreesClassifier, \
-    AdaBoostClassifier
-from sklearn.feature_selection import SelectKBest, SelectFromModel, RFE, VarianceThreshold, f_classif, chi2, \
-    mutual_info_classif, SelectFpr, f_regression, SelectFwe
-
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import SelectKBest,f_classif, chi2,mutual_info_classif, SelectFpr, f_regression
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV
 import time
 from src.feature_importance.feature_selection import select_features_adaboost, select_features_tree_based, \
     select_features_rfe, select_features_sequential, select_features_adaboost_new, select_embedded_adaboost, \
     select_features_tree_based_before
-from src.feature_importance.model_explanation import select_features, get_important_features
 from src.data_processing.data_loader import DataLoader
-from src.data_processing.feature_fuser import FeatureFuser, CompositeFusionStrategy, StandardScalerStrategy
-from src.evaluation.evaluate import evaluate_results
+from src.data_processing.feature_fuser import FeatureFuser
 from src.model_training.data_splitter import DataSplitter
 from src.model_training.grid_search import run_grid_search
 
-from src.model_training.score_fusion import perform_score_fusion_basic, perform_score_fusion
+from src.model_training.score_fusion import perform_score_fusion
 
 data_loader = DataLoader("./data", "./data")
 
@@ -97,6 +89,8 @@ before the model training.
 """
 def filter_experiment(X, y, selection_method="f_classif"):
     k_features = 200
+    if X.shape[1] < 200:
+        k_features = X.shape[1]
     # Split data first
     data_splitter = DataSplitter(X, y, test_size=0.2)
     X_train, X_test, y_train, y_test = data_splitter.split_data()

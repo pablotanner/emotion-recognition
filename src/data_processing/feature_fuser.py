@@ -2,6 +2,8 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
+from src.data_processing.autoencoder import reduce_dimensionality
+
 
 def preprocess_landmarks(landmarks):
     # Normalize to range from 0 to 1
@@ -31,17 +33,26 @@ def preprocess_nonrigid_face_shape(nonrigid_face_shape):
 def preprocess_landmark_distances(landmark_distances):
     return landmark_distances
 
-def preprocess_landmarks_3d(landmarks_3d):
-    # use PCA to reduce dimensionality
-    pca = PCA(n_components=0.95, svd_solver='full')
-    return pca.fit_transform(landmarks_3d)
-    #return landmarks_3d
+def preprocess_landmarks_3d(landmarks_3d, reduction_strategy='pca'):
+    if reduction_strategy is None or reduction_strategy == 'none':
+        return landmarks_3d
+    if reduction_strategy == 'pca':
+        # use PCA to reduce dimensionality
+        pca = PCA(n_components=0.95, svd_solver='full')
+        return pca.fit_transform(landmarks_3d)
+    if reduction_strategy == 'autoencoder':
+        return reduce_dimensionality(np.array(landmarks_3d), 100)
 
-def preprocess_hog(hog):
-    # use PCA to reduce dimensionality
-    pca = PCA(n_components=0.95, svd_solver='full')
-    return pca.fit_transform(hog)
-    #return hog
+def preprocess_hog(hog, reduction_strategy='pca'):
+    if reduction_strategy is None or reduction_strategy == 'none':
+        return hog
+    if reduction_strategy == 'pca':
+        # use PCA to reduce dimensionality
+        pca = PCA(n_components=0.95, svd_solver='full')
+        return pca.fit_transform(hog)
+    if reduction_strategy == 'autoencoder':
+        return reduce_dimensionality(np.array(hog), 300)
+
 
 
 
@@ -65,9 +76,9 @@ class Feature:
         if self.name == 'landmark_distances':
             return preprocess_landmark_distances(self.data)
         if self.name == 'landmarks_3d':
-            return preprocess_landmarks_3d(self.data)
+            return preprocess_landmarks_3d(self.data, reduction_strategy='pca')
         if self.name == 'hog':
-            return preprocess_hog(self.data)
+            return preprocess_hog(self.data, reduction_strategy='pca')
 
     def __str__(self):
         return f"{self.name}: {self.data}"

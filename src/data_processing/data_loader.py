@@ -11,6 +11,9 @@ class DataLoader:
         self.features_dir = features_dir
         self._ids = self.filter_existing_features(self.get_ids())
 
+        # Limit ids to 2500 (For Testing)
+        # self._ids = self._ids[:2500]
+
         self.emotions = np.array(self.load_annotations()).astype(int)
 
         self._landmarks = []
