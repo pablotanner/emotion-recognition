@@ -70,8 +70,8 @@ def perform_score_fusion(X, y, models, technique='average', n_splits=5):
             probabilities.append(proba)
             predictions.append(pred)
 
-            print(f"{model.__class__.__name__} balanced accuracy: {balanced_accuracy_score(y_test, pred)}")
-            evaluate_results(y_test, pred)
+            # print(f"{model.__class__.__name__} balanced accuracy: {balanced_accuracy_score(y_test, pred)}")
+            # evaluate_results(y_test, pred)
 
             # Evaluate individual model performance
             acc = balanced_accuracy_score(original_y_test, pred)

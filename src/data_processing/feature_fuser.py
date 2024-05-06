@@ -79,6 +79,12 @@ class Feature:
             return preprocess_landmarks_3d(self.data, reduction_strategy='pca')
         if self.name == 'hog':
             return preprocess_hog(self.data, reduction_strategy='pca')
+        if self.name == 'deepface':
+            return preprocess_hog(self.data, reduction_strategy='pca')
+        if self.name == 'facenet':
+            return self.data
+        else:
+            return self.data
 
     def __str__(self):
         return f"{self.name}: {self.data}"

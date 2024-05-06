@@ -24,6 +24,9 @@ class DataLoader:
         self._nonrigid_face_shape = []
         self._landmarks_3d = []
         self._hog = []
+        self._deepface = []
+        self._facenet = []
+
 
         self.features = {
             "landmarks": self._landmarks,
@@ -34,6 +37,8 @@ class DataLoader:
             "nonrigid_face_shape": self._nonrigid_face_shape,
             "landmarks_3d": self._landmarks_3d,
             "hog": self._hog,
+            "deepface": self._deepface,
+            "facenet": self._facenet
         }
 
         self.load_features()
@@ -109,6 +114,9 @@ class DataLoader:
             pose = np.load(f"{self.features_dir}/features/{file_id}_pose.npy")
             standardized_3d_landmarks = standardize_3d_landmarks(landmarks_3d, pose)
 
+            deepface = np.load(f"{self.features_dir}/embeddings/{file_id}_DeepFace.npy")
+            facenet = np.load(f"{self.features_dir}/embeddings/{file_id}_Facenet.npy")
+
             self._landmarks.append(landmarks)
             self._facs_intensity.append(facs_intensity)
             self._facs_presence.append(facs_presence)
@@ -117,6 +125,8 @@ class DataLoader:
             self._nonrigid_face_shape.append(nonrigid_face_shape)
             self._landmarks_3d.append(standardized_3d_landmarks)
             self._hog.append(hog)
+            self._facenet.append(facenet)
+            self._deepface.append(deepface)
 
 
 

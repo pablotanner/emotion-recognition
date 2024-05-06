@@ -22,7 +22,7 @@ data_loader = DataLoader("./data", "./data")
 
 feature_fuser = FeatureFuser(
     data_loader.features,
-    include=['nonrigid_face_shape', 'landmarks_3d', 'facs_intensity', 'hog'],
+    include=['nonrigid_face_shape', 'landmarks_3d', 'facs_intensity', 'hog', 'facenet'],
     #fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
 )
 y = data_loader.emotions
