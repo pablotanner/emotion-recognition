@@ -6,11 +6,13 @@ from src.algorithms.standardize_3d_landmarks import standardize_3d_landmarks
 
 
 class DataLoader:
-    def __init__(self, annotations_dir, features_dir):
+    def __init__(self, annotations_dir, features_dir, exclude=None):
         self.annotations_dir = annotations_dir
         self.features_dir = features_dir
+        self.exclude = exclude
+        if self.exclude is None:
+            self.exclude = []
         self._ids = self.filter_existing_features(self.get_ids())
-
         # Limit ids to 2500 (For Testing)
         # self._ids = self._ids[:2500]
 
@@ -26,6 +28,7 @@ class DataLoader:
         self._hog = []
         self._deepface = []
         self._facenet = []
+        self._vggface = []
 
 
         self.features = {
@@ -38,7 +41,8 @@ class DataLoader:
             "landmarks_3d": self._landmarks_3d,
             "hog": self._hog,
             "deepface": self._deepface,
-            "facenet": self._facenet
+            "facenet": self._facenet,
+            "vggface": self._vggface
         }
 
         self.load_features()
@@ -101,32 +105,43 @@ class DataLoader:
     def load_features(self):
         # First create list of all file ids, for which we have all feature types
         for file_id in self._ids:
-            landmarks = np.load(f"{self.features_dir}/features/{file_id}_landmarks.npy")
             facs_intensity = np.load(f"{self.features_dir}/features/{file_id}_facs_intensity.npy")
             facs_presence = np.load(f"{self.features_dir}/features/{file_id}_facs_presence.npy")
             #landmark_distances = np.load(f"{self.features_dir}/features/{file_id}_landmark_distances.npy")
             rigid_face_shape = np.load(f"{self.features_dir}/features/{file_id}_rigid_face_shape.npy")
             nonrigid_face_shape = np.load(f"{self.features_dir}/features/{file_id}_nonrigid_face_shape.npy")
-            hog = np.load(f"{self.features_dir}/features/{file_id}_hog.npy")[0]
 
             # Load and standardize 3d landmarks
             landmarks_3d = np.load(f"{self.features_dir}/features/{file_id}_landmarks_3d.npy")
             pose = np.load(f"{self.features_dir}/features/{file_id}_pose.npy")
             standardized_3d_landmarks = standardize_3d_landmarks(landmarks_3d, pose)
 
-            deepface = np.load(f"{self.features_dir}/embeddings/{file_id}_DeepFace.npy")
-            facenet = np.load(f"{self.features_dir}/embeddings/{file_id}_Facenet.npy")
+            if 'landmarks' not in self.exclude:
+                landmarks = np.load(f"{self.features_dir}/features/{file_id}_landmarks.npy")
+                self._landmarks.append(landmarks)
 
-            self._landmarks.append(landmarks)
+            if 'hog' not in self.exclude:
+                hog = np.load(f"{self.features_dir}/features/{file_id}_hog.npy")[0]
+                self._hog.append(hog)
+
+            if 'deepface' not in self.exclude:
+                deepface = np.load(f"{self.features_dir}/embeddings/{file_id}_DeepFace.npy")
+                self._deepface.append(deepface)
+
+            if 'facenet' not in self.exclude:
+                facenet = np.load(f"{self.features_dir}/embeddings/{file_id}_Facenet.npy")
+                self._facenet.append(facenet)
+
+            if 'vggface' not in self.exclude:
+                vggface = np.load(f"{self.features_dir}/embeddings/{file_id}_VGG-Face.npy")
+                self._vggface.append(vggface)
+
             self._facs_intensity.append(facs_intensity)
             self._facs_presence.append(facs_presence)
             #self._landmark_distances.append(landmark_distances)
             self._rigid_face_shape.append(rigid_face_shape)
             self._nonrigid_face_shape.append(nonrigid_face_shape)
             self._landmarks_3d.append(standardized_3d_landmarks)
-            self._hog.append(hog)
-            self._facenet.append(facenet)
-            self._deepface.append(deepface)
 
 
 

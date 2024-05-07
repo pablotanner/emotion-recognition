@@ -13,16 +13,15 @@ from src.feature_importance.feature_selection import select_features_adaboost, s
 from src.data_processing.data_loader import DataLoader
 from src.data_processing.feature_fuser import FeatureFuser
 from src.model_training.data_splitter import DataSplitter
-from src.model_training.grid_search import run_grid_search
 
 from src.model_training.score_fusion import perform_score_fusion
 
-data_loader = DataLoader("./data", "./data")
+data_loader = DataLoader("./data", "./data", exclude=['deepface', 'facenet', 'landmarks', 'vggface'])
 
 
 feature_fuser = FeatureFuser(
     data_loader.features,
-    include=['nonrigid_face_shape', 'landmarks_3d', 'facs_intensity', 'hog', 'facenet'],
+    include=['nonrigid_face_shape', 'landmarks_3d', 'facs_intensity', 'hog'],
     #fusion_strategy=CompositeFusionStrategy([StandardScalerStrategy()])
 )
 y = data_loader.emotions
@@ -242,7 +241,7 @@ y = np.concatenate((y_train, y_test), axis=0)
 
 # Perform score fusion
 #perform_score_fusion(X_train, X_test, y_train, y_test, models=models)
-perform_score_fusion(X,y, models=models, n_splits=5, technique='majority_vote')
+perform_score_fusion(X,y, models=models, n_splits=5, technique='logistic_regression')
 
 
 # Perform grid search

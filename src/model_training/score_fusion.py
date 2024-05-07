@@ -8,6 +8,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.neural_network import MLPClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
@@ -89,6 +91,15 @@ def perform_score_fusion(X, y, models, technique='average', n_splits=5):
                                        final_estimator=LogisticRegression(), cv=3)
             stack.fit(X_train, y_train)
             final_predictions = stack.predict(X_test)
+        elif technique == 'logistic_regression':
+            stacking_pipeline = Pipeline([
+                ('scaler', StandardScaler()),
+                ('log_reg', LogisticRegression())
+            ])
+            X_stack = np.column_stack(probabilities)
+            stacking_pipeline.fit(X_stack, y_test)
+            final_predictions = stacking_pipeline.predict(X_stack)
+
 
 
 

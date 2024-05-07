@@ -24,23 +24,16 @@ models = [
     "SFace"
 ]
 
-svc = SVC(C=1, gamma='scale', kernel='rbf', probability=True, random_state=42)
-rf = RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=5, random_state=42)
-mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=400, random_state=42)
+#svc = SVC(C=1, gamma='scale', kernel='rbf', probability=True, random_state=42)
+#rf = RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=5, random_state=42)
+mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='relu', random_state=42)
 
-svc.__setattr__("__name__", "SVM")
-rf.__setattr__("__name__", "RandomForest")
+#svc.__setattr__("__name__", "SVM")
+#rf.__setattr__("__name__", "RandomForest")
 mlp.__setattr__("__name__", "MLP")
 
-classifiers = [
-    svc, rf, mlp
-]
-
-
-for model in models[2:]:
-    # Split and Scale data, then concatenate again
+# Train and Evaluate MLP using Stratified K Fold
+for model in models:
     X = np.array(X_dict[model])
-    print(10*"=" + f"Model: {model}" + 10*"=")
-    perform_score_fusion(X, y, models=classifiers, n_splits=5, technique='average')
-
-
+    print(f"Training and Evaluating {model}")
+    perform_score_fusion(X, y, models=[mlp], n_splits=5, technique='average')
