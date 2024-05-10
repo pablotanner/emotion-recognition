@@ -77,6 +77,8 @@ class DataSplitLoader:
 
         self.get_ids_and_data()
 
+        for key in self.emotions:
+            self.emotions[key] = np.array(self.emotions[key]).astype(int)
 
 
     def get_data(self):
@@ -88,20 +90,8 @@ class DataSplitLoader:
         Helper function to load and append data to the appropriate dataset
         """
         if self.id_is_complete(id):
-            data = self.load_feature_files(id)
-            annotation = self.load_annotations(id)
-            if dataset_type == 'train':
-                for key in data:
-                    self.features['train'][key].append(data[key])
-                self.emotions['train'].append(annotation)
-            elif dataset_type == 'val':
-                for key in data:
-                    self.features['val'][key].append(data[key])
-                self.emotions['val'].append(annotation)
-            elif dataset_type == 'test':
-                for key in data:
-                    self.features['test'][key].append(data[key])
-                self.emotions['test'].append(annotation)
+            self.load_feature_files(id, dataset_type)
+            self.load_annotations(id, dataset_type)
 
 
     def get_ids_and_data(self):
@@ -154,57 +144,54 @@ class DataSplitLoader:
                 return False
         return True
 
-    def load_annotations(self, file_id):
+    def load_annotations(self, file_id, dataset_type):
         """
         Load the annotations for a file id
         """
-        annotations = np.load(f"{self._annotations_dir}/{file_id}_exp.npy")
-        return annotations
+        emotion = np.load(f"{self._annotations_dir}/{file_id}_exp.npy")
+        self.emotions[dataset_type].append(emotion)
 
 
 
-    def load_feature_files(self, file_id):
+    def load_feature_files(self, file_id, dataset_type):
         """ CAN BE OPTIMIZED, LOAD DIRECTLY INTO self.features"""
-        data = {}
         features_path = f"{self._features_dir}/{file_id}"
         embeddings_path = f"{self._embeddings_dir}/{file_id}"
 
         if 'landmarks' not in self._excluded_features:
-            data['landmarks'] = np.load(f"{features_path}_landmarks.npy", mmap_mode='r')
+            self.features[dataset_type]['landmarks'].append(np.load(f"{features_path}_landmarks.npy", mmap_mode='r'))
 
         if 'hog' not in self._excluded_features:
-            data['hog'] = np.load(f"{features_path}_hog.npy", mmap_mode='r')[0]
+            self.features[dataset_type]['hog'].append(np.load(f"{features_path}_hog.npy", mmap_mode='r')[0])
 
         if 'deepface' not in self._excluded_features:
-            data['deepface'] = np.load(f"{embeddings_path}_DeepFace.npy", mmap_mode='r')
+            self.features[dataset_type]['deepface'].append(np.load(f"{embeddings_path}_DeepFace.npy", mmap_mode='r'))
 
         if 'facenet' not in self._excluded_features:
-            data['facenet'] = np.load(f"{embeddings_path}_Facenet.npy", mmap_mode='r')
+            self.features[dataset_type]['facenet'].append(np.load(f"{embeddings_path}_Facenet.npy", mmap_mode='r'))
 
         if 'vggface' not in self._excluded_features:
-            data['vggface'] = np.load(f"{embeddings_path}_VGG-Face.npy", mmap_mode='r')
+            self.features[dataset_type]['vggface'].append(np.load(f"{embeddings_path}_VGG-Face.npy", mmap_mode='r'))
 
         if 'openface' not in self._excluded_features:
-            data['openface'] = np.load(f"{embeddings_path}_OpenFace.npy", mmap_mode='r')
+            self.features[dataset_type]['openface'].append(np.load(f"{embeddings_path}_OpenFace.npy", mmap_mode='r'))
 
         if 'sface' not in self._excluded_features:
-            data['sface'] = np.load(f"{embeddings_path}_SFace.npy", mmap_mode='r')
+            self.features[dataset_type]['sface'].append(np.load(f"{embeddings_path}_SFace.npy", mmap_mode='r'))
 
         if 'facenet512' not in self._excluded_features:
-            data['facenet512'] = np.load(f"{embeddings_path}_Facenet512.npy", mmap_mode='r')
+            self.features[dataset_type]['facenet512'].append(np.load(f"{embeddings_path}_Facenet512.npy", mmap_mode='r'))
 
         if 'arcface' not in self._excluded_features:
-            data['arcface'] = np.load(f"{embeddings_path}_ArcFace.npy", mmap_mode='r')
+            self.features[dataset_type]['arcface'].append(np.load(f"{embeddings_path}_ArcFace.npy", mmap_mode='r'))
 
 
-        data['facs_intensity'] = np.load(f"{features_path}_facs_intensity.npy", mmap_mode='r')
-        data['facs_presence'] = np.load(f"{features_path}_facs_presence.npy", mmap_mode='r')
+        self.features[dataset_type]['facs_intensity'].append(np.load(f"{features_path}_facs_intensity.npy", mmap_mode='r'))
+        self.features[dataset_type]['facs_presence'].append(np.load(f"{features_path}_facs_presence.npy", mmap_mode='r'))
         #data['landmark_distances'] = np.load(f"{features_path}_landmark_distances.npy")
-        data['rigid_face_shape'] = np.load(f"{features_path}_rigid_face_shape.npy", mmap_mode='r')
-        data['nonrigid_face_shape'] = np.load(f"{features_path}_nonrigid_face_shape.npy", mmap_mode='r')
+        self.features[dataset_type]['rigid_face_shape'].append(np.load(f"{features_path}_rigid_face_shape.npy", mmap_mode='r'))
+        self.features[dataset_type]['nonrigid_face_shape'].append(np.load(f"{features_path}_nonrigid_face_shape.npy", mmap_mode='r'))
 
         pose = np.load(f"{features_path}_pose.npy")
         landmarks_3d = np.load(f"{features_path}_landmarks_3d.npy", mmap_mode='r')
-        data['landmarks_3d'] = standardize_3d_landmarks(landmarks_3d, pose)
-
-        return data
+        self.features[dataset_type]['landmarks_3d'].append(standardize_3d_landmarks(landmarks_3d, pose))
