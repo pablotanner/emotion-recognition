@@ -82,6 +82,7 @@ def spatial_relationship_model():
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
         ('svm', SVC(C=1, gamma='scale', kernel='linear', probability=True))
+        #('rf', RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=10, random_state=42))
     ])
 
     pipeline.fit(X_spatial_train, y_train)
@@ -94,7 +95,8 @@ def embedded_model():
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
         ('pca', PCA(n_components=0.95)),  # reduce dimensions
-        ('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True))
+        #('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True))
+        ('rf', RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=10, random_state=42))
     ])
 
     pipeline.fit(X_embedded_train, y_train)
@@ -188,7 +190,6 @@ def evaluate_stacking(probabilities, pipelines):
     ])
 
     stacking_pipeline.fit(X_stack, y_test)
-
     stacking_accuracy = stacking_pipeline.score(X_stack, y_test)
 
     print("Accuracy of stacking classifier:", stacking_accuracy)
