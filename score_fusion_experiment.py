@@ -3,7 +3,8 @@ from keras import Sequential
 from keras.src.layers import Dense, Dropout
 from keras.src.utils import to_categorical
 from sklearn.decomposition import PCA
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
+from sklearn.feature_selection import SelectKBest, f_classif, SelectFromModel
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.neural_network import MLPClassifier
@@ -18,6 +19,20 @@ data_split_loader = DataSplitLoader("./data/annotations", "./data/features", "./
 
 # Features and Emotions are split into train, validation, and test sets
 feature_splits_dict, emotions_splits_dict = data_split_loader.get_data()
+
+def create_neural_network(input_dim):
+    model = Sequential([
+        Dense(128, activation='relu', input_shape=(input_dim,)),
+        Dropout(0.5),
+        Dense(64, activation='relu'),
+        Dropout(0.5),
+        Dense(8, activation='softmax') # 8 classes
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+    # Make so that if you do model.predict_proba, it calls model.predict
+    model.predict_proba = model.predict
+    return model
 
 
 def process_embeddings(train_embeddings, val_embeddings, test_embeddings):
@@ -37,7 +52,7 @@ def process_embeddings(train_embeddings, val_embeddings, test_embeddings):
 
 
 # Fit Embeddings and Transform
-for key in ['sface', 'facenet', 'arcface']:
+for key in ['sface', 'facenet', 'arcface']: #, 'vggface', 'facenet512', 'openface', 'deepface']:
     train_embeddings, val_embeddings, test_embeddings = process_embeddings(feature_splits_dict['train'][key], feature_splits_dict['val'][key], feature_splits_dict['test'][key])
     feature_splits_dict['train'][key] = train_embeddings
     feature_splits_dict['val'][key] = val_embeddings
@@ -52,7 +67,7 @@ def get_feature_groups(features_dict):
     :return: A tuple containing the feature groups
     """
 
-    spatial_features = np.concatenate([features_dict['landmarks_3d'], features_dict['landmarks']], axis=1)
+    spatial_features = np.concatenate([features_dict['landmarks_3d']], axis=1)
     embedded_features = np.concatenate([features_dict['sface'], features_dict['facenet'], features_dict['arcface']], axis=1)
     facs_features = np.concatenate([features_dict['facs_intensity'], features_dict['facs_presence']], axis=1)
     pdm_features = np.array(features_dict['nonrigid_face_shape'])
@@ -67,21 +82,6 @@ X_test_spatial, X_test_embedded, X_test_facs, X_test_pdm, X_test_hog = get_featu
 
 # Get the emotions for the train, validation, and test sets
 y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
-
-
-def create_neural_network(input_dim):
-    model = Sequential([
-        Dense(128, activation='relu', input_shape=(input_dim,)),
-        Dropout(0.5),
-        Dense(64, activation='relu'),
-        Dropout(0.5),
-        Dense(8, activation='softmax') # 8 classes
-    ])
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-    # Make so that if you do model.predict_proba, it calls model.predict
-    model.predict_proba = model.predict
-    return model
 
 def spatial_relationship_model(X, y):
     # Linear scores worse individually, but better in stacking
@@ -99,7 +99,7 @@ def spatial_relationship_model(X, y):
 def embedded_model(X, y):
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
-        ('pca', PCA(n_components=0.95)),  # reduce dimensions
+        ('pca', PCA(n_components=0.95)),  # reduce dimensions,
         ('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True))
         #('rf', RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=10, random_state=42))
     ])
@@ -111,35 +111,14 @@ def embedded_model(X, y):
 
 
 def facial_unit_model(X, y):
-    """
-
-        nn = create_neural_network(X.shape[1])
+    nn = create_neural_network(X.shape[1])
     y_train_categorical = to_categorical(y)
     nn.fit(X, y_train_categorical, epochs=100, batch_size=32, verbose=0)
-
     return nn
-    """
-    rf = RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=10, random_state=42)
-
-    rf.fit(X, y)
-
-    return rf
-
-
-
 
 
 
 def pdm_model(X, y):
-    """
-     nn = create_neural_network(X.shape[1])
-    y_train_categorical = to_categorical(y)
-    nn.fit(X, y_train_categorical, epochs=100, batch_size=32, verbose=0)
-
-    return nn
-
-
-    """
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
         ('log_reg', LogisticRegression())
@@ -152,9 +131,8 @@ def pdm_model(X, y):
 def hog_model(X, y):
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
-        #('pca', PCA(n_components=0.95)),  # reduce dimensions
+        ('pca', PCA(n_components=0.95)),  # reduce dimensions
         ('mlp', MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='relu', random_state=42))
-
     ])
 
     pipeline.fit(X, y)
@@ -194,9 +172,15 @@ def evaluate_stacking(probabilities, pipelines, X_val_spatial, X_val_embedded, X
     stacking_pipeline.fit(X_stack, y_val)
     stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
 
-    print("Accuracy of stacking classifier:", stacking_accuracy)
+    log_reg_model = stacking_pipeline.named_steps['log_reg']
+    coefficients = log_reg_model.coef_
+    for idx, model_name in enumerate(probabilities.keys()):
+        print(f"Coefficients for {model_name}: {coefficients[:, idx]}")
 
-    evaluate_results(y_val, stacking_pipeline.predict(X_stack))
+    print(20*"-" + '\n')
+    print("Accuracy of stacking classifier (Val Set):", stacking_accuracy)
+    print(20*"-" + '\n')
+    #evaluate_results(y_val, stacking_pipeline.predict(X_stack))
 
     # Individual accuracies
     print("Accuracy of individual models")
@@ -225,6 +209,7 @@ def evaluate_stacking(probabilities, pipelines, X_val_spatial, X_val_embedded, X
 stacking_pipe = evaluate_stacking(probabilities_val, pipelines, X_val_spatial, X_val_embedded, X_val_facs, X_val_pdm, X_val_hog, y_val)
 
 
+"""
 # Finally, we can evaluate the stacking classifier on the test set
 probabilities_test = {
     "spatial": pipelines["spatial"].predict_proba(X_test_spatial),
@@ -237,5 +222,7 @@ probabilities_test = {
 X_test_stack = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
 
 print("Accuracy of stacking classifier on test set:", stacking_pipe.score(X_test_stack, y_test))
+
+"""
 
 

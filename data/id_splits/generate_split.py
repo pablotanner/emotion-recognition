@@ -35,6 +35,14 @@ def initialize_split_files(ids, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15
     val_ids = id_list[train_end:val_end]
     test_ids = id_list[val_end:]
 
+    # Delete existing files
+    if os.path.exists('train_ids.txt'):
+        os.remove('train_ids.txt')
+    if os.path.exists('val_ids.txt'):
+        os.remove('val_ids.txt')
+    if os.path.exists('test_ids.txt'):
+        os.remove('test_ids.txt')
+
     # Save IDs to files
     with open('train_ids.txt', 'w') as f:
         for id in train_ids:
@@ -50,6 +58,25 @@ def initialize_split_files(ids, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15
 
     print(f"Initialized ID files: {len(train_ids)} train, {len(val_ids)} validation, {len(test_ids)} test samples.")
 
+def check_duplicates(id_dir):
+    """
+    Check for duplicate IDs in the given directory (3 files)
+    :param id_dir:
+    :return:
+    """
+    unique_ids = []
+    for file in os.listdir(id_dir):
+        if file.endswith(".txt"):
+            with open(file, 'r') as f:
+                for id in f:
+                    if id in unique_ids:
+                        print(f"Duplicate ID: {id}")
+                    else:
+                        unique_ids.append(id)
+    print("No duplicates found.")
+
+
+
 
 if __name__ == '__main__':
     # Path to the image directory
@@ -59,4 +86,6 @@ if __name__ == '__main__':
     ids = get_ids(path)
 
 
-    initialize_split_files(ids, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15)
+    #initialize_split_files(ids, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15)
+
+    check_duplicates('./')

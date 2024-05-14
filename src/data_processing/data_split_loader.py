@@ -97,20 +97,13 @@ class DataSplitLoader:
     def get_ids_and_data(self):
         # Define datasets
         datasets = ['train', 'test', 'val']
-        # Create a ThreadPoolExecutor to manage concurrency
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            # Handle each dataset files
-            futures = []
-            for dataset in datasets:
-                file_path = f'{self._id_dir}/{dataset}_ids.txt'
-                with open(file_path, 'r') as file:
-                    for id in file:
-                        clean_id = id.strip()
-                        # Submit each file reading and processing to the executor
-                        future = executor.submit(self.load_and_append_data, clean_id, dataset)
-                        futures.append(future)
-            # Wait for all futures to complete
-            concurrent.futures.wait(futures)
+        for dataset in datasets:
+            file_path = f'{self._id_dir}/{dataset}_ids.txt'
+            with open(file_path, 'r') as file:
+                for id in file:
+                    clean_id = id.strip()
+                    self.load_and_append_data(clean_id, dataset)
+
 
 
 
