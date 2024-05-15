@@ -1,7 +1,15 @@
+import argparse
 import os
 
 import numpy as np
+from sklearn.model_selection import train_test_split
 
+
+
+parser = argparse.ArgumentParser(description='Generate train, validation splits for the dataset.')
+parser.add_argument('--input_dir', type=str, help='Directory containing the images')
+parser.add_argument('--output_dir', type=str, help='Path to save the train, val, test splits.')
+args = parser.parse_args()
 
 def get_ids(image_path):
     """
@@ -15,10 +23,12 @@ def get_ids(image_path):
                 ids.append(file_id)
     return ids
 
-
-def initialize_split_files(ids, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15):
+def split_train_val(ids, train_ratio=0.8, val_ratio=0.2, output_dir=None):
+    """
+    Split the IDs into train and validation sets
+    """
     # Ensure the ratios sum to 1
-    assert train_ratio + val_ratio + test_ratio == 1, "The sum of splits ratios must be 1"
+    assert train_ratio + val_ratio == 1, "The sum of splits ratios must be 1"
 
     # List all image files in the data directory
     id_list = ids
@@ -29,34 +39,31 @@ def initialize_split_files(ids, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15
     # Split the IDs based on the given ratios
     total_images = len(id_list)
     train_end = int(total_images * train_ratio)
-    val_end = train_end + int(total_images * val_ratio)
 
     train_ids = id_list[:train_end]
-    val_ids = id_list[train_end:val_end]
-    test_ids = id_list[val_end:]
+    val_ids = id_list[train_end:]
 
     # Delete existing files
     if os.path.exists('train_ids.txt'):
         os.remove('train_ids.txt')
     if os.path.exists('val_ids.txt'):
         os.remove('val_ids.txt')
-    if os.path.exists('test_ids.txt'):
-        os.remove('test_ids.txt')
 
-    # Save IDs to files
-    with open('train_ids.txt', 'w') as f:
+    # Save IDs as files in the output directory
+    if output_dir:
+        train_file = os.path.join(output_dir, 'train_ids.txt')
+        val_file = os.path.join(output_dir, 'val_ids.txt')
+    else:
+        train_file = 'train_ids.txt'
+        val_file = 'val_ids.txt'
+
+    with open(train_file, 'w') as f:
         for id in train_ids:
             f.write("%s\n" % id)
 
-    with open('val_ids.txt', 'w') as f:
+    with open(val_file, 'w') as f:
         for id in val_ids:
             f.write("%s\n" % id)
-
-    with open('test_ids.txt', 'w') as f:
-        for id in test_ids:
-            f.write("%s\n" % id)
-
-    print(f"Initialized ID files: {len(train_ids)} train, {len(val_ids)} validation, {len(test_ids)} test samples.")
 
 def check_duplicates(id_dir):
     """
@@ -75,63 +82,16 @@ def check_duplicates(id_dir):
                         unique_ids.append(id)
     print("No duplicates found.")
 
-def shuffle_train_val():
-    """
-    Shuffles the ids of the train and val sets (redistributes between eachother)
-    """
-    # Count number of IDs in each set
-    train_ids = []
-    val_ids = []
-    with open('train_ids.txt', 'r') as f:
-        # One id per line
-        for id in f:
-            train_ids.append(id.strip(" ").strip("\n"))
-
-    with open('val_ids.txt', 'r') as f:
-        for id in f:
-            val_ids.append(id.strip(" ").strip("\n"))
-
-    num_train = len(train_ids)
-
-    concat_ids = train_ids + val_ids
-    np.random.shuffle(concat_ids)
-
-    new_train_ids = concat_ids[:num_train]
-    new_val_ids = concat_ids[num_train:]
-
-    # Delete existing files
-    if os.path.exists('train_ids.txt'):
-        os.remove('train_ids.txt')
-
-    if os.path.exists('val_ids.txt'):
-        os.remove('val_ids.txt')
-
-    # Save IDs to files
-    with open('train_ids.txt', 'w') as f:
-        for id in new_train_ids:
-            f.write("%s\n" % id)
-
-    with open('val_ids.txt', 'w') as f:
-        for id in new_val_ids:
-            f.write("%s\n" % id)
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
     # Path to the image directory
-    #path = "../images/"
+    path = args.input_dir
 
     # Get all image IDs
-    #ids = get_ids(path)
+    ids = get_ids(path)
 
+    split_train_val(ids, output_dir=args.output_dir)
 
-    #initialize_split_files(ids, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15)
-
-    #check_duplicates('./')
-
-    shuffle_train_val()
+    # Check for duplicates
+    check_duplicates(args.output_dir)

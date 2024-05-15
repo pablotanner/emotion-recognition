@@ -87,3 +87,4 @@ def batch_read_hog_files(hog_file_directory, output_folder):
 if __name__ == '__main__':
     #hog_data = batch_read_hog_files(args.input_folder, args.output_folder)
     #batch_read_hog_files('C:/Users/41763/Desktop/OpenFace_2.2.0_win_x64/processed', '../../data/features/')
+    pass
