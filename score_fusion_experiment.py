@@ -7,9 +7,10 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier,
 from sklearn.feature_selection import SelectKBest, f_classif, SelectFromModel
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import GridSearchCV
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.svm import SVC
 
 from src import evaluate_results
@@ -34,16 +35,54 @@ def create_neural_network(input_dim):
     model.predict_proba = model.predict
     return model
 
+def evaluate_stacking(probabilities, pipelines, X_val_spatial, X_val_embedded, X_val_facs, X_val_pdm, X_val_hog, y_val):
+    """
+    Perform score fusion with stacking classifier
+    """
+    # Use probabilities as input to the stacking classifier
+    X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
+
+    stacking_pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('log_reg', LogisticRegression(random_state=42))
+    ])
+
+    stacking_pipeline.fit(X_stack, y_val)
+    stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
+
+    log_reg_model = stacking_pipeline.named_steps['log_reg']
+    coefficients = log_reg_model.coef_
+    for idx, model_name in enumerate(probabilities.keys()):
+        print(f"{coefficients[:, idx]}")
+
+    print("Accuracy of stacking classifier (Val Set):", stacking_accuracy)
+    #evaluate_results(y_val, stacking_pipeline.predict(X_stack))
+
+    # Individual accuracies
+    val_sets = {
+        "spatial": X_val_spatial,
+        "embedded": X_val_embedded,
+        "facs": X_val_facs,
+        "pdm": X_val_pdm,
+        "hog": X_val_hog
+    }
+
+    # y_pred_spatial = pipelines["spatial"].predict(X_spatial_test)
+    # evaluate_results(y_test, y_pred_spatial)
+
+    for model in probabilities:
+        try:
+            accuracy = pipelines[model].score(val_sets[model], y_val)
+        except AttributeError:
+            accuracy = accuracy_score(y_val, np.argmax(probabilities[model], axis=1))
+        print(f"{model} accuracy: {accuracy}")
+
+
+    # Return the stacking pipeline
+    return stacking_pipeline
 
 def process_embeddings(train_embeddings, val_embeddings, test_embeddings):
-    # Apply PCA, then StandardScaler
-    pca = PCA(n_components=0.95)
-    pca.fit(train_embeddings)
-    train_embeddings = pca.transform(train_embeddings)
-    val_embeddings = pca.transform(val_embeddings)
-    test_embeddings = pca.transform(test_embeddings)
-
-    scaler = StandardScaler()
+    scaler = MinMaxScaler(feature_range=(-5, 5))
     train_embeddings = scaler.fit_transform(train_embeddings)
     val_embeddings = scaler.transform(val_embeddings)
     test_embeddings = scaler.transform(test_embeddings)
@@ -51,13 +90,30 @@ def process_embeddings(train_embeddings, val_embeddings, test_embeddings):
     return train_embeddings, val_embeddings, test_embeddings
 
 
-# Fit Embeddings and Transform
-for key in ['sface', 'facenet', 'arcface']: #, 'vggface', 'facenet512', 'openface', 'deepface']:
-    train_embeddings, val_embeddings, test_embeddings = process_embeddings(feature_splits_dict['train'][key], feature_splits_dict['val'][key], feature_splits_dict['test'][key])
-    feature_splits_dict['train'][key] = train_embeddings
-    feature_splits_dict['val'][key] = val_embeddings
-    feature_splits_dict['test'][key] = test_embeddings
+def select_and_preprocess_embeddings(embedding_types=None):
+    """
+    Selects a random subset of embeddings and preprocesses them (only of no types provided)
+    """
+    model_names = ['sface', 'facenet', 'arcface', 'facenet512', 'openface', 'deepface', 'vggface']
 
+    # If embedding types is array of strings, use those embeddings
+    if type(embedding_types) == list:
+        pass
+    else:
+        random_size = np.random.randint(2, 4)
+        embedding_types = np.random.choice(model_names, random_size, replace=False)
+
+
+    # Fit selected embeddings
+    for key in embedding_types:
+        train_embeddings, val_embeddings, test_embeddings = process_embeddings(feature_splits_dict['train'][key], feature_splits_dict['val'][key], feature_splits_dict['test'][key])
+        feature_splits_dict['train'][key] = train_embeddings
+        feature_splits_dict['val'][key] = val_embeddings
+        feature_splits_dict['test'][key] = test_embeddings
+
+    return embedding_types
+
+embedding_types = select_and_preprocess_embeddings(embedding_types=['sface', 'facenet512'])
 
 
 # From this we get X_train_spatial, X_val_spatial, X_test_spatial, X_train_embedded, etc.
@@ -68,7 +124,8 @@ def get_feature_groups(features_dict):
     """
 
     spatial_features = np.concatenate([features_dict['landmarks_3d']], axis=1)
-    embedded_features = np.concatenate([features_dict['sface'], features_dict['facenet'], features_dict['arcface']], axis=1)
+    # Concatenate selected embeddings
+    embedded_features = np.concatenate([features_dict[emb_name] for emb_name in embedding_types], axis=1)
     facs_features = np.concatenate([features_dict['facs_intensity'], features_dict['facs_presence']], axis=1)
     pdm_features = np.array(features_dict['nonrigid_face_shape'])
     hog_features = np.array(features_dict['hog'])
@@ -87,7 +144,7 @@ def spatial_relationship_model(X, y):
     # Linear scores worse individually, but better in stacking
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
-        ('svm', SVC(C=1, gamma='scale', kernel='linear', probability=True))
+        ('svm', SVC(C=0.1, gamma='scale', kernel='linear', probability=True))
     ])
 
     pipeline.fit(X, y)
@@ -99,9 +156,8 @@ def spatial_relationship_model(X, y):
 def embedded_model(X, y):
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
-        ('pca', PCA(n_components=0.95)),  # reduce dimensions,
+        ('pca', PCA(n_components=0.99)),  # reduce dimensions,
         ('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True))
-        #('rf', RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=10, random_state=42))
     ])
 
     pipeline.fit(X, y)
@@ -121,7 +177,7 @@ def facial_unit_model(X, y):
 def pdm_model(X, y):
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
-        ('log_reg', LogisticRegression())
+        ('log_reg', LogisticRegression(C=0.1, solver='liblinear', random_state=42))
     ])
 
     pipeline.fit(X, y)
@@ -132,7 +188,7 @@ def hog_model(X, y):
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
         ('pca', PCA(n_components=0.95)),  # reduce dimensions
-        ('mlp', MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=300, solver='sgd', learning_rate_init=0.001, activation='relu', random_state=42))
+        ('mlp', MLPClassifier(hidden_layer_sizes=(200, 100), max_iter=200, solver='sgd', learning_rate_init=0.001, activation='relu', random_state=42))
     ])
 
     pipeline.fit(X, y)
@@ -157,54 +213,6 @@ probabilities_val = {
     "hog": pipelines["hog"].predict_proba(X_val_hog)
 }
 
-def evaluate_stacking(probabilities, pipelines, X_val_spatial, X_val_embedded, X_val_facs, X_val_pdm, X_val_hog, y_val):
-    """
-    Perform score fusion with stacking classifier
-    """
-    # Use probabilities as input to the stacking classifier
-    X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
-
-    stacking_pipeline = Pipeline([
-        ('scaler', StandardScaler()),
-        ('log_reg', LogisticRegression(random_state=42))
-    ])
-
-    stacking_pipeline.fit(X_stack, y_val)
-    stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
-
-    log_reg_model = stacking_pipeline.named_steps['log_reg']
-    coefficients = log_reg_model.coef_
-    for idx, model_name in enumerate(probabilities.keys()):
-        print(f"Coefficients for {model_name}: {coefficients[:, idx]}")
-
-    print(20*"-" + '\n')
-    print("Accuracy of stacking classifier (Val Set):", stacking_accuracy)
-    print(20*"-" + '\n')
-    #evaluate_results(y_val, stacking_pipeline.predict(X_stack))
-
-    # Individual accuracies
-    print("Accuracy of individual models")
-    val_sets = {
-        "spatial": X_val_spatial,
-        "embedded": X_val_embedded,
-        "facs": X_val_facs,
-        "pdm": X_val_pdm,
-        "hog": X_val_hog
-    }
-
-    # y_pred_spatial = pipelines["spatial"].predict(X_spatial_test)
-    # evaluate_results(y_test, y_pred_spatial)
-
-    for model in probabilities:
-        try:
-            accuracy = pipelines[model].score(val_sets[model], y_val)
-        except AttributeError:
-            accuracy = accuracy_score(y_val, np.argmax(probabilities[model], axis=1))
-        print(f"{model} accuracy: {accuracy}")
-
-
-    # Return the stacking pipeline
-    return stacking_pipeline
 
 stacking_pipe = evaluate_stacking(probabilities_val, pipelines, X_val_spatial, X_val_embedded, X_val_facs, X_val_pdm, X_val_hog, y_val)
 

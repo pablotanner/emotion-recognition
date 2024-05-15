@@ -75,17 +75,63 @@ def check_duplicates(id_dir):
                         unique_ids.append(id)
     print("No duplicates found.")
 
+def shuffle_train_val():
+    """
+    Shuffles the ids of the train and val sets (redistributes between eachother)
+    """
+    # Count number of IDs in each set
+    train_ids = []
+    val_ids = []
+    with open('train_ids.txt', 'r') as f:
+        # One id per line
+        for id in f:
+            train_ids.append(id.strip(" ").strip("\n"))
+
+    with open('val_ids.txt', 'r') as f:
+        for id in f:
+            val_ids.append(id.strip(" ").strip("\n"))
+
+    num_train = len(train_ids)
+
+    concat_ids = train_ids + val_ids
+    np.random.shuffle(concat_ids)
+
+    new_train_ids = concat_ids[:num_train]
+    new_val_ids = concat_ids[num_train:]
+
+    # Delete existing files
+    if os.path.exists('train_ids.txt'):
+        os.remove('train_ids.txt')
+
+    if os.path.exists('val_ids.txt'):
+        os.remove('val_ids.txt')
+
+    # Save IDs to files
+    with open('train_ids.txt', 'w') as f:
+        for id in new_train_ids:
+            f.write("%s\n" % id)
+
+    with open('val_ids.txt', 'w') as f:
+        for id in new_val_ids:
+            f.write("%s\n" % id)
+
+
+
+
+
 
 
 
 if __name__ == '__main__':
     # Path to the image directory
-    path = "../images/"
+    #path = "../images/"
 
     # Get all image IDs
-    ids = get_ids(path)
+    #ids = get_ids(path)
 
 
     #initialize_split_files(ids, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15)
 
-    check_duplicates('./')
+    #check_duplicates('./')
+
+    shuffle_train_val()

@@ -1,7 +1,13 @@
+import argparse
 import os
 import struct
 
 import numpy as np
+
+parser = argparse.ArgumentParser(description='Extract HOG features from .hog files')
+parser.add_argument('-input_folder', type=str, help='Path to folder with .hog files')
+parser.add_argument('-output_folder', type=str, help='Path where successfully read .hog files will be stored as .npy files')
+args = parser.parse_args()
 
 
 def read_hog_file(filename, batch_size=5000):
@@ -63,10 +69,9 @@ def read_hog_file(filename, batch_size=5000):
         # Split into is-valid and feature vectors
         is_valid = all_feature_vectors[:, 0]
         feature_vectors = all_feature_vectors[:, 1:]
-
         return is_valid, feature_vectors
 
-def batch_read_hog_files(hog_file_directory):
+def batch_read_hog_files(hog_file_directory, output_folder):
     hog_files = [f for f in os.listdir(hog_file_directory) if f.endswith('.hog')]
     hog_data = []
     for hog_file in hog_files:
@@ -74,10 +79,11 @@ def batch_read_hog_files(hog_file_directory):
         is_valid, feature_vectors = read_hog_file(path)
         if is_valid is False:
             continue
-        np.save("../../data/features/" + hog_file.split(".")[0] + "_hog.npy", feature_vectors)
+        np.save(f"{output_folder}/{hog_file.split('.')[0]}_hog.npy", feature_vectors[0])
         hog_data.append(feature_vectors)
     return hog_data
 
 
-# Usage example:
-hog_data = batch_read_hog_files('C:/Users/41763/Desktop/OpenFace_2.2.0_win_x64/processed')
+if __name__ == '__main__':
+    #hog_data = batch_read_hog_files(args.input_folder, args.output_folder)
+    #batch_read_hog_files('C:/Users/41763/Desktop/OpenFace_2.2.0_win_x64/processed', '../../data/features/')
