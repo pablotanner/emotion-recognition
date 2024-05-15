@@ -160,6 +160,7 @@ class RolfLoader:
             if dataset == 'test':
                 # For each '*_exp.npy' file in the test_annotations directory, take id and load data
                 for file in os.listdir(self._annotations_dir[dataset]):
+                    print(file)
                     if file.endswith("_exp.npy"):
                         file_id = file.split('_')[0]
                         self.load_and_append_data(file_id, dataset)
