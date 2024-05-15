@@ -97,13 +97,13 @@ class RolfLoader:
             "nonrigid_face_shape",
             "landmarks_3d",
             "hog",
-            "deepface",
-            "facenet",
-            "vggface",
-            "openface",
-            "sface",
-            "facenet512",
-            "arcface",
+            #"deepface",
+            #"facenet",
+            #"vggface",
+            #"openface",
+            #"sface",
+            #"facenet512",
+            #"arcface",
         ]
 
 
