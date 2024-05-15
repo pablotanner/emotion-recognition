@@ -176,9 +176,7 @@ class RolfLoader:
         """
         Checks if for an id, all required feature types are present
         """
-        features_path = f"{self._features_dir[dataset_type]}/{file_id}"
-
-        print(features_path)
+        features_path = f"{self._features_dir[dataset_type]}"
 
 
         if 'landmarks' not in self._excluded_features:
