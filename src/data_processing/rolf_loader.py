@@ -146,6 +146,7 @@ class RolfLoader:
         Helper function to load and append data to the appropriate dataset
         """
         if self.id_is_complete(id, dataset_type):
+            print(f"Loading data for {id} in {dataset_type} set")
             self.load_feature_files(id, dataset_type)
             self.load_annotations(id, dataset_type)
 
@@ -162,14 +163,12 @@ class RolfLoader:
                 for file in os.listdir(self._annotations_dir[dataset]):
                     if file.endswith("_exp.npy"):
                         file_id = file.split('_')[0]
-                        print("test", file_id)
                         self.load_and_append_data(file_id, dataset)
             else:
                 file_path = f'{self._main_id_dir}/{dataset}_ids.txt'
                 with open(file_path, 'r') as file:
                     for id in file:
                         clean_id = id.strip()
-                        print(dataset, clean_id)
                         self.load_and_append_data(clean_id, dataset)
 
 
@@ -213,6 +212,9 @@ class RolfLoader:
         """
 
         emotion = np.load(f"{self._annotations_dir[dataset_type]}/{file_id}_exp.npy")
+
+        print(f"{self._annotations_dir[dataset_type]}/{file_id}_exp.npy")
+        print(emotion)
 
         self.emotions[dataset_type].append(emotion)
 
