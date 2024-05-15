@@ -146,7 +146,6 @@ class RolfLoader:
         Helper function to load and append data to the appropriate dataset
         """
         if self.id_is_complete(id, dataset_type):
-            print(f"Loading data for {id} in {dataset_type} set")
             self.load_feature_files(id, dataset_type)
             self.load_annotations(id, dataset_type)
 
@@ -178,6 +177,8 @@ class RolfLoader:
         Checks if for an id, all required feature types are present
         """
         features_path = f"{self._features_dir[dataset_type]}/{file_id}"
+
+        print(features_path)
 
 
         if 'landmarks' not in self._excluded_features:
@@ -212,9 +213,6 @@ class RolfLoader:
         """
 
         emotion = np.load(f"{self._annotations_dir[dataset_type]}/{file_id}_exp.npy")
-
-        print(f"{self._annotations_dir[dataset_type]}/{file_id}_exp.npy")
-        print(emotion)
 
         self.emotions[dataset_type].append(emotion)
 
