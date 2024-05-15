@@ -2,7 +2,6 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from src.data_processing.autoencoder import reduce_dimensionality
 
 
 def preprocess_landmarks(landmarks):
@@ -40,8 +39,8 @@ def preprocess_landmarks_3d(landmarks_3d, reduction_strategy='pca'):
         # use PCA to reduce dimensionality
         pca = PCA(n_components=0.95, svd_solver='full')
         return pca.fit_transform(landmarks_3d)
-    if reduction_strategy == 'autoencoder':
-        return reduce_dimensionality(np.array(landmarks_3d), 100)
+    #if reduction_strategy == 'autoencoder':
+        #return reduce_dimensionality(np.array(landmarks_3d), 100)
 
 def preprocess_hog(hog, reduction_strategy='pca'):
     if reduction_strategy is None or reduction_strategy == 'none':
@@ -50,8 +49,8 @@ def preprocess_hog(hog, reduction_strategy='pca'):
         # use PCA to reduce dimensionality
         pca = PCA(n_components=0.95, svd_solver='full')
         return pca.fit_transform(hog)
-    if reduction_strategy == 'autoencoder':
-        return reduce_dimensionality(np.array(hog), 300)
+    #if reduction_strategy == 'autoencoder':
+        #return reduce_dimensionality(np.array(hog), 300)
 
 
 
