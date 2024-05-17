@@ -258,7 +258,7 @@ if __name__ == "__main__":
             ('scaler', StandardScaler()),
             ('pca', PCA(n_components=0.95)),  # reduce dimensions
             ('mlp', PyTorchMLPClassifier(input_size=input_size, hidden_size=hidden_size, num_classes=num_classes,
-                                         num_epochs=200, batch_size=32, learning_rate=0.001, class_weights=class_weights))
+                                         num_epochs=200, batch_size=32, learning_rate=0.001, class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
