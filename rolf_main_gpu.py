@@ -147,16 +147,16 @@ if __name__ == "__main__":
 
         stacking_pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(random_state=42))
+            ('log_reg', LogisticRegression())
         ])
 
         stacking_pipeline.fit(X_stack, y_val)
         stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
 
-        log_reg_model = stacking_pipeline.named_steps['log_reg']
-        coefficients = log_reg_model.coef_
-        for idx, model_name in enumerate(probabilities.keys()):
-            print(f"{coefficients[:, idx]}")
+        #log_reg_model = stacking_pipeline.named_steps['log_reg']
+        #coefficients = log_reg_model.coef_
+        #for idx, model_name in enumerate(probabilities.keys()):
+            #print(f"{coefficients[:, idx]}")
 
         print("Accuracy of stacking classifier (Val Set):", stacking_accuracy)
         # evaluate_results(y_val, stacking_pipeline.predict(X_stack))
@@ -250,7 +250,7 @@ if __name__ == "__main__":
 
 
     def hog_model(X, y):
-        n_components = 200  # Number of principal components to keep
+        n_components = 800  # Number of principal components to keep
         hidden_size = 200
         num_classes = len(np.unique(y))  # Number of classes
 
