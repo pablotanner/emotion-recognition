@@ -1,5 +1,7 @@
 import argparse
 import logging
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -24,6 +26,7 @@ parser.add_argument('--test_features_dir', type=str, help='Path to /features fol
 parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)')
 # Whether to use dummy data
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
+parser.add_argument('--use_existing',action='store_true', help='Use saved data/models')
 args = parser.parse_args()
 
 class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
@@ -94,12 +97,28 @@ if __name__ == "__main__":
                             logging.StreamHandler()
                         ])
 
-    logger.info(f"Starting ROLF Training | Dummy: {args.dummy}")
+    logger.info(f"Starting ROLF Training | Dummy: {args.dummy} | Use Existing: {args.use_existing}")
     logger.info("Loading data...")
 
+    def save_features_to_disk(split_features_dict):
+        """
+        Save the features to disk
+        """
+        splits = list(split_features_dict.keys())
+
+        for split in splits:
+            np.save(f'{split}_spatial_features.npy', split_features_dict[split]['landmarks_3d'])
+            np.save(f'{split}_facs_features.npy', np.hstack([split_features_dict[split]['facs_intensity'], split_features_dict[split]['facs_presence']]))
+            np.save(f'{split}_pdm_features.npy', split_features_dict[split]['nonrigid_face_shape'])
+            np.save(f'{split}_hog_features.npy', split_features_dict[split]['hog'])
+            # Clear the dictionary to free up memory
+            del split_features_dict[split]
+            logger.info(f"Saved {split} features to disk")
+
     if not args.dummy:
-        data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
-        feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+        if not args.use_existing:
+            data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
+            feature_splits_dict, emotions_splits_dict = data_loader.get_data()
     else:
         num_samples = 1000
 
@@ -156,26 +175,19 @@ if __name__ == "__main__":
         return stacking_pipeline
 
 
-    def save_features_to_disk(split_features_dict):
-        """
-        Save the features to disk
-        """
-        splits = list(split_features_dict.keys())
-
-        for split in splits:
-            np.save(f'{split}_spatial_features.npy', split_features_dict[split]['landmarks_3d'])
-            np.save(f'{split}_facs_features.npy', np.hstack([split_features_dict[split]['facs_intensity'], split_features_dict[split]['facs_presence']]))
-            np.save(f'{split}_pdm_features.npy', split_features_dict[split]['nonrigid_face_shape'])
-            np.save(f'{split}_hog_features.npy', split_features_dict[split]['hog'])
-            # Clear the dictionary to free up memory
-            del split_features_dict[split]
-            logger.info(f"Saved {split} features to disk")
-
-    # Save features to disk and clear up from memory
-    save_features_to_disk(feature_splits_dict)
-
     # Get the emotions for the train, validation, and test sets
-    y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
+    if not args.use_existing:
+        # Save features to disk and clear up from memory
+        save_features_to_disk(feature_splits_dict)
+        
+        y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
+        np.save('y_train.npy', y_train)
+        np.save('y_val.npy', y_val)
+        np.save('y_test.npy', y_test)
+    else:
+        y_train = np.load('y_train.npy')
+        y_val = np.load('y_val.npy')
+        y_test = np.load('y_test.npy')
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
@@ -246,44 +258,59 @@ if __name__ == "__main__":
     probabilities_test = {}
 
     # Train models, then save
-    spatial_pipeline = spatial_relationship_model(np.load('train_spatial_features.npy'), y_train)
+    # if already trained, load from disk
+    if os.path.exists('spatial_pipeline.joblib') and args.use_existing:
+        spatial_pipeline = joblib.load('spatial_pipeline.joblib')
+    else:
+        spatial_pipeline = spatial_relationship_model(np.load('train_spatial_features.npy'), y_train)
+        joblib.dump(spatial_pipeline, 'spatial_pipeline.joblib')
     probabilities_val["spatial"] = spatial_pipeline.predict_proba(np.load('val_spatial_features.npy'))
     probabilities_test["spatial"] = spatial_pipeline.predict_proba(np.load('test_spatial_features.npy'))
     # Log individual accuracy
     logger.info(f"Accuracy of spatial relationship classifier on val set: {spatial_pipeline.score(np.load('val_spatial_features.npy'), y_val)}")
-    joblib.dump(spatial_pipeline, 'spatial_pipeline.joblib')
     # Clear up memory
     del spatial_pipeline
 
-    facs_pipeline = facial_unit_model(np.load('train_facs_features.npy'), y_train)
+    if os.path.exists('facs_pipeline.joblib') and args.use_existing:
+        facs_pipeline = joblib.load('facs_pipeline.joblib')
+    else:
+        facs_pipeline = facial_unit_model(np.load('train_facs_features.npy'), y_train)
+        joblib.dump(facs_pipeline, 'facs_pipeline.joblib')
     probabilities_val["facs"] = facs_pipeline.predict_proba(np.load('val_facs_features.npy'))
     probabilities_test["facs"] = facs_pipeline.predict_proba(np.load('test_facs_features.npy'))
     # Log individual accuracy
     logger.info(f"Accuracy of facial unit classifier on val set: {facs_pipeline.score(np.load('val_facs_features.npy'), y_val)}")
-    joblib.dump(facs_pipeline, 'facs_pipeline.joblib')
     del facs_pipeline
 
-    pdm_pipeline = pdm_model(np.load('train_pdm_features.npy'), y_train)
+    if os.path.exists('pdm_pipeline.joblib') and args.use_existing:
+        pdm_pipeline = joblib.load('pdm_pipeline.joblib')
+    else:
+        pdm_pipeline = pdm_model(np.load('train_pdm_features.npy'), y_train)
+        joblib.dump(pdm_pipeline, 'pdm_pipeline.joblib')
     probabilities_val["pdm"] = pdm_pipeline.predict_proba(np.load('val_pdm_features.npy'))
     probabilities_test["pdm"] = pdm_pipeline.predict_proba(np.load('test_pdm_features.npy'))
     # Log
     logger.info(f"Accuracy of pdm classifier on val set: {pdm_pipeline.score(np.load('val_pdm_features.npy'), y_val)}")
-    joblib.dump(pdm_pipeline, 'pdm_pipeline.joblib')
     del pdm_pipeline
 
-    hog_pipeline = hog_model(np.load('train_hog_features.npy'), y_train)
+    if os.path.exists('hog_pipeline.joblib') and args.use_existing:
+        hog_pipeline = joblib.load('hog_pipeline.joblib')
+    else:
+        hog_pipeline = hog_model(np.load('train_hog_features.npy'), y_train)
+        joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
     probabilities_val["hog"] = hog_pipeline.predict_proba(np.load('val_hog_features.npy'))
     probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('test_hog_features.npy'))
     # Log
     logger.info(f"Accuracy of hog classifier on val set: {hog_pipeline.score(np.load('val_hog_features.npy'), y_val)}")
-    joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
     del hog_pipeline
 
 
     logger.info("Starting Stacking...")
-
-    stacking_pipe = evaluate_stacking(probabilities_val, y_val)
-    joblib.dump(stacking_pipe, 'stacking_pipeline.joblib')
+    if os.path.exists('stacking_pipeline.joblib') and args.use_existing:
+        stacking_pipe = joblib.load('stacking_pipeline.joblib')
+    else:
+        stacking_pipe = evaluate_stacking(probabilities_val, y_val)
+        joblib.dump(stacking_pipe, 'stacking_pipeline.joblib')
 
     def evaluate_test(stacking_pipe, y_test):
         logger.info("Evaluating Test Set...")
