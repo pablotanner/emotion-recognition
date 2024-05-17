@@ -93,9 +93,11 @@ if __name__ == "__main__":
                             logging.FileHandler('logs/rolf_gpu_training.log'),
                             logging.StreamHandler()
                         ])
+
+    logger.info(f"Starting ROLF Training | Dummy: {args.dummy}")
     logger.info("Loading data...")
 
-    if args.dummy:
+    if not args.dummy:
         data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
         feature_splits_dict, emotions_splits_dict = data_loader.get_data()
     else:
