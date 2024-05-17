@@ -1,17 +1,21 @@
 import argparse
 import logging
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
+import torch
+import torch.nn as nn
+import torch.optim as optim
+#import cupy as cp
+from cuml.svm import SVR as SVC
+from cuml.preprocessing import StandardScaler
+from cuml.ensemble import RandomForestClassifier
+from cuml.linear_model import LogisticRegression
+from cuml.decomposition import PCA
 from sklearn.metrics import accuracy_score
-from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
-from src.data_processing.rolf_loader import RolfLoader
+from sklearn.base import BaseEstimator, ClassifierMixin
+#from src.data_processing.rolf_loader import RolfLoader
 
-parser = argparse.ArgumentParser(description='Model training and evaluation.')
+parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)')
 parser.add_argument('--test_annotations_dir', type=str, help='Path to /annotations folder (test)')
 parser.add_argument('--main_features_dir', type=str, help='Path to /features folder (train and val)')
@@ -20,15 +24,102 @@ parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. 
 args = parser.parse_args()
 
 
+class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self, input_size, hidden_size, num_classes, num_epochs=10, batch_size=32, learning_rate=0.001):
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_classes = num_classes
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.model = self._build_model()
+        self.criterion = nn.CrossEntropyLoss()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+
+    def _build_model(self):
+        model = nn.Sequential(
+            nn.Linear(self.input_size, self.hidden_size),
+            nn.ReLU(),
+            nn.Linear(self.hidden_size, self.num_classes)
+        )
+        return model
+
+    def fit(self, X, y):
+        X_tensor = torch.tensor(X, dtype=torch.float32).cuda()
+        y_tensor = torch.tensor(y, dtype=torch.long).cuda()
+        self.model = self.model.cuda()
+        self.model.train()
+
+        for epoch in range(self.num_epochs):
+            self.optimizer.zero_grad()
+            outputs = self.model(X_tensor)
+            loss = self.criterion(outputs, y_tensor)
+            loss.backward()
+            self.optimizer.step()
+
+        return self
+
+    def predict(self, X):
+        X_tensor = torch.tensor(X, dtype=torch.float32).cuda()
+        self.model.eval()
+        with torch.no_grad():
+            outputs = self.model(X_tensor)
+        _, predicted = torch.max(outputs.data, 1)
+        return predicted.cpu().numpy()
+
+    def predict_proba(self, X):
+        X_tensor = torch.tensor(X, dtype=torch.float32).cuda()
+        self.model.eval()
+        with torch.no_grad():
+            outputs = self.model(X_tensor)
+        return torch.softmax(outputs, dim=1).cpu().numpy()
+
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
-    logging.basicConfig(level=logging.INFO)
-
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                        filename='logs/rolf_main.log'
+                        )
     logger.info("Loading data...")
-    data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
+    #data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
+
+
     logger.info("Data loaded.")
 
-    feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+    #feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+
+    # Dummy Data below
+    num_samples = 1000
+
+    feature_splits_dict = {
+        'train': {
+            'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+            'facs_intensity': np.random.rand(num_samples, 20),
+            'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+            'nonrigid_face_shape': np.random.rand(num_samples, 13),
+            'hog': np.random.rand(num_samples, 3000)
+        },
+        'val': {
+            'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+            'facs_intensity': np.random.rand(num_samples, 20),
+            'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+            'nonrigid_face_shape': np.random.rand(num_samples, 13),
+            'hog': np.random.rand(num_samples, 3000)
+        },
+        'test': {
+            'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+            'facs_intensity': np.random.rand(num_samples, 20),
+            'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+            'nonrigid_face_shape': np.random.rand(num_samples, 13),
+            'hog': np.random.rand(num_samples, 3000)
+        },
+    }
+    # 8 CLasses
+    emotions_splits_dict = {
+        'train': np.random.randint(0, 8, num_samples),
+        'val': np.random.randint(0, 8, num_samples),
+        'test': np.random.randint(0, 8, num_samples)
+    }
 
     logger.info("Data preprocessed.")
 
@@ -60,14 +151,12 @@ if __name__ == "__main__":
         # Individual accuracies
         val_sets = {
             "spatial": X_val_spatial,
-            # "embedded": X_val_embedded,
             "facs": X_val_facs,
             "pdm": X_val_pdm,
             "hog": X_val_hog
         }
 
-        # y_pred_spatial = pipelines["spatial"].predict(X_spatial_test)
-        # evaluate_results(y_test, y_pred_spatial)
+        #evaluate_results(y_val, stacking_pipeline.predict(X_stack))
 
         for model in probabilities:
             try:
@@ -144,11 +233,16 @@ if __name__ == "__main__":
 
 
     def hog_model(X, y):
+        input_size = X.shape[1]
+        hidden_size = 200
+        num_classes = len(np.unique(y))  # Number of classes
+
+
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('pca', PCA(n_components=0.95)),  # reduce dimensions
-            ('mlp', MLPClassifier(hidden_layer_sizes=(200, 100), max_iter=200, solver='sgd', learning_rate_init=0.001,
-                                  activation='relu', random_state=42))
+            ('mlp', PyTorchMLPClassifier(input_size=input_size, hidden_size=hidden_size, num_classes=num_classes,
+                                         num_epochs=200, batch_size=32, learning_rate=0.001))
         ])
 
         pipeline.fit(X, y)
