@@ -15,6 +15,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import compute_class_weight
 from src.data_processing.rolf_loader import RolfLoader
+import joblib
 
 parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)')
@@ -23,7 +24,6 @@ parser.add_argument('--main_features_dir', type=str, help='Path to /features fol
 parser.add_argument('--test_features_dir', type=str, help='Path to /features folder (test)')
 parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)')
 args = parser.parse_args()
-
 
 class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, input_size, hidden_size, num_classes, num_epochs=10, batch_size=32, learning_rate=0.001,
@@ -100,7 +100,6 @@ if __name__ == "__main__":
 
     feature_splits_dict, emotions_splits_dict = data_loader.get_data()
 
-
     """
     # Dummy Data
         num_samples = 1000
@@ -137,8 +136,7 @@ if __name__ == "__main__":
     """
 
 
-    def evaluate_stacking(probabilities, pipelines, X_val_spatial, X_val_facs, X_val_pdm, X_val_hog,
-                          y_val):
+    def evaluate_stacking(probabilities, y_val):
         """
         Perform score fusion with stacking classifier
         """
@@ -153,63 +151,32 @@ if __name__ == "__main__":
         stacking_pipeline.fit(X_stack, y_val)
         stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
 
-        #log_reg_model = stacking_pipeline.named_steps['log_reg']
-        #coefficients = log_reg_model.coef_
-        #for idx, model_name in enumerate(probabilities.keys()):
-            #print(f"{coefficients[:, idx]}")
-
-        print("Accuracy of stacking classifier (Val Set):", stacking_accuracy)
-        # evaluate_results(y_val, stacking_pipeline.predict(X_stack))
-
-        # Individual accuracies
-        val_sets = {
-            "spatial": X_val_spatial,
-            "facs": X_val_facs,
-            "pdm": X_val_pdm,
-            "hog": X_val_hog
-        }
-
-        #evaluate_results(y_val, stacking_pipeline.predict(X_stack))
-
-        for model in probabilities:
-            try:
-                accuracy = pipelines[model].score(val_sets[model], y_val)
-            except AttributeError:
-                accuracy = accuracy_score(y_val, np.argmax(probabilities[model], axis=1))
-            print(f"{model} accuracy: {accuracy}")
+        logger.info(f"Accuracy of stacking classifier (Validation Set): {stacking_accuracy}")
 
         # Return the stacking pipeline
         return stacking_pipeline
 
 
-
-
-
-
-    # From this we get X_train_spatial, X_val_spatial, X_test_spatial, X_train_embedded, etc.
-    def get_feature_groups(features_dict):
+    def save_features_to_disk(split_features_dict):
         """
-        :param features_dict: A dictionary containing the features of the different feature groups
-        :return: A tuple containing the feature groups
+        Save the features to disk
         """
+        splits = list(split_features_dict.keys())
 
-        spatial_features = np.concatenate([features_dict['landmarks_3d']], axis=1)
-        # Concatenate selected embeddings
-        facs_features = np.concatenate([features_dict['facs_intensity'], features_dict['facs_presence']], axis=1)
-        pdm_features = np.array(features_dict['nonrigid_face_shape'])
-        hog_features = np.array(features_dict['hog'])
+        for split in splits:
+            np.save(f'{split}_spatial_features.npy', split_features_dict[split]['landmarks_3d'])
+            np.save(f'{split}_facs_features.npy', np.hstack([split_features_dict[split]['facs_intensity'], split_features_dict[split]['facs_presence']]))
+            np.save(f'{split}_pdm_features.npy', split_features_dict[split]['nonrigid_face_shape'])
+            np.save(f'{split}_hog_features.npy', split_features_dict[split]['hog'])
+            # Clear the dictionary to free up memory
+            del split_features_dict[split]
+            logger.info(f"Saved {split} features to disk")
 
-        return spatial_features, facs_features, pdm_features, hog_features
-
-
-    # Get the feature groups for the train, validation, and test sets
-    X_train_spatial, X_train_facs, X_train_pdm, X_train_hog = get_feature_groups(feature_splits_dict['train'])
-    X_val_spatial, X_val_facs, X_val_pdm, X_val_hog = get_feature_groups(feature_splits_dict['val'])
-    X_test_spatial, X_test_facs, X_test_pdm, X_test_hog = get_feature_groups(feature_splits_dict['test'])
+    # Save features to disk and clear up from memory
+    save_features_to_disk(feature_splits_dict)
 
     # Get the emotions for the train, validation, and test sets
     y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
-
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
@@ -275,38 +242,59 @@ if __name__ == "__main__":
 
     logger.info("Starting Fitting...")
 
-    pipelines = {
-        "spatial": spatial_relationship_model(X_train_spatial, y_train),
-        "facs": facial_unit_model(X_train_facs, y_train),
-        "pdm": pdm_model(X_train_pdm, y_train),
-        "hog": hog_model(X_train_hog, y_train)
-    }
 
-    # Probabilities for each model
-    probabilities_val = {
-        "spatial": pipelines["spatial"].predict_proba(X_val_spatial),
-        "facs": pipelines["facs"].predict_proba(X_val_facs),
-        "pdm": pipelines["pdm"].predict_proba(X_val_pdm),
-        "hog": pipelines["hog"].predict_proba(X_val_hog)
-    }
+    probabilities_val = {}
+    probabilities_test = {}
+
+    # Train models, then save
+    spatial_pipeline = spatial_relationship_model(np.load('train_spatial_features.npy'), y_train)
+    probabilities_val["spatial"] = spatial_pipeline.predict_proba(np.load('val_spatial_features.npy'))
+    probabilities_test["spatial"] = spatial_pipeline.predict_proba(np.load('test_spatial_features.npy'))
+    # Log individual accuracy
+    print("Accuracy of spatial relationship classifier on val set:", spatial_pipeline.score(np.load('val_spatial_features.npy'), y_val))
+    joblib.dump(spatial_pipeline, 'spatial_pipeline.joblib')
+    # Clear up memory
+    del spatial_pipeline
+
+    facs_pipeline = facial_unit_model(np.load('train_facs_features.npy'), y_train)
+    probabilities_val["facs"] = facs_pipeline.predict_proba(np.load('val_facs_features.npy'))
+    probabilities_test["facs"] = facs_pipeline.predict_proba(np.load('test_facs_features.npy'))
+    # Log individual accuracy
+    print("Accuracy of facial unit classifier on val set:", facs_pipeline.score(np.load('val_facs_features.npy'), y_val))
+    joblib.dump(facs_pipeline, 'facs_pipeline.joblib')
+    del facs_pipeline
+
+    pdm_pipeline = pdm_model(np.load('train_pdm_features.npy'), y_train)
+    probabilities_val["pdm"] = pdm_pipeline.predict_proba(np.load('val_pdm_features.npy'))
+    probabilities_test["pdm"] = pdm_pipeline.predict_proba(np.load('test_pdm_features.npy'))
+    # Log
+    print("Accuracy of pdm classifier on val set:", pdm_pipeline.score(np.load('val_pdm_features.npy'), y_val))
+    joblib.dump(pdm_pipeline, 'pdm_pipeline.joblib')
+    del pdm_pipeline
+
+    hog_pipeline = hog_model(np.load('train_hog_features.npy'), y_train)
+    probabilities_val["hog"] = hog_pipeline.predict_proba(np.load('val_hog_features.npy'))
+    probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('test_hog_features.npy'))
+    # Log
+    print("Accuracy of hog classifier on val set:", hog_pipeline.score(np.load('val_hog_features.npy'), y_val))
+    joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
+    del hog_pipeline
+
 
     logger.info("Starting Stacking...")
 
-    stacking_pipe = evaluate_stacking(probabilities_val, pipelines, X_val_spatial, X_val_facs, X_val_pdm, X_val_hog,
-                                      y_val)
+    stacking_pipe = evaluate_stacking(probabilities_val, y_val)
+    joblib.dump(stacking_pipe, 'stacking_pipeline.joblib')
 
-    # Finally, we can evaluate the stacking classifier on the test set
-    probabilities_test = {
-        "spatial": pipelines["spatial"].predict_proba(X_test_spatial),
-        "facs": pipelines["facs"].predict_proba(X_test_facs),
-        "pdm": pipelines["pdm"].predict_proba(X_test_pdm),
-        "hog": pipelines["hog"].predict_proba(X_test_hog)
-    }
+    def evaluate_test(stacking_pipe, y_test):
+        logger.info("Evaluating Test Set...")
+        X_test_stack = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
 
-    X_test_stack = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
+        stacking_accuracy = stacking_pipe.score(X_test_stack, y_test)
 
-    print("Accuracy of stacking classifier on test set:", stacking_pipe.score(X_test_stack, y_test))
+        logger.info(f"Accuracy of stacking classifier (Test Set): {stacking_accuracy}")
 
+    evaluate_test(stacking_pipe, y_test)
 
 
 
