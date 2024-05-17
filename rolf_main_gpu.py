@@ -10,7 +10,6 @@ from cuml.preprocessing import StandardScaler
 from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
-from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import compute_class_weight
@@ -93,18 +92,16 @@ if __name__ == "__main__":
                             logging.StreamHandler()
                         ])
     logger.info("Loading data...")
-    data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
+    #data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
 
 
     logger.info("Data loaded.")
 
-    feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+    #feature_splits_dict, emotions_splits_dict = data_loader.get_data()
 
-    """
-    # Dummy Data
-        num_samples = 1000
+    num_samples = 1000
 
-        feature_splits_dict = {
+    feature_splits_dict = {
         'train': {
             'landmarks_3d': np.random.rand(num_samples, 68 * 3),
             'facs_intensity': np.random.rand(num_samples, 20),
@@ -133,7 +130,6 @@ if __name__ == "__main__":
         'val': np.random.randint(0, 8, num_samples),
         'test': np.random.randint(0, 8, num_samples)
     }
-    """
 
 
     def evaluate_stacking(probabilities, y_val):
