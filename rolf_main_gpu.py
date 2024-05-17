@@ -88,9 +88,10 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(name)s - %(message)s',
-                        # save to file txt
-                        filename='rolf_main_gpu.log',
-                        )
+                        handlers=[
+                            logging.FileHandler('logs/rolf_gpu_training.log'),
+                            logging.StreamHandler()
+                        ])
     logger.info("Loading data...")
     data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
 
