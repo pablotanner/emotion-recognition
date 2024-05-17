@@ -9,9 +9,10 @@ import torch.optim as optim
 #import cupy as cp
 from cuml.svm import LinearSVC
 from cuml.preprocessing import StandardScaler
-from cuml.ensemble import RandomForestClassifier
+#from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import compute_class_weight
@@ -19,14 +20,15 @@ from src.data_processing.rolf_loader import RolfLoader
 import joblib
 
 parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
-parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)')
-parser.add_argument('--test_annotations_dir', type=str, help='Path to /annotations folder (test)')
-parser.add_argument('--main_features_dir', type=str, help='Path to /features folder (train and val)')
-parser.add_argument('--test_features_dir', type=str, help='Path to /features folder (test)')
-parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)')
+parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')
+parser.add_argument('--test_annotations_dir', type=str, help='Path to /annotations folder (test)', default='/local/scratch/datasets/AffectNet/val_set/annotations')
+parser.add_argument('--main_features_dir', type=str, help='Path to /features folder (train and val)', default='/local/scratch/ptanner/features')
+parser.add_argument('--test_features_dir', type=str, help='Path to /features folder (test)', default='/local/scratch/ptanner/test_features')
+parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)', default='/local/scratch/ptanner/')
 # Whether to use dummy data
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
 parser.add_argument('--use_existing',action='store_true', help='Use saved data/models')
+parser.add_argument('--skip_hog', action='store_true', help='Skip HOG model training')
 args = parser.parse_args()
 
 class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
@@ -168,7 +170,7 @@ if __name__ == "__main__":
 
         stacking_pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression())
+            ('log_reg', LogisticRegression(class_weight=class_weights))
         ])
 
         stacking_pipeline.fit(X_stack, y_val)
@@ -202,7 +204,7 @@ if __name__ == "__main__":
         # Linear scores worse individually, but better in stacking
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('svm', LinearSVC(C=0.1, probability=True, class_weight=class_weights)) #  kernel='linear', gamma='scale'
+            ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights)) #  kernel='linear', gamma='scale'
         ])
 
         pipeline.fit(X, y)
@@ -215,7 +217,7 @@ if __name__ == "__main__":
     def facial_unit_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('rf', RandomForestClassifier(n_estimators=200, max_depth=20, min_samples_split=10))
+            ('rf', RandomForestClassifier(n_estimators=200, max_depth=10, min_samples_split=4,class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
@@ -228,7 +230,7 @@ if __name__ == "__main__":
     def pdm_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(C=0.1, solver='qn', class_weight=class_weights))
+            ('log_reg', LogisticRegression(C=1, solver='qn', class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
@@ -298,16 +300,17 @@ if __name__ == "__main__":
     logger.info(f"Accuracy of pdm classifier on val set: {pdm_pipeline.score(np.load('val_pdm_features.npy'), y_val)}")
     del pdm_pipeline
 
-    if os.path.exists('hog_pipeline.joblib') and args.use_existing:
-        hog_pipeline = joblib.load('hog_pipeline.joblib')
-    else:
-        hog_pipeline = hog_model(np.load('train_hog_features.npy'), y_train)
-        joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
-    probabilities_val["hog"] = hog_pipeline.predict_proba(np.load('val_hog_features.npy'))
-    probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('test_hog_features.npy'))
-    # Log
-    logger.info(f"Accuracy of hog classifier on val set: {hog_pipeline.score(np.load('val_hog_features.npy'), y_val)}")
-    del hog_pipeline
+    if not args.skip_hog:
+        if os.path.exists('hog_pipeline.joblib') and args.use_existing:
+            hog_pipeline = joblib.load('hog_pipeline.joblib')
+        else:
+            hog_pipeline = hog_model(np.load('train_hog_features.npy'), y_train)
+            joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
+        probabilities_val["hog"] = hog_pipeline.predict_proba(np.load('val_hog_features.npy'))
+        probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('test_hog_features.npy'))
+        # Log
+        logger.info(f"Accuracy of hog classifier on val set: {hog_pipeline.score(np.load('val_hog_features.npy'), y_val)}")
+        del hog_pipeline
 
 
     logger.info("Starting Stacking...")
