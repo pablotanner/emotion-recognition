@@ -210,7 +210,7 @@ if __name__ == "__main__":
 
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
-    class_weights = torch.tensor(class_weights, dtype=torch.float32)
+    class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
 
     def spatial_relationship_model(X, y):
