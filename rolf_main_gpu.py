@@ -9,7 +9,8 @@ from cuml.svm import LinearSVC
 from cuml.preprocessing import StandardScaler
 from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
-from cuml.decomposition import PCA
+from sklearn.decomposition import PCA
+#from cuml.decomposition import PCA
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
