@@ -108,9 +108,14 @@ if __name__ == "__main__":
 
         for split in splits:
             np.save(f'{split}_spatial_features.npy', split_features_dict[split]['landmarks_3d'])
+            del split_features_dict[split]['landmarks_3d']
             np.save(f'{split}_facs_features.npy', np.hstack([split_features_dict[split]['facs_intensity'], split_features_dict[split]['facs_presence']]))
+            del split_features_dict[split]['facs_intensity']
+            del split_features_dict[split]['facs_presence']
             np.save(f'{split}_pdm_features.npy', split_features_dict[split]['nonrigid_face_shape'])
+            del split_features_dict[split]['nonrigid_face_shape']
             np.save(f'{split}_hog_features.npy', split_features_dict[split]['hog'])
+            del split_features_dict[split]['hog']
             # Clear the dictionary to free up memory
             del split_features_dict[split]
             logger.info(f"Saved {split} features to disk")
@@ -179,7 +184,7 @@ if __name__ == "__main__":
     if not args.use_existing:
         # Save features to disk and clear up from memory
         save_features_to_disk(feature_splits_dict)
-        
+
         y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
         np.save('y_train.npy', y_train)
         np.save('y_val.npy', y_val)
