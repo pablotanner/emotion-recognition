@@ -225,8 +225,11 @@ if __name__ == "__main__":
     def facial_unit_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('rf', RandomForestClassifier(n_estimators=200, max_depth=10, min_samples_split=4,class_weight=class_weights))
-        ])
+            #('rf', RandomForestClassifier(n_estimators=200, max_depth=10, min_samples_split=4,class_weight=class_weights))
+            ('mlp',
+             PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=200, num_classes=len(np.unique(y)), num_epochs=200,
+                                  batch_size=32, learning_rate=0.001, class_weight=class_weights)
+             )])
 
         pipeline.fit(X, y)
 
@@ -239,8 +242,9 @@ if __name__ == "__main__":
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('log_reg', LogisticRegression(C=1, solver='qn', class_weight=class_weights))
-            ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
-        ])
+            #('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
+            ('mlp', PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=200, num_classes=len(np.unique(y)), num_epochs=200, batch_size=32, learning_rate=0.001, class_weight=class_weights)
+             )])
 
         pipeline.fit(X, y)
 
