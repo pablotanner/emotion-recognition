@@ -28,18 +28,19 @@ args = parser.parse_args()
 
 class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, input_size, hidden_size, num_classes, num_epochs=10, batch_size=32, learning_rate=0.001,
-                 class_weights=None):
+                 class_weight=None):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_classes = num_classes
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
-        self.class_weights = class_weights
+        self.class_weight = class_weight
         self.model = self._build_model()
 
-        if self.class_weights is not None:
-            weight_tensor = torch.tensor(self.class_weights, dtype=torch.float32).cuda()
+        if self.class_weight is not None:
+            weight_list = [self.class_weight[i] for i in range(self.num_classes)]
+            weight_tensor = torch.tensor(weight_list, dtype=torch.float32).cuda()
             self.criterion = nn.CrossEntropyLoss(weight=weight_tensor)
         else:
             self.criterion = nn.CrossEntropyLoss()
