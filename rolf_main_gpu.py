@@ -10,13 +10,11 @@ from cuml.preprocessing import StandardScaler
 from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
-#from cuml.decomposition import PCA
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import compute_class_weight
-
-#from src.data_processing.rolf_loader import RolfLoader
+from src.data_processing.rolf_loader import RolfLoader
 
 parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)')
@@ -94,17 +92,19 @@ if __name__ == "__main__":
                         filename='rolf_main_gpu.log',
                         )
     logger.info("Loading data...")
-    #data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
+    data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
 
 
     logger.info("Data loaded.")
 
-    #feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+    feature_splits_dict, emotions_splits_dict = data_loader.get_data()
 
-    # Dummy Data below
-    num_samples = 1000
 
-    feature_splits_dict = {
+    """
+    # Dummy Data
+        num_samples = 1000
+
+        feature_splits_dict = {
         'train': {
             'landmarks_3d': np.random.rand(num_samples, 68 * 3),
             'facs_intensity': np.random.rand(num_samples, 20),
@@ -133,8 +133,7 @@ if __name__ == "__main__":
         'val': np.random.randint(0, 8, num_samples),
         'test': np.random.randint(0, 8, num_samples)
     }
-
-    logger.info("Data preprocessed.")
+    """
 
 
     def evaluate_stacking(probabilities, pipelines, X_val_spatial, X_val_facs, X_val_pdm, X_val_hog,
@@ -224,6 +223,8 @@ if __name__ == "__main__":
 
         pipeline.fit(X, y)
 
+        logger.info("Spatial Relationship Model Fitted")
+
         return pipeline
 
 
@@ -235,6 +236,8 @@ if __name__ == "__main__":
 
         pipeline.fit(X, y)
 
+        logger.info("Facial Unit Model Fitted")
+
         return pipeline
 
 
@@ -245,6 +248,8 @@ if __name__ == "__main__":
         ])
 
         pipeline.fit(X, y)
+
+        logger.info("PDM Model Fitted")
 
         return pipeline
 
@@ -263,10 +268,11 @@ if __name__ == "__main__":
         ])
 
         pipeline.fit(X, y)
+
+        logger.info("HOG Model Fitted")
         return pipeline
 
-    logger.info("Starting Fitting")
-
+    logger.info("Starting Fitting...")
 
     pipelines = {
         "spatial": spatial_relationship_model(X_train_spatial, y_train),
@@ -283,7 +289,7 @@ if __name__ == "__main__":
         "hog": pipelines["hog"].predict_proba(X_val_hog)
     }
 
-    logger.info("Starting Stacking")
+    logger.info("Starting Stacking...")
 
     stacking_pipe = evaluate_stacking(probabilities_val, pipelines, X_val_spatial, X_val_facs, X_val_pdm, X_val_hog,
                                       y_val)
