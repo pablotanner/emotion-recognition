@@ -10,14 +10,18 @@ import torch.optim as optim
 from cuml.svm import LinearSVC
 from cuml.preprocessing import StandardScaler
 #from cuml.ensemble import RandomForestClassifier
-from cuml.linear_model import LogisticRegression
+#from cuml.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import compute_class_weight
 from src.data_processing.rolf_loader import RolfLoader
 import joblib
+from datetime import datetime
+
 
 parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')
@@ -91,11 +95,15 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
         return torch.softmax(outputs, dim=1).cpu().numpy()
 
 if __name__ == "__main__":
+    # Get ID for unique log file
+    now = datetime.now()
+    current_time = now.strftime("%m-%d_%H%M")
+
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         handlers=[
-                            logging.FileHandler('logs/rolf_gpu_training.log'),
+                            logging.FileHandler(f'logs/{current_time}.log'),
                             logging.StreamHandler()
                         ])
 
@@ -170,7 +178,7 @@ if __name__ == "__main__":
 
         stacking_pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(class_weight=class_weights))
+            ('log_reg', LogisticRegression(C=0.1, solver='liblinear', class_weight=class_weights))
         ])
 
         stacking_pipeline.fit(X_stack, y_val)
@@ -230,7 +238,8 @@ if __name__ == "__main__":
     def pdm_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(C=1, solver='qn', class_weight=class_weights))
+            #('log_reg', LogisticRegression(C=1, solver='qn', class_weight=class_weights))
+            ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
@@ -275,6 +284,7 @@ if __name__ == "__main__":
     probabilities_test["spatial"] = spatial_pipeline.predict_proba(np.load('test_spatial_features.npy'))
     # Log individual accuracy
     logger.info(f"Accuracy of spatial relationship classifier on val set: {spatial_pipeline.score(np.load('val_spatial_features.npy'), y_val)}")
+    logger.info(f"Accuracy of spatial relationship classifier on test set: {spatial_pipeline.score(np.load('test_spatial_features.npy'), y_test)}")
     # Clear up memory
     del spatial_pipeline
 
@@ -287,6 +297,7 @@ if __name__ == "__main__":
     probabilities_test["facs"] = facs_pipeline.predict_proba(np.load('test_facs_features.npy'))
     # Log individual accuracy
     logger.info(f"Accuracy of facial unit classifier on val set: {facs_pipeline.score(np.load('val_facs_features.npy'), y_val)}")
+    logger.info(f"Accuracy of facial unit classifier on test set: {facs_pipeline.score(np.load('test_facs_features.npy'), y_test)}")
     del facs_pipeline
 
     if os.path.exists('pdm_pipeline.joblib') and args.use_existing:
@@ -298,6 +309,7 @@ if __name__ == "__main__":
     probabilities_test["pdm"] = pdm_pipeline.predict_proba(np.load('test_pdm_features.npy'))
     # Log
     logger.info(f"Accuracy of pdm classifier on val set: {pdm_pipeline.score(np.load('val_pdm_features.npy'), y_val)}")
+    logger.info(f"Accuracy of pdm classifier on test set: {pdm_pipeline.score(np.load('test_pdm_features.npy'), y_test)}")
     del pdm_pipeline
 
     if not args.skip_hog:
@@ -310,8 +322,8 @@ if __name__ == "__main__":
         probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('test_hog_features.npy'))
         # Log
         logger.info(f"Accuracy of hog classifier on val set: {hog_pipeline.score(np.load('val_hog_features.npy'), y_val)}")
+        logger.info(f"Accuracy of hog classifier on test set: {hog_pipeline.score(np.load('test_hog_features.npy'), y_test)}")
         del hog_pipeline
-
 
     logger.info("Starting Stacking...")
     if os.path.exists('stacking_pipeline.joblib') and args.use_existing:
@@ -320,6 +332,9 @@ if __name__ == "__main__":
         stacking_pipe = evaluate_stacking(probabilities_val, y_val)
         joblib.dump(stacking_pipe, 'stacking_pipeline.joblib')
 
+    logger.info("Classification Report (Val):")
+    logger.info(classification_report(y_val, stacking_pipe.predict(np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1))))
+
     def evaluate_test(stacking_pipe, y_test):
         logger.info("Evaluating Test Set...")
         X_test_stack = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
@@ -327,6 +342,9 @@ if __name__ == "__main__":
         stacking_accuracy = stacking_pipe.score(X_test_stack, y_test)
 
         logger.info(f"Accuracy of stacking classifier (Test Set): {stacking_accuracy}")
+
+        logger.info("Classification Report (Test):")
+        logger.info(classification_report(y_test, stacking_pipe.predict(X_test_stack)))
 
     evaluate_test(stacking_pipe, y_test)
 
