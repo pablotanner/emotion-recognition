@@ -22,6 +22,8 @@ parser.add_argument('--test_annotations_dir', type=str, help='Path to /annotatio
 parser.add_argument('--main_features_dir', type=str, help='Path to /features folder (train and val)')
 parser.add_argument('--test_features_dir', type=str, help='Path to /features folder (test)')
 parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)')
+# Whether to use dummy data
+parser.add_argument('--dummy', action='store_true', help='Use dummy data')
 args = parser.parse_args()
 
 class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
@@ -86,51 +88,50 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(message)s',
+                        format='%(asctime)s - %(message)s',
                         handlers=[
                             logging.FileHandler('logs/rolf_gpu_training.log'),
                             logging.StreamHandler()
                         ])
     logger.info("Loading data...")
-    #data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
 
+    if args.dummy:
+        data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
+        feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+    else:
+        num_samples = 1000
+
+        feature_splits_dict = {
+            'train': {
+                'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+                'facs_intensity': np.random.rand(num_samples, 20),
+                'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+                'nonrigid_face_shape': np.random.rand(num_samples, 13),
+                'hog': np.random.rand(num_samples, 3000)
+            },
+            'val': {
+                'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+                'facs_intensity': np.random.rand(num_samples, 20),
+                'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+                'nonrigid_face_shape': np.random.rand(num_samples, 13),
+                'hog': np.random.rand(num_samples, 3000)
+            },
+            'test': {
+                'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+                'facs_intensity': np.random.rand(num_samples, 20),
+                'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+                'nonrigid_face_shape': np.random.rand(num_samples, 13),
+                'hog': np.random.rand(num_samples, 3000)
+            },
+        }
+        # 8 Classes
+        emotions_splits_dict = {
+            'train': np.random.randint(0, 8, num_samples),
+            'val': np.random.randint(0, 8, num_samples),
+            'test': np.random.randint(0, 8, num_samples)
+        }
 
     logger.info("Data loaded.")
-
-    #feature_splits_dict, emotions_splits_dict = data_loader.get_data()
-
-    num_samples = 1000
-
-    feature_splits_dict = {
-        'train': {
-            'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-            'facs_intensity': np.random.rand(num_samples, 20),
-            'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-            'nonrigid_face_shape': np.random.rand(num_samples, 13),
-            'hog': np.random.rand(num_samples, 3000)
-        },
-        'val': {
-            'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-            'facs_intensity': np.random.rand(num_samples, 20),
-            'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-            'nonrigid_face_shape': np.random.rand(num_samples, 13),
-            'hog': np.random.rand(num_samples, 3000)
-        },
-        'test': {
-            'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-            'facs_intensity': np.random.rand(num_samples, 20),
-            'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-            'nonrigid_face_shape': np.random.rand(num_samples, 13),
-            'hog': np.random.rand(num_samples, 3000)
-        },
-    }
-    # 8 Classes
-    emotions_splits_dict = {
-        'train': np.random.randint(0, 8, num_samples),
-        'val': np.random.randint(0, 8, num_samples),
-        'test': np.random.randint(0, 8, num_samples)
-    }
-
 
     def evaluate_stacking(probabilities, y_val):
         """
@@ -247,7 +248,7 @@ if __name__ == "__main__":
     probabilities_val["spatial"] = spatial_pipeline.predict_proba(np.load('val_spatial_features.npy'))
     probabilities_test["spatial"] = spatial_pipeline.predict_proba(np.load('test_spatial_features.npy'))
     # Log individual accuracy
-    print("Accuracy of spatial relationship classifier on val set:", spatial_pipeline.score(np.load('val_spatial_features.npy'), y_val))
+    logger.info(f"Accuracy of spatial relationship classifier on val set: {spatial_pipeline.score(np.load('val_spatial_features.npy'), y_val)}")
     joblib.dump(spatial_pipeline, 'spatial_pipeline.joblib')
     # Clear up memory
     del spatial_pipeline
@@ -256,7 +257,7 @@ if __name__ == "__main__":
     probabilities_val["facs"] = facs_pipeline.predict_proba(np.load('val_facs_features.npy'))
     probabilities_test["facs"] = facs_pipeline.predict_proba(np.load('test_facs_features.npy'))
     # Log individual accuracy
-    print("Accuracy of facial unit classifier on val set:", facs_pipeline.score(np.load('val_facs_features.npy'), y_val))
+    logger.info(f"Accuracy of facial unit classifier on val set: {facs_pipeline.score(np.load('val_facs_features.npy'), y_val)}")
     joblib.dump(facs_pipeline, 'facs_pipeline.joblib')
     del facs_pipeline
 
@@ -264,7 +265,7 @@ if __name__ == "__main__":
     probabilities_val["pdm"] = pdm_pipeline.predict_proba(np.load('val_pdm_features.npy'))
     probabilities_test["pdm"] = pdm_pipeline.predict_proba(np.load('test_pdm_features.npy'))
     # Log
-    print("Accuracy of pdm classifier on val set:", pdm_pipeline.score(np.load('val_pdm_features.npy'), y_val))
+    logger.info(f"Accuracy of pdm classifier on val set: {pdm_pipeline.score(np.load('val_pdm_features.npy'), y_val)}")
     joblib.dump(pdm_pipeline, 'pdm_pipeline.joblib')
     del pdm_pipeline
 
@@ -272,7 +273,7 @@ if __name__ == "__main__":
     probabilities_val["hog"] = hog_pipeline.predict_proba(np.load('val_hog_features.npy'))
     probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('test_hog_features.npy'))
     # Log
-    print("Accuracy of hog classifier on val set:", hog_pipeline.score(np.load('val_hog_features.npy'), y_val))
+    logger.info(f"Accuracy of hog classifier on val set: {hog_pipeline.score(np.load('val_hog_features.npy'), y_val)}")
     joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
     del hog_pipeline
 
