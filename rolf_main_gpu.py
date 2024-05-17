@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 #import cupy as cp
-from cuml.svm import SVR as SVC
+from cuml.svm import LinearSVC
 from cuml.preprocessing import StandardScaler
 from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
@@ -13,6 +13,8 @@ from cuml.decomposition import PCA
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils import compute_class_weight
+
 #from src.data_processing.rolf_loader import RolfLoader
 
 parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
@@ -25,15 +27,23 @@ args = parser.parse_args()
 
 
 class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
-    def __init__(self, input_size, hidden_size, num_classes, num_epochs=10, batch_size=32, learning_rate=0.001):
+    def __init__(self, input_size, hidden_size, num_classes, num_epochs=10, batch_size=32, learning_rate=0.001,
+                 class_weights=None):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_classes = num_classes
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+        self.class_weights = class_weights
         self.model = self._build_model()
-        self.criterion = nn.CrossEntropyLoss()
+
+        if self.class_weights is not None:
+            weight_tensor = torch.tensor(self.class_weights, dtype=torch.float32).cuda()
+            self.criterion = nn.CrossEntropyLoss(weight=weight_tensor)
+        else:
+            self.criterion = nn.CrossEntropyLoss()
+
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
     def _build_model(self):
@@ -77,8 +87,9 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                        filename='logs/rolf_main.log'
+                        format='%(asctime)s - %(name)s - %(message)s',
+                        # save to file txt
+                        filename='rolf_main_gpu.log',
                         )
     logger.info("Loading data...")
     #data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir, args.test_features_dir, args.main_id_dir)
@@ -114,7 +125,7 @@ if __name__ == "__main__":
             'hog': np.random.rand(num_samples, 3000)
         },
     }
-    # 8 CLasses
+    # 8 Classes
     emotions_splits_dict = {
         'train': np.random.randint(0, 8, num_samples),
         'val': np.random.randint(0, 8, num_samples),
@@ -198,11 +209,15 @@ if __name__ == "__main__":
     y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
 
 
+    class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+    class_weights = torch.tensor(class_weights, dtype=torch.float32)
+
+
     def spatial_relationship_model(X, y):
         # Linear scores worse individually, but better in stacking
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('svm', SVC(C=0.1, gamma='scale', kernel='linear', probability=True))
+            ('svm', LinearSVC(C=0.1, probability=True, class_weight=class_weights)) #  kernel='linear', gamma='scale'
         ])
 
         pipeline.fit(X, y)
@@ -213,7 +228,7 @@ if __name__ == "__main__":
     def facial_unit_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('rf', RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=10, random_state=42))
+            ('rf', RandomForestClassifier(n_estimators=200, max_depth=20, min_samples_split=10))
         ])
 
         pipeline.fit(X, y)
@@ -224,7 +239,7 @@ if __name__ == "__main__":
     def pdm_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(C=0.1, solver='liblinear', random_state=42))
+            ('log_reg', LogisticRegression(C=0.1, solver='qn', class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
@@ -242,7 +257,7 @@ if __name__ == "__main__":
             ('scaler', StandardScaler()),
             ('pca', PCA(n_components=0.95)),  # reduce dimensions
             ('mlp', PyTorchMLPClassifier(input_size=input_size, hidden_size=hidden_size, num_classes=num_classes,
-                                         num_epochs=200, batch_size=32, learning_rate=0.001))
+                                         num_epochs=200, batch_size=32, learning_rate=0.001, class_weights=class_weights))
         ])
 
         pipeline.fit(X, y)
