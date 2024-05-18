@@ -53,7 +53,9 @@ class PyTorchMLPClassifier(nn.Module):
         # Set optimizer and criterion
         self.optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
         if class_weights is not None:
-            class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
+            # Convert class weights dictionary to tensor
+            weight_list = [class_weights[i] for i in range(num_classes)]
+            class_weights_tensor = torch.tensor(weight_list, dtype=torch.float32)
             if torch.cuda.is_available():
                 class_weights_tensor = class_weights_tensor.cuda()
             self.criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
