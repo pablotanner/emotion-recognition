@@ -292,7 +292,7 @@ if __name__ == "__main__":
             ('scaler', StandardScaler()),
             ('pca', PCA(n_components=n_components)),  # reduce dimensions
             ('mlp', PyTorchMLPClassifier(input_size=n_components, hidden_size=hidden_size, num_classes=num_classes,
-                                         num_epochs=200, batch_size=16, learning_rate=0.001,
+                                         num_epochs=200, batch_size=32, learning_rate=0.001,
                                          class_weight=class_weights))
         ])
 
