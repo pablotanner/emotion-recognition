@@ -18,6 +18,8 @@ from sklearn.metrics import classification_report
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import compute_class_weight
+from torch.utils.data import DataLoader, TensorDataset
+
 from src.data_processing.rolf_loader import RolfLoader
 import joblib
 from datetime import datetime
@@ -35,64 +37,92 @@ parser.add_argument('--use_existing',action='store_true', help='Use saved data/m
 parser.add_argument('--skip_hog', action='store_true', help='Skip HOG model training')
 args = parser.parse_args()
 
-class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
-    def __init__(self, input_size, hidden_size, num_classes, num_epochs=10, batch_size=32, learning_rate=0.001,
+
+class PyTorchMLPClassifier(nn.Module):
+    def __init__(self, input_size, hidden_size, num_classes, num_epochs=200, batch_size=32, learning_rate=0.001,
                  class_weight=None):
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.num_classes = num_classes
+        super(PyTorchMLPClassifier, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_size, num_classes)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
-        self.class_weight = class_weight
-        self.model = self._build_model()
+        self.class_weights = class_weight
 
-        if self.class_weight is not None:
-            weight_list = [self.class_weight[i] for i in range(self.num_classes)]
-            weight_tensor = torch.tensor(weight_list, dtype=torch.float32).cuda()
-            self.criterion = nn.CrossEntropyLoss(weight=weight_tensor)
+        # Set optimizer and criterion
+        self.optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+        if class_weights is not None:
+            class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
+            if torch.cuda.is_available():
+                class_weights_tensor = class_weights_tensor.cuda()
+            self.criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
         else:
             self.criterion = nn.CrossEntropyLoss()
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
-
-    def _build_model(self):
-        model = nn.Sequential(
-            nn.Linear(self.input_size, self.hidden_size),
-            nn.ReLU(),
-            nn.Linear(self.hidden_size, self.num_classes)
-        )
-        return model
+    def forward(self, x):
+        out = self.fc1(x)
+        out = self.relu(out)
+        out = self.fc2(out)
+        return out
 
     def fit(self, X, y):
-        X_tensor = torch.tensor(X, dtype=torch.float32).cuda()
-        y_tensor = torch.tensor(y, dtype=torch.long).cuda()
-        self.model = self.model.cuda()
-        self.model.train()
+        # Convert data to PyTorch tensors and create a DataLoader
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        y_tensor = torch.tensor(y, dtype=torch.long)
+        dataset = TensorDataset(X_tensor, y_tensor)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
+        # Move model to GPU if available
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.to(device)
+
+        # Training loop with mini-batches
+        self.train()
         for epoch in range(self.num_epochs):
-            self.optimizer.zero_grad()
-            outputs = self.model(X_tensor)
-            loss = self.criterion(outputs, y_tensor)
-            loss.backward()
-            self.optimizer.step()
+            for batch_X, batch_y in dataloader:
+                batch_X, batch_y = batch_X.to(device), batch_y.to(device)
+
+                self.optimizer.zero_grad()
+                outputs = self(batch_X)
+                loss = self.criterion(outputs, batch_y)
+                loss.backward()
+                self.optimizer.step()
 
         return self
 
     def predict(self, X):
-        X_tensor = torch.tensor(X, dtype=torch.float32).cuda()
-        self.model.eval()
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        dataloader = DataLoader(TensorDataset(X_tensor), batch_size=self.batch_size)
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.to(device)
+
+        self.eval()
+        predictions = []
         with torch.no_grad():
-            outputs = self.model(X_tensor)
-        _, predicted = torch.max(outputs.data, 1)
-        return predicted.cpu().numpy()
+            for batch_X in dataloader:
+                batch_X = batch_X[0].to(device)
+                outputs = self(batch_X)
+                _, predicted = torch.max(outputs.data, 1)
+                predictions.append(predicted.cpu().numpy())
+        return np.concatenate(predictions)
 
     def predict_proba(self, X):
-        X_tensor = torch.tensor(X, dtype=torch.float32).cuda()
-        self.model.eval()
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        dataloader = DataLoader(TensorDataset(X_tensor), batch_size=self.batch_size)
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.to(device)
+
+        self.eval()
+        probabilities = []
         with torch.no_grad():
-            outputs = self.model(X_tensor)
-        return torch.softmax(outputs, dim=1).cpu().numpy()
+            for batch_X in dataloader:
+                batch_X = batch_X[0].to(device)
+                outputs = self(batch_X)
+                probabilities.append(torch.softmax(outputs, dim=1).cpu().numpy())
+        return np.concatenate(probabilities)
 
 if __name__ == "__main__":
     # Get ID for unique log file
@@ -254,7 +284,7 @@ if __name__ == "__main__":
 
 
     def hog_model(X, y):
-        n_components = 800  # Number of principal components to keep
+        n_components = 400  # Number of principal components to keep
         hidden_size = 200
         num_classes = len(np.unique(y))  # Number of classes
 
@@ -262,7 +292,7 @@ if __name__ == "__main__":
             ('scaler', StandardScaler()),
             ('pca', PCA(n_components=n_components)),  # reduce dimensions
             ('mlp', PyTorchMLPClassifier(input_size=n_components, hidden_size=hidden_size, num_classes=num_classes,
-                                         num_epochs=200, batch_size=32, learning_rate=0.001,
+                                         num_epochs=200, batch_size=16, learning_rate=0.001,
                                          class_weight=class_weights))
         ])
 
