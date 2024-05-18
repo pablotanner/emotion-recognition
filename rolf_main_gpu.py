@@ -256,7 +256,6 @@ if __name__ == "__main__":
     def hog_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('pca', PCA(n_components=500)),  # reduce dimensions
             ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
         ])
 
@@ -314,13 +313,30 @@ if __name__ == "__main__":
         if os.path.exists('hog_pipeline.joblib') and args.use_existing:
             hog_pipeline = joblib.load('hog_pipeline.joblib')
         else:
-            hog_pipeline = hog_model(np.load('train_hog_features.npy'), y_train)
+            # Perform dimensionality reduction with PCA and save
+            X_train_hog = np.load('train_hog_features.npy')
+            logger.info("Fitting PCA for HOG training features...")
+            pca = PCA(n_components=500)
+            pca.fit(X_train_hog)
+            # Save transformed features
+            np.save('pca_train_hog_features.npy', pca.transform(X_train_hog))
+            del X_train_hog
+            # Transform val and test features
+            X_val_hog = np.load('val_hog_features.npy')
+            X_test_hog = np.load('test_hog_features.npy')
+            logger.info("Transforming HOG val and test features...")
+            np.save('pca_val_hog_features.npy', pca.transform(X_val_hog))
+            np.save('pca_test_hog_features.npy', pca.transform(X_test_hog))
+            del X_val_hog
+            del X_test_hog
+            logger.info("Fitting HOG model...")
+            hog_pipeline = hog_model(np.load('pca_train_hog_features.npy'), y_train)
             joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
-        probabilities_val["hog"] = hog_pipeline.predict_proba(np.load('val_hog_features.npy'))
-        probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('test_hog_features.npy'))
+        probabilities_val["hog"] = hog_pipeline.predict_proba(np.load('pca_val_hog_features.npy'))
+        probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('pca_test_hog_features.npy'))
         # Log
-        logger.info(f"Accuracy of hog classifier on val set: {hog_pipeline.score(np.load('val_hog_features.npy'), y_val)}")
-        logger.info(f"Accuracy of hog classifier on test set: {hog_pipeline.score(np.load('test_hog_features.npy'), y_test)}")
+        logger.info(f"Accuracy of hog classifier on val set: {hog_pipeline.score(np.load('pca_val_hog_features.npy'), y_val)}")
+        logger.info(f"Accuracy of hog classifier on test set: {hog_pipeline.score(np.load('pca_test_hog_features.npy'), y_test)}")
         del hog_pipeline
 
     logger.info("Starting Stacking...")
