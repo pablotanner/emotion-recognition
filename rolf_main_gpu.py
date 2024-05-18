@@ -254,16 +254,10 @@ if __name__ == "__main__":
 
 
     def hog_model(X, y):
-        n_components = 800  # Number of principal components to keep
-        hidden_size = 200
-        num_classes = len(np.unique(y))  # Number of classes
-
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('pca', PCA(n_components=n_components)),  # reduce dimensions
-            ('mlp', PyTorchMLPClassifier(input_size=n_components, hidden_size=hidden_size, num_classes=num_classes,
-                                         num_epochs=200, batch_size=32, learning_rate=0.001,
-                                         class_weight=class_weights))
+            ('pca', PCA(n_components=500)),  # reduce dimensions
+            ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
