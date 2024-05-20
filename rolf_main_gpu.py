@@ -120,6 +120,8 @@ if __name__ == "__main__":
             np.save(f'{split}_spatial_features.npy', split_features_dict[split]['landmarks_3d'])
             del split_features_dict[split]['landmarks_3d']
             np.save(f'{split}_facs_features.npy', np.hstack([split_features_dict[split]['facs_intensity'], split_features_dict[split]['facs_presence']]))
+            np.save(f'{split}_facs_intensity.npy', split_features_dict[split]['facs_intensity'])
+            np.save(f'{split}_facs_presence.npy', split_features_dict[split]['facs_presence'])
             del split_features_dict[split]['facs_intensity']
             del split_features_dict[split]['facs_presence']
             np.save(f'{split}_pdm_features.npy', split_features_dict[split]['nonrigid_face_shape'])
@@ -237,6 +239,18 @@ if __name__ == "__main__":
 
         return pipeline
 
+    def rf_model(X, y):
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('rf', RandomForestClassifier(n_estimators=200, max_depth=10, min_samples_split=4,class_weight=class_weights))
+        ])
+
+        pipeline.fit(X, y)
+
+        logger.info("RF Model Fitted")
+
+        return pipeline
+
 
     def pdm_model(X, y):
         pipeline = Pipeline([
@@ -296,6 +310,25 @@ if __name__ == "__main__":
     logger.info(f"Accuracy of facial unit classifier on val set: {facs_pipeline.score(np.load('val_facs_features.npy'), y_val)}")
     logger.info(f"Accuracy of facial unit classifier on test set: {facs_pipeline.score(np.load('test_facs_features.npy'), y_test)}")
     del facs_pipeline
+
+
+    facs_intensity_pipeline = rf_model(np.load('train_facs_intensity.npy'), y_train)
+    probabilities_val["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('val_facs_intensity.npy'))
+    probabilities_test["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('test_facs_intensity.npy'))
+    # Log individual accuracy
+    logger.info(f"Accuracy of facs intensity classifier on val set: {facs_intensity_pipeline.score(np.load('val_facs_intensity.npy'), y_val)}")
+    logger.info(f"Accuracy of facs intensity classifier on test set: {facs_intensity_pipeline.score(np.load('test_facs_intensity.npy'), y_test)}")
+    del facs_intensity_pipeline
+
+    facs_presence_pipeline = rf_model(np.load('train_facs_presence.npy'), y_train)
+    probabilities_val["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('val_facs_presence.npy'))
+    probabilities_test["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('test_facs_presence.npy'))
+    # Log individual accuracy
+    logger.info(f"Accuracy of facs presence classifier on val set: {facs_presence_pipeline.score(np.load('val_facs_presence.npy'), y_val)}")
+    logger.info(f"Accuracy of facs presence classifier on test set: {facs_presence_pipeline.score(np.load('test_facs_presence.npy'), y_test)}")
+    del facs_presence_pipeline
+
+
 
     if os.path.exists('pdm_pipeline.joblib') and args.use_existing:
         pdm_pipeline = joblib.load('pdm_pipeline.joblib')
