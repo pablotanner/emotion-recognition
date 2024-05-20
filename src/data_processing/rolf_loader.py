@@ -253,13 +253,14 @@ class RolfLoader:
         
         """
 
-
         self.features[dataset_type]['facs_intensity'].append(np.load(f"{features_path}_facs_intensity.npy"))
         self.features[dataset_type]['facs_presence'].append(np.load(f"{features_path}_facs_presence.npy"))
         #data['landmark_distances'] = np.load(f"{features_path}_landmark_distances.npy")
         self.features[dataset_type]['rigid_face_shape'].append(np.load(f"{features_path}_rigid_face_shape.npy"))
-        self.features[dataset_type]['nonrigid_face_shape'].append(np.load(f"{features_path}_nonrigid_face_shape.npy"))
+        if 'nonrigid_face_shape' not in self._excluded_features:
+            self.features[dataset_type]['nonrigid_face_shape'].append(np.load(f"{features_path}_nonrigid_face_shape.npy"))
 
-        pose = np.load(f"{features_path}_pose.npy")
-        landmarks_3d = np.load(f"{features_path}_landmarks_3d.npy")
-        self.features[dataset_type]['landmarks_3d'].append(standardize_3d_landmarks(landmarks_3d, pose))
+        if 'landmarks_3d' not in self._excluded_features:
+            pose = np.load(f"{features_path}_pose.npy")
+            landmarks_3d = np.load(f"{features_path}_landmarks_3d.npy")
+            self.features[dataset_type]['landmarks_3d'].append(standardize_3d_landmarks(landmarks_3d, pose))
