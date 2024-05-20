@@ -204,18 +204,6 @@ if __name__ == "__main__":
         y_val = np.load('y_val.npy')
         y_test = np.load('y_test.npy')
 
-    data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
-                             args.test_features_dir, args.main_id_dir,
-                             excluded_features=['landmarks_3d', 'nonrigid_face_shape', 'hog', 'landmarks'])
-    feature_splits_dict, emotions_splits_dict = data_loader.get_data()
-
-    for split in ['train', 'val', 'test']:
-        np.save(f'{split}_facs_intensity.npy', feature_splits_dict[split]['facs_intensity'])
-        np.save(f'{split}_facs_presence.npy', feature_splits_dict[split]['facs_presence'])
-
-    del feature_splits_dict
-    del emotions_splits_dict
-    del data_loader
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
@@ -259,6 +247,18 @@ if __name__ == "__main__":
         pipeline.fit(X, y)
 
         logger.info("RF Model Fitted")
+
+        return pipeline
+
+    def log_reg_model(X, y):
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('log_reg', LogisticRegression(C=1, solver='qn'))
+        ])
+
+        pipeline.fit(X, y)
+
+        logger.info("Logistic Regression Model Fitted")
 
         return pipeline
 
@@ -331,15 +331,13 @@ if __name__ == "__main__":
     logger.info(f"Accuracy of facs intensity classifier on test set: {facs_intensity_pipeline.score(np.load('test_facs_intensity.npy'), y_test)}")
     del facs_intensity_pipeline
 
-    facs_presence_pipeline = rf_model(np.load('train_facs_presence.npy'), y_train)
+    facs_presence_pipeline = log_reg_model(np.load('train_facs_presence.npy'), y_train)
     probabilities_val["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('val_facs_presence.npy'))
     probabilities_test["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('test_facs_presence.npy'))
     # Log individual accuracy
     logger.info(f"Accuracy of facs presence classifier on val set: {facs_presence_pipeline.score(np.load('val_facs_presence.npy'), y_val)}")
     logger.info(f"Accuracy of facs presence classifier on test set: {facs_presence_pipeline.score(np.load('test_facs_presence.npy'), y_test)}")
     del facs_presence_pipeline
-
-
 
     if os.path.exists('pdm_pipeline.joblib') and args.use_existing:
         pdm_pipeline = joblib.load('pdm_pipeline.joblib')
