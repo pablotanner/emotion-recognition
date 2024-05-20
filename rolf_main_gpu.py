@@ -120,8 +120,6 @@ if __name__ == "__main__":
             np.save(f'{split}_spatial_features.npy', split_features_dict[split]['landmarks_3d'])
             del split_features_dict[split]['landmarks_3d']
             np.save(f'{split}_facs_features.npy', np.hstack([split_features_dict[split]['facs_intensity'], split_features_dict[split]['facs_presence']]))
-            np.save(f'{split}_facs_intensity.npy', split_features_dict[split]['facs_intensity'])
-            np.save(f'{split}_facs_presence.npy', split_features_dict[split]['facs_presence'])
             del split_features_dict[split]['facs_intensity']
             del split_features_dict[split]['facs_presence']
             np.save(f'{split}_pdm_features.npy', split_features_dict[split]['nonrigid_face_shape'])
@@ -205,6 +203,19 @@ if __name__ == "__main__":
         y_train = np.load('y_train.npy')
         y_val = np.load('y_val.npy')
         y_test = np.load('y_test.npy')
+
+    data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
+                             args.test_features_dir, args.main_id_dir,
+                             excluded_features=['landmarks_3d', 'nonrigid_face_shape', 'hog', 'landmarks'])
+    feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+
+    for split in ['train', 'val', 'test']:
+        np.save(f'{split}_facs_intensity.npy', feature_splits_dict[split]['facs_intensity'])
+        np.save(f'{split}_facs_presence.npy', feature_splits_dict[split]['facs_presence'])
+
+    del feature_splits_dict
+    del emotions_splits_dict
+    del data_loader
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
