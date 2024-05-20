@@ -323,7 +323,7 @@ if __name__ == "__main__":
     del facs_pipeline
 
 
-    facs_intensity_pipeline = rf_model(np.load('train_facs_intensity.npy'), y_train)
+    facs_intensity_pipeline = facial_unit_model(np.load('train_facs_intensity.npy'), y_train)
     probabilities_val["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('val_facs_intensity.npy'))
     probabilities_test["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('test_facs_intensity.npy'))
     # Log individual accuracy
