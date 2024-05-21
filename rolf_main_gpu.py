@@ -18,9 +18,10 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, balanced_accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.svm import SVC
+from sklearn.svm import SVR
 from sklearn.utils import compute_class_weight
 from src.data_processing.rolf_loader import RolfLoader
 import joblib
@@ -258,15 +259,15 @@ if __name__ == "__main__":
 
         return pipeline
 
-    def svm_rbf_model(X, y):
+    def knn_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True, class_weight=class_weights))
+            ('knn', KNeighborsClassifier(n_neighbors=5))
         ])
 
         pipeline.fit(X, y)
 
-        logger.info("SVM RBF Model Fitted")
+        logger.info("KNN Model Fitted")
 
         return pipeline
 
@@ -383,7 +384,7 @@ if __name__ == "__main__":
     logger.info(f"Balanced Accuracy of facs intensity classifier on test set: {test_bal_acc}")
     del facs_intensity_pipeline
 
-    facs_presence_pipeline = svm_rbf_model(np.load('train_facs_presence.npy'), y_train)
+    facs_presence_pipeline = knn_model(np.load('train_facs_presence.npy'), y_train)
     probabilities_val["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('val_facs_presence.npy'))
     probabilities_test["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('test_facs_presence.npy'))
     # Log bal accs
