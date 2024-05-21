@@ -9,6 +9,9 @@ import torch.optim as optim
 #import cupy as cp
 from cuml.svm import LinearSVC
 from cuml.preprocessing import StandardScaler
+from keras import Sequential
+from keras.src.layers import Dense, Dropout
+from keras.src.utils import to_categorical
 #from cuml.ensemble import RandomForestClassifier
 #from cuml.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
@@ -22,7 +25,6 @@ from src.data_processing.rolf_loader import RolfLoader
 import joblib
 from datetime import datetime
 
-
 parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')
 parser.add_argument('--test_annotations_dir', type=str, help='Path to /annotations folder (test)', default='/local/scratch/datasets/AffectNet/val_set/annotations')
@@ -34,6 +36,18 @@ parser.add_argument('--dummy', action='store_true', help='Use dummy data')
 parser.add_argument('--use_existing',action='store_true', help='Use saved data/models')
 parser.add_argument('--skip_hog', action='store_true', help='Skip HOG model training')
 args = parser.parse_args()
+
+def create_neural_network(input_dim):
+    model = Sequential([
+        Dense(128, activation='relu', input_shape=(input_dim,)),
+        Dropout(0.5),
+        Dense(64, activation='relu'),
+        Dropout(0.5),
+        Dense(8, activation='softmax') # 8 classes
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.predict_proba = model.predict
+    return model
 
 class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, input_size, hidden_size, num_classes, num_epochs=10, batch_size=32, learning_rate=0.001,
@@ -120,6 +134,8 @@ if __name__ == "__main__":
             np.save(f'{split}_spatial_features.npy', split_features_dict[split]['landmarks_3d'])
             del split_features_dict[split]['landmarks_3d']
             np.save(f'{split}_facs_features.npy', np.hstack([split_features_dict[split]['facs_intensity'], split_features_dict[split]['facs_presence']]))
+            np.save(f'{split}_facs_intensity.npy', split_features_dict[split]['facs_intensity'])
+            np.save(f'{split}_facs_presence.npy', split_features_dict[split]['facs_presence'])
             del split_features_dict[split]['facs_intensity']
             del split_features_dict[split]['facs_presence']
             np.save(f'{split}_pdm_features.npy', split_features_dict[split]['nonrigid_face_shape'])
@@ -253,7 +269,7 @@ if __name__ == "__main__":
     def log_reg_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(C=1, solver='qn'))
+            ('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
@@ -266,8 +282,6 @@ if __name__ == "__main__":
     def pdm_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            #('log_reg', LogisticRegression(C=1, solver='qn', class_weight=class_weights))
-            #('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
             ('mlp', PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=200, num_classes=len(np.unique(y)), num_epochs=200, batch_size=32, learning_rate=0.001, class_weight=class_weights)
              )])
 
@@ -276,6 +290,22 @@ if __name__ == "__main__":
         logger.info("PDM Model Fitted")
 
         return pipeline
+
+    def nn_model(X, y, use_scaler=False):
+        clf = create_neural_network(X.shape[1])
+
+        if use_scaler:
+            pipeline = Pipeline([
+                ('scaler', StandardScaler()),
+                ('nn', clf)
+            ])
+        else:
+            pipeline = clf
+
+        y_train_categorical = to_categorical(y)
+        pipeline.fit(X, y_train_categorical, epochs=100, batch_size=32, verbose=0)
+        return pipeline
+
 
 
     def hog_model(X, y):
@@ -323,7 +353,7 @@ if __name__ == "__main__":
     del facs_pipeline
 
 
-    facs_intensity_pipeline = facial_unit_model(np.load('train_facs_intensity.npy'), y_train)
+    facs_intensity_pipeline = nn_model(np.load('train_facs_intensity.npy'), y_train, use_scaler=True)
     probabilities_val["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('val_facs_intensity.npy'))
     probabilities_test["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('test_facs_intensity.npy'))
     # Log individual accuracy
@@ -331,7 +361,7 @@ if __name__ == "__main__":
     logger.info(f"Accuracy of facs intensity classifier on test set: {facs_intensity_pipeline.score(np.load('test_facs_intensity.npy'), y_test)}")
     del facs_intensity_pipeline
 
-    facs_presence_pipeline = log_reg_model(np.load('train_facs_presence.npy'), y_train)
+    facs_presence_pipeline = nn_model(np.load('train_facs_presence.npy'), y_train, use_scaler=True)
     probabilities_val["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('val_facs_presence.npy'))
     probabilities_test["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('test_facs_presence.npy'))
     # Log individual accuracy
@@ -355,22 +385,23 @@ if __name__ == "__main__":
         if os.path.exists('hog_pipeline.joblib') and args.use_existing:
             hog_pipeline = joblib.load('hog_pipeline.joblib')
         else:
-            # Perform dimensionality reduction with PCA and save
-            X_train_hog = np.load('train_hog_features.npy')
-            logger.info("Fitting PCA for HOG training features...")
-            pca = PCA(n_components=500)
-            pca.fit(X_train_hog)
-            # Save transformed features
-            np.save('pca_train_hog_features.npy', pca.transform(X_train_hog))
-            del X_train_hog
-            # Transform val and test features
-            X_val_hog = np.load('val_hog_features.npy')
-            X_test_hog = np.load('test_hog_features.npy')
-            logger.info("Transforming HOG val and test features...")
-            np.save('pca_val_hog_features.npy', pca.transform(X_val_hog))
-            np.save('pca_test_hog_features.npy', pca.transform(X_test_hog))
-            del X_val_hog
-            del X_test_hog
+            if not os.path.exists('pca_train_hog_features.npy') or not os.path.exists('pca_val_hog_features.npy') or not os.path.exists('pca_test_hog_features.npy'):
+                # Perform dimensionality reduction with PCA and save
+                X_train_hog = np.load('train_hog_features.npy')
+                logger.info("Fitting PCA for HOG training features...")
+                pca = PCA(n_components=500)
+                pca.fit(X_train_hog)
+                # Save transformed features
+                np.save('pca_train_hog_features.npy', pca.transform(X_train_hog))
+                del X_train_hog
+                # Transform val and test features
+                X_val_hog = np.load('val_hog_features.npy')
+                X_test_hog = np.load('test_hog_features.npy')
+                logger.info("Transforming HOG val and test features...")
+                np.save('pca_val_hog_features.npy', pca.transform(X_val_hog))
+                np.save('pca_test_hog_features.npy', pca.transform(X_test_hog))
+                del X_val_hog
+                del X_test_hog
             logger.info("Fitting HOG model...")
             hog_pipeline = hog_model(np.load('pca_train_hog_features.npy'), y_train)
             joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
@@ -382,11 +413,7 @@ if __name__ == "__main__":
         del hog_pipeline
 
     logger.info("Starting Stacking...")
-    if os.path.exists('stacking_pipeline.joblib') and args.use_existing:
-        stacking_pipe = joblib.load('stacking_pipeline.joblib')
-    else:
-        stacking_pipe = evaluate_stacking(probabilities_val, y_val)
-        joblib.dump(stacking_pipe, 'stacking_pipeline.joblib')
+    stacking_pipe = evaluate_stacking(probabilities_val, y_val)
 
     logger.info("Classification Report (Val):")
     logger.info(classification_report(y_val, stacking_pipe.predict(np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1))))
