@@ -303,7 +303,7 @@ if __name__ == "__main__":
             pipeline = clf
 
         y_train_categorical = to_categorical(y)
-        pipeline.fit(X, y_train_categorical, epochs=100, batch_size=32, verbose=0)
+        pipeline.fit(X, y_train_categorical, nn__epochs=100, nn__batch_size=32, nn__verbose=0)
         return pipeline
 
 
