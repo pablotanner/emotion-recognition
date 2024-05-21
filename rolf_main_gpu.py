@@ -12,10 +12,9 @@ from cuml.preprocessing import StandardScaler
 from keras import Sequential
 from keras.src.layers import Dense, Dropout
 from keras.src.utils import to_categorical
-#from cuml.ensemble import RandomForestClassifier
+from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression as CUMLLogisticRegression
 from sklearn.decomposition import PCA
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, balanced_accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
