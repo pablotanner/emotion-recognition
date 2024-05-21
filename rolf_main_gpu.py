@@ -298,7 +298,8 @@ if __name__ == "__main__":
     def hog_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
+            #('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
+            ('mlp', PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=300, num_classes=len(np.unique(y)), num_epochs=200, batch_size=32, learning_rate=0.001, class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
@@ -317,7 +318,7 @@ if __name__ == "__main__":
     if os.path.exists('spatial_pipeline.joblib') and args.use_existing:
         spatial_pipeline = joblib.load('spatial_pipeline.joblib')
     else:
-        spatial_pipeline = nn_model(np.load('train_spatial_features.npy'), y_train)
+        spatial_pipeline = spatial_relationship_model(np.load('train_spatial_features.npy'), y_train)
         joblib.dump(spatial_pipeline, 'spatial_pipeline.joblib')
     probabilities_val["spatial"] = spatial_pipeline.predict_proba(np.load('val_spatial_features.npy'))
     probabilities_test["spatial"] = spatial_pipeline.predict_proba(np.load('test_spatial_features.npy'))
