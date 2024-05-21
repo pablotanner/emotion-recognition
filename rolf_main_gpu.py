@@ -247,9 +247,8 @@ if __name__ == "__main__":
     def facial_unit_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            #('rf', RandomForestClassifier(n_estimators=200, max_depth=10, min_samples_split=4,class_weight=class_weights))
             ('mlp',
-             PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=200, num_classes=len(np.unique(y)), num_epochs=200,
+             PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=300, num_classes=len(np.unique(y)), num_epochs=200,
                                   batch_size=32, learning_rate=0.001, class_weight=class_weights)
              )])
 
@@ -349,7 +348,6 @@ if __name__ == "__main__":
     # Clear up memory
     del spatial_pipeline
 
-    """
     # Remove the combined facs pipeline, to see if it's better to separate them
     if os.path.exists('facs_pipeline.joblib') and args.use_existing:
         facs_pipeline = joblib.load('facs_pipeline.joblib')
@@ -358,12 +356,12 @@ if __name__ == "__main__":
         joblib.dump(facs_pipeline, 'facs_pipeline.joblib')
     probabilities_val["facs"] = facs_pipeline.predict_proba(np.load('val_facs_features.npy'))
     probabilities_test["facs"] = facs_pipeline.predict_proba(np.load('test_facs_features.npy'))
-    # Log individual accuracy
-    logger.info(f"Accuracy of facial unit classifier on val set: {facs_pipeline.score(np.load('val_facs_features.npy'), y_val)}")
-    #logger.info(f"Accuracy of facial unit classifier on test set: {facs_pipeline.score(np.load('test_facs_features.npy'), y_test)}")
+    # Log bal acc
+    val_bal_acc = balanced_accuracy_score(y_val, facs_pipeline.predict(np.load('val_facs_features.npy')))
+    logger.info(f"Balanced Accuracy of facial unit classifier on val set: {val_bal_acc}")
     del facs_pipeline
-    """
 
+    """
     facs_intensity_pipeline = facial_unit_model(np.load('train_facs_intensity.npy'), y_train)
     probabilities_val["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('val_facs_intensity.npy'))
     probabilities_test["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('test_facs_intensity.npy'))
@@ -382,8 +380,10 @@ if __name__ == "__main__":
     #test_bal_acc = balanced_accuracy_score(y_test, facs_presence_pipeline.predict(np.load('test_facs_presence.npy')))
     logger.info(f"Balanced Accuracy of facs presence classifier on val set: {val_bal_acc}")
     #logger.info(f"Balanced Accuracy of facs presence classifier on test set: {test_bal_acc}")
+    del facs_presence_pipeline    
+    
+    """
 
-    del facs_presence_pipeline
 
     if os.path.exists('pdm_pipeline.joblib') and args.use_existing:
         pdm_pipeline = joblib.load('pdm_pipeline.joblib')
