@@ -12,7 +12,7 @@ class NeuralNetwork(nn.Module):
         self.dropout2 = nn.Dropout(0.5)
         self.fc3 = nn.Linear(64, 8)
         self.optimizer = None
-        
+
         if isinstance(class_weight, dict):
             class_weight = torch.tensor([class_weight[i] for i in range(len(class_weight))], dtype=torch.float32)
 

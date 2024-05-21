@@ -317,7 +317,7 @@ if __name__ == "__main__":
     if os.path.exists('spatial_pipeline.joblib') and args.use_existing:
         spatial_pipeline = joblib.load('spatial_pipeline.joblib')
     else:
-        spatial_pipeline = spatial_relationship_model(np.load('train_spatial_features.npy'), y_train)
+        spatial_pipeline = nn_model(np.load('train_spatial_features.npy'), y_train)
         joblib.dump(spatial_pipeline, 'spatial_pipeline.joblib')
     probabilities_val["spatial"] = spatial_pipeline.predict_proba(np.load('val_spatial_features.npy'))
     probabilities_test["spatial"] = spatial_pipeline.predict_proba(np.load('test_spatial_features.npy'))
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     if os.path.exists('facs_pipeline.joblib') and args.use_existing:
         facs_pipeline = joblib.load('facs_pipeline.joblib')
     else:
-        facs_pipeline = nn_model(np.load('train_facs_features.npy'), y_train)
+        facs_pipeline = facial_unit_model(np.load('train_facs_features.npy'), y_train)
         joblib.dump(facs_pipeline, 'facs_pipeline.joblib')
     probabilities_val["facs"] = facs_pipeline.predict_proba(np.load('val_facs_features.npy'))
     probabilities_test["facs"] = facs_pipeline.predict_proba(np.load('test_facs_features.npy'))
@@ -369,7 +369,7 @@ if __name__ == "__main__":
     if os.path.exists('pdm_pipeline.joblib') and args.use_existing:
         pdm_pipeline = joblib.load('pdm_pipeline.joblib')
     else:
-        pdm_pipeline = nn_model(np.load('train_pdm_features.npy'), y_train)
+        pdm_pipeline = pdm_model(np.load('train_pdm_features.npy'), y_train)
         joblib.dump(pdm_pipeline, 'pdm_pipeline.joblib')
     probabilities_val["pdm"] = pdm_pipeline.predict_proba(np.load('val_pdm_features.npy'))
     probabilities_test["pdm"] = pdm_pipeline.predict_proba(np.load('test_pdm_features.npy'))
