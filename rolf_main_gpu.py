@@ -17,9 +17,10 @@ from keras.src.utils import to_categorical
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.svm import SVC
 from sklearn.utils import compute_class_weight
 from src.data_processing.rolf_loader import RolfLoader
 import joblib
@@ -202,6 +203,9 @@ if __name__ == "__main__":
 
         logger.info(f"Accuracy of stacking classifier (Validation Set): {stacking_accuracy}")
 
+        balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack))
+        logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
+
         # Return the stacking pipeline
         return stacking_pipeline
 
@@ -254,6 +258,18 @@ if __name__ == "__main__":
 
         return pipeline
 
+    def svm_rbf_model(X, y):
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True, class_weight=class_weights))
+        ])
+
+        pipeline.fit(X, y)
+
+        logger.info("SVM RBF Model Fitted")
+
+        return pipeline
+
     def rf_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
@@ -291,6 +307,7 @@ if __name__ == "__main__":
 
         return pipeline
 
+    # Too slow currently
     def nn_model(X, y, use_scaler=False):
         clf = create_neural_network(X.shape[1])
 
@@ -305,7 +322,6 @@ if __name__ == "__main__":
         y_train_categorical = to_categorical(y)
         pipeline.fit(X, y_train_categorical, nn__epochs=100, nn__batch_size=32, nn__verbose=0)
         return pipeline
-
 
 
     def hog_model(X, y):
@@ -334,12 +350,16 @@ if __name__ == "__main__":
         joblib.dump(spatial_pipeline, 'spatial_pipeline.joblib')
     probabilities_val["spatial"] = spatial_pipeline.predict_proba(np.load('val_spatial_features.npy'))
     probabilities_test["spatial"] = spatial_pipeline.predict_proba(np.load('test_spatial_features.npy'))
-    # Log individual accuracy
-    logger.info(f"Accuracy of spatial relationship classifier on val set: {spatial_pipeline.score(np.load('val_spatial_features.npy'), y_val)}")
-    logger.info(f"Accuracy of spatial relationship classifier on test set: {spatial_pipeline.score(np.load('test_spatial_features.npy'), y_test)}")
+    # Log bal accs
+    val_bal_acc = balanced_accuracy_score(y_val, spatial_pipeline.predict(np.load('val_spatial_features.npy')))
+    test_bal_acc = balanced_accuracy_score(y_test, spatial_pipeline.predict(np.load('test_spatial_features.npy')))
+    logger.info(f"Balanced Accuracy of spatial relationship classifier on val set: {val_bal_acc}")
+    logger.info(f"Balanced Accuracy of spatial relationship classifier on test set: {test_bal_acc}")
     # Clear up memory
     del spatial_pipeline
 
+    """
+    # Remove the combined facs pipeline, to see if it's better to separate them
     if os.path.exists('facs_pipeline.joblib') and args.use_existing:
         facs_pipeline = joblib.load('facs_pipeline.joblib')
     else:
@@ -351,22 +371,27 @@ if __name__ == "__main__":
     logger.info(f"Accuracy of facial unit classifier on val set: {facs_pipeline.score(np.load('val_facs_features.npy'), y_val)}")
     logger.info(f"Accuracy of facial unit classifier on test set: {facs_pipeline.score(np.load('test_facs_features.npy'), y_test)}")
     del facs_pipeline
+    """
 
-
-    facs_intensity_pipeline = nn_model(np.load('train_facs_intensity.npy'), y_train, use_scaler=True)
+    facs_intensity_pipeline = facial_unit_model(np.load('train_facs_intensity.npy'), y_train)
     probabilities_val["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('val_facs_intensity.npy'))
     probabilities_test["facs_intensity"] = facs_intensity_pipeline.predict_proba(np.load('test_facs_intensity.npy'))
-    # Log individual accuracy
-    logger.info(f"Accuracy of facs intensity classifier on val set: {facs_intensity_pipeline.score(np.load('val_facs_intensity.npy'), y_val)}")
-    logger.info(f"Accuracy of facs intensity classifier on test set: {facs_intensity_pipeline.score(np.load('test_facs_intensity.npy'), y_test)}")
+    # Log balanced accuracy
+    val_bal_acc = balanced_accuracy_score(y_val, facs_intensity_pipeline.predict(np.load('val_facs_intensity.npy')))
+    test_bal_acc = balanced_accuracy_score(y_test, facs_intensity_pipeline.predict(np.load('test_facs_intensity.npy')))
+    logger.info(f"Balanced Accuracy of facs intensity classifier on val set: {val_bal_acc}")
+    logger.info(f"Balanced Accuracy of facs intensity classifier on test set: {test_bal_acc}")
     del facs_intensity_pipeline
 
-    facs_presence_pipeline = nn_model(np.load('train_facs_presence.npy'), y_train, use_scaler=True)
+    facs_presence_pipeline = svm_rbf_model(np.load('train_facs_presence.npy'), y_train)
     probabilities_val["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('val_facs_presence.npy'))
     probabilities_test["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('test_facs_presence.npy'))
-    # Log individual accuracy
-    logger.info(f"Accuracy of facs presence classifier on val set: {facs_presence_pipeline.score(np.load('val_facs_presence.npy'), y_val)}")
-    logger.info(f"Accuracy of facs presence classifier on test set: {facs_presence_pipeline.score(np.load('test_facs_presence.npy'), y_test)}")
+    # Log bal accs
+    val_bal_acc = balanced_accuracy_score(y_val, facs_presence_pipeline.predict(np.load('val_facs_presence.npy')))
+    test_bal_acc = balanced_accuracy_score(y_test, facs_presence_pipeline.predict(np.load('test_facs_presence.npy')))
+    logger.info(f"Balanced Accuracy of facs presence classifier on val set: {val_bal_acc}")
+    logger.info(f"Balanced Accuracy of facs presence classifier on test set: {test_bal_acc}")
+
     del facs_presence_pipeline
 
     if os.path.exists('pdm_pipeline.joblib') and args.use_existing:
@@ -376,9 +401,11 @@ if __name__ == "__main__":
         joblib.dump(pdm_pipeline, 'pdm_pipeline.joblib')
     probabilities_val["pdm"] = pdm_pipeline.predict_proba(np.load('val_pdm_features.npy'))
     probabilities_test["pdm"] = pdm_pipeline.predict_proba(np.load('test_pdm_features.npy'))
-    # Log
-    logger.info(f"Accuracy of pdm classifier on val set: {pdm_pipeline.score(np.load('val_pdm_features.npy'), y_val)}")
-    logger.info(f"Accuracy of pdm classifier on test set: {pdm_pipeline.score(np.load('test_pdm_features.npy'), y_test)}")
+    # Log bal accs
+    val_bal_acc = balanced_accuracy_score(y_val, pdm_pipeline.predict(np.load('val_pdm_features.npy')))
+    test_bal_acc = balanced_accuracy_score(y_test, pdm_pipeline.predict(np.load('test_pdm_features.npy')))
+    logger.info(f"Balanced Accuracy of pdm classifier on val set: {val_bal_acc}")
+    logger.info(f"Balanced Accuracy of pdm classifier on test set: {test_bal_acc}")
     del pdm_pipeline
 
     if not args.skip_hog:
@@ -407,16 +434,18 @@ if __name__ == "__main__":
             joblib.dump(hog_pipeline, 'hog_pipeline.joblib')
         probabilities_val["hog"] = hog_pipeline.predict_proba(np.load('pca_val_hog_features.npy'))
         probabilities_test["hog"] = hog_pipeline.predict_proba(np.load('pca_test_hog_features.npy'))
-        # Log
-        logger.info(f"Accuracy of hog classifier on val set: {hog_pipeline.score(np.load('pca_val_hog_features.npy'), y_val)}")
-        logger.info(f"Accuracy of hog classifier on test set: {hog_pipeline.score(np.load('pca_test_hog_features.npy'), y_test)}")
+        # Log bal accs
+        val_bal_acc = balanced_accuracy_score(y_val, hog_pipeline.predict(np.load('pca_val_hog_features.npy')))
+        test_bal_acc = balanced_accuracy_score(y_test, hog_pipeline.predict(np.load('pca_test_hog_features.npy')))
+        logger.info(f"Balanced Accuracy of HOG classifier on val set: {val_bal_acc}")
+        logger.info(f"Balanced Accuracy of HOG classifier on test set: {test_bal_acc}")
         del hog_pipeline
 
     logger.info("Starting Stacking...")
     stacking_pipe = evaluate_stacking(probabilities_val, y_val)
 
     logger.info("Classification Report (Val):")
-    logger.info(classification_report(y_val, stacking_pipe.predict(np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1))))
+    logger.info("\n" + classification_report(y_val, stacking_pipe.predict(np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1))))
 
     def evaluate_test(stacking_pipe, y_test):
         logger.info("Evaluating Test Set...")
@@ -425,9 +454,10 @@ if __name__ == "__main__":
         stacking_accuracy = stacking_pipe.score(X_test_stack, y_test)
 
         logger.info(f"Accuracy of stacking classifier (Test Set): {stacking_accuracy}")
+        logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {balanced_accuracy_score(y_test, stacking_pipe.predict(X_test_stack))}")
 
         logger.info("Classification Report (Test):")
-        logger.info(classification_report(y_test, stacking_pipe.predict(X_test_stack)))
+        logger.info("\n" + classification_report(y_test, stacking_pipe.predict(X_test_stack)))
 
     evaluate_test(stacking_pipe, y_test)
 
