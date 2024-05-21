@@ -12,9 +12,10 @@ from cuml.preprocessing import StandardScaler
 from keras import Sequential
 from keras.src.layers import Dense, Dropout
 from keras.src.utils import to_categorical
-from cuml.ensemble import RandomForestClassifier
+#from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression as CUMLLogisticRegression
 from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, balanced_accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
@@ -263,7 +264,7 @@ if __name__ == "__main__":
     def rf_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('rf', RandomForestClassifier(n_estimators=300, split_criterion=1, max_depth=20, min_samples_split=5, min_samples_leaf=2, class_weight=class_weights))
+            ('rf', RandomForestClassifier(n_estimators=300, criterion='entropy', max_depth=20, min_samples_split=5, min_samples_leaf=2, class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
