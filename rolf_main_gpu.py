@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
         stacking_pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(C=0.1, solver='liblinear', class_weight='balanced'))
+            ('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight='balanced'))
         ])
 
         stacking_pipeline.fit(X_stack, y_val)
