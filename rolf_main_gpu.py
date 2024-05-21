@@ -264,7 +264,7 @@ if __name__ == "__main__":
     def rf_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('rf', RandomForestClassifier(n_estimators=200, max_depth=10, min_samples_split=4,class_weight=class_weights))
+            ('rf', RandomForestClassifier(n_estimators=300, criterion=1, max_depth=20, min_samples_split=5, min_samples_leaf=2, class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     def pdm_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('mlp', PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=200, num_classes=len(np.unique(y)), num_epochs=200, batch_size=32, learning_rate=0.001, class_weight=class_weights)
+            ('mlp', PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=300, num_classes=len(np.unique(y)), num_epochs=200, batch_size=32, learning_rate=0.01, class_weight=class_weights)
              )])
 
         pipeline.fit(X, y)
@@ -374,7 +374,7 @@ if __name__ == "__main__":
     #logger.info(f"Balanced Accuracy of facs intensity classifier on test set: {test_bal_acc}")
     del facs_intensity_pipeline
 
-    facs_presence_pipeline = log_reg_model(np.load('train_facs_presence.npy'), y_train)
+    facs_presence_pipeline = rf_model(np.load('train_facs_presence.npy'), y_train)
     probabilities_val["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('val_facs_presence.npy'))
     probabilities_test["facs_presence"] = facs_presence_pipeline.predict_proba(np.load('test_facs_presence.npy'))
     # Log bal accs
