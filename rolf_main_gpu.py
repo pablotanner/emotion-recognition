@@ -263,7 +263,7 @@ if __name__ == "__main__":
     def rf_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('rf', RandomForestClassifier(n_estimators=300, criterion=1, max_depth=20, min_samples_split=5, min_samples_leaf=2, class_weight=class_weights))
+            ('rf', RandomForestClassifier(n_estimators=300, split_criterion=1, max_depth=20, min_samples_split=5, min_samples_leaf=2, class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
