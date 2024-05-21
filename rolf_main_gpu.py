@@ -9,23 +9,20 @@ import torch.optim as optim
 #import cupy as cp
 from cuml.svm import LinearSVC
 from cuml.preprocessing import StandardScaler
-from keras import Sequential
-from keras.src.layers import Dense, Dropout
-from keras.src.utils import to_categorical
 #from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression as CUMLLogisticRegression
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, balanced_accuracy_score
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.svm import SVR
 from sklearn.utils import compute_class_weight
 from src.data_processing.rolf_loader import RolfLoader
 import joblib
 from datetime import datetime
+
+from src.model_training.torch_neural_network import NeuralNetwork
 
 parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')
@@ -39,17 +36,6 @@ parser.add_argument('--use_existing',action='store_true', help='Use saved data/m
 parser.add_argument('--skip_hog', action='store_true', help='Skip HOG model training')
 args = parser.parse_args()
 
-def create_neural_network(input_dim):
-    model = Sequential([
-        Dense(128, activation='relu', input_shape=(input_dim,)),
-        Dropout(0.5),
-        Dense(64, activation='relu'),
-        Dropout(0.5),
-        Dense(8, activation='softmax') # 8 classes
-    ])
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    model.predict_proba = model.predict
-    return model
 
 class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, input_size, hidden_size, num_classes, num_epochs=10, batch_size=32, learning_rate=0.001,
@@ -111,15 +97,20 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
         return torch.softmax(outputs, dim=1).cpu().numpy()
 
 if __name__ == "__main__":
+    experiment_name = input("Enter experiment name: ")
     # Get ID for unique log file
     now = datetime.now()
-    current_time = now.strftime("%m-%d_%H%M")
+    date = now.strftime("%m-%d")
+
+    # If date directory doesn't exist, create it
+    if not os.path.exists(f'logs/{date}'):
+        os.makedirs(f'logs/{date}')
 
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         handlers=[
-                            logging.FileHandler(f'logs/{current_time}.log'),
+                            logging.FileHandler(f'logs/{date}/{experiment_name}.log'),
                             logging.StreamHandler()
                         ])
 
@@ -234,7 +225,7 @@ if __name__ == "__main__":
         # Linear scores worse individually, but better in stacking
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights)) #  kernel='linear', gamma='scale'
+            ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
         ])
 
         pipeline.fit(X, y)
@@ -258,7 +249,14 @@ if __name__ == "__main__":
 
         return pipeline
 
+    def nn_model(X, y):
+        model = NeuralNetwork(input_dim=X.shape[1], class_weight=class_weights)
+        model.compile(optim.Adam(model.parameters(), lr=0.001))
+        model.fit(X, y)
 
+        logger.info("NN Model Fitted")
+
+        return model
 
     def rf_model(X, y):
         pipeline = Pipeline([
@@ -296,23 +294,6 @@ if __name__ == "__main__":
         logger.info("PDM Model Fitted")
 
         return pipeline
-
-    # Too slow currently
-    def nn_model(X, y, use_scaler=False):
-        clf = create_neural_network(X.shape[1])
-
-        if use_scaler:
-            pipeline = Pipeline([
-                ('scaler', StandardScaler()),
-                ('nn', clf)
-            ])
-        else:
-            pipeline = clf
-
-        y_train_categorical = to_categorical(y)
-        pipeline.fit(X, y_train_categorical, nn__epochs=100, nn__batch_size=32, nn__verbose=0)
-        return pipeline
-
 
     def hog_model(X, y):
         pipeline = Pipeline([
