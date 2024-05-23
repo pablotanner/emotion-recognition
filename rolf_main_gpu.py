@@ -14,6 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, balanced_accuracy_score
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils import compute_class_weight
 from src.data_processing.rolf_loader import RolfLoader
 import joblib
@@ -73,6 +74,11 @@ if __name__ == "__main__":
             del split_features_dict[split]['nonrigid_face_shape']
             np.save(f'{split}_hog_features.npy', split_features_dict[split]['hog'])
             del split_features_dict[split]['hog']
+
+            np.save(f'{split}_sface.npy', split_features_dict[split]['sface'])
+            np.save(f'{split}_facenet.npy', split_features_dict[split]['facenet'])
+            del split_features_dict[split]['sface']
+
             # Clear the dictionary to free up memory
             del split_features_dict[split]
             logger.info(f"Saved {split} features to disk")
@@ -217,6 +223,9 @@ if __name__ == "__main__":
 
         return pipeline
 
+    def embedded_model(X, y):
+
+
 
     def pdm_model(X, y):
         pipeline = Pipeline([
@@ -348,6 +357,56 @@ if __name__ == "__main__":
         logger.info(f"Balanced Accuracy of HOG classifier on val set: {val_bal_acc}")
         #logger.info(f"Balanced Accuracy of HOG classifier on test set: {test_bal_acc}")
         del hog_pipeline
+
+    if not os.path.exists('train_embedded_features.npy') or not os.path.exists('val_embedded_features.npy') or not os.path.exists('test_embedded_features.npy') or not args.use_existing:
+        scaler = MinMaxScaler()
+        X_train_fit_sface = scaler.fit_transform(np.load('train_sface.npy'))
+        X_val_fit_sface = scaler.transform(np.load('val_sface.npy'))
+        X_test_fit_sface = scaler.transform(np.load('test_sface.npy'))
+
+        X_train_fit_facenet = scaler.fit_transform(np.load(f'{args.data_output_dir}/train_facenet.npy'))
+        X_val_fit_facenet = scaler.transform(np.load(f'{args.data_output_dir}/val_facenet.npy'))
+        X_test_fit_facenet = scaler.transform(np.load(f'{args.data_output_dir}/test_facenet.npy'))
+
+        logger.info("Concatenating SFace and Facenet features...")
+        X_train = np.concatenate([X_train_fit_sface, X_train_fit_facenet], axis=1)
+        X_val = np.concatenate([X_val_fit_sface, X_val_fit_facenet], axis=1)
+        X_test = np.concatenate([X_test_fit_sface, X_test_fit_facenet], axis=1)
+
+        logger.info("Fitting PCA for embedded training features...")
+        pca = PCA(n_components=0.99)
+        X_train = pca.fit_transform(X_train)
+        X_val = pca.transform(X_val)
+        X_test = pca.transform(X_test)
+
+        np.save('train_embedded_features.npy', X_train)
+        np.save('val_embedded_features.npy', X_val)
+        np.save('test_embedded_features.npy', X_test)
+
+        del X_train_fit_sface
+        del X_val_fit_sface
+        del X_test_fit_sface
+        del X_train_fit_facenet
+        del X_val_fit_facenet
+        del X_test_fit_facenet
+        del X_train
+        del X_val
+        del X_test
+        del pca
+        del scaler
+    if os.path.exists('embedded_pipeline.joblib') and args.use_existing:
+        embedded_pipeline = joblib.load('embedded_pipeline.joblib')
+    else:
+        embedded_pipeline = embedded_model(np.load('train_embedded_features.npy'), y_train)
+        joblib.dump(embedded_pipeline, 'embedded_pipeline.joblib')
+    probabilities_val["embedded"] = embedded_pipeline.predict_proba(np.load('val_embedded_features.npy'))
+    probabilities_test["embedded"] = embedded_pipeline.predict_proba(np.load('test_embedded_features.npy'))
+    # Log bal accs
+    val_bal_acc = balanced_accuracy_score(y_val, embedded_pipeline.predict(np.load('val_embedded_features.npy')))
+    #test_bal_acc = balanced_accuracy_score(y_test, embedded_pipeline.predict(np.load('test_embedded_features.npy')))
+    logger.info(f"Balanced Accuracy of embedded classifier on val set: {val_bal_acc}")
+    #logger.info(f"Balanced Accuracy of embedded classifier on test set: {test_bal_acc}")
+    del embedded_pipeline
 
     logger.info("Starting Stacking...")
     stacking_pipe = evaluate_stacking(probabilities_val, y_val)

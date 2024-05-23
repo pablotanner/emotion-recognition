@@ -66,7 +66,6 @@ if __name__ == '__main__':
         X_val_fit_facenet = scaler.transform(np.load(f'{args.data_output_dir}/val_facenet.npy'))
         X_test_fit_facenet = scaler.transform(np.load(f'{args.data_output_dir}/test_facenet.npy'))
 
-
         print('Loading Data')
         X_train = np.concatenate([X_train_fit_sface, X_train_fit_facenet], axis=1)
         X_val = np.concatenate([X_val_fit_sface, X_val_fit_facenet], axis=1)
