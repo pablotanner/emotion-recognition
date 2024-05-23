@@ -185,10 +185,7 @@ if __name__ == "__main__":
         # Use probabilities as input to the stacking classifier
         X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
 
-        stacking_pipeline = Pipeline([
-            ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight='balanced'))
-        ])
+        stacking_pipeline = Pipeline([('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight='balanced'))])
 
         stacking_pipeline.fit(X_stack, y_val)
         stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
@@ -224,7 +221,7 @@ if __name__ == "__main__":
     def spatial_relationship_model(X, y):
         # Linear scores worse individually, but better in stacking
         pipeline = Pipeline([
-            #('scaler', StandardScaler()),
+            ('scaler', StandardScaler()),
             ('svm', LinearSVC(C=1, probability=True, class_weight=class_weights))
         ])
 
@@ -237,7 +234,7 @@ if __name__ == "__main__":
 
     def facial_unit_model(X, y):
         pipeline = Pipeline([
-            #('scaler', StandardScaler()),
+            ('scaler', StandardScaler()),
             ('mlp',
              PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=300, num_classes=len(np.unique(y)), num_epochs=200,
                                   batch_size=32, learning_rate=0.001, class_weight=class_weights)
@@ -260,7 +257,7 @@ if __name__ == "__main__":
 
     def rf_model(X, y):
         pipeline = Pipeline([
-            #('scaler', StandardScaler()),
+            ('scaler', StandardScaler()),
             ('rf', RandomForestClassifier(n_estimators=300, criterion='entropy', max_depth=20, min_samples_split=5, min_samples_leaf=2, class_weight=class_weights))
         ])
 
@@ -272,7 +269,7 @@ if __name__ == "__main__":
 
     def log_reg_model(X, y):
         pipeline = Pipeline([
-            #('scaler', StandardScaler()),
+            ('scaler', StandardScaler()),
             ('log_reg', CUMLLogisticRegression(C=1, solver='qn', class_weight=class_weights))
         ])
 
