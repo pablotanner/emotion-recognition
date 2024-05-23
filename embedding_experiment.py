@@ -2,6 +2,7 @@ import argparse
 import joblib
 import numpy as np
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils import compute_class_weight
 from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
@@ -17,7 +18,7 @@ parser.add_argument('--main_features_dir', type=str, help='Path to /features fol
 parser.add_argument('--test_features_dir', type=str, help='Path to /features folder (test)', default='/local/scratch/ptanner/test_features')
 parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)', default='/local/scratch/ptanner/')
 parser.add_argument('--data_output_dir', type=str, help='Path to the output directory', default='/local/scratch/ptanner/embedding_experiment')
-parser.add_argument('--use_existing', type=bool, help='Use existing data', default=False)
+parser.add_argument('--use_existing',action='store_true', help='Use saved data/models')
 args = parser.parse_args()
 
 
@@ -54,18 +55,28 @@ if __name__ == '__main__':
 
 
     # Just concatenate experiment
-    def concatenated_experiment():
-        print('Loading Data')
-        X_train = np.concatenate([np.load(f'{args.data_output_dir}/train_sface.npy'), np.load(f'{args.data_output_dir}/train_facenet.npy')], axis=1)
-        X_val = np.concatenate([np.load(f'{args.data_output_dir}/val_sface.npy'), np.load(f'{args.data_output_dir}/val_facenet.npy')], axis=1)
-        X_test = np.concatenate([np.load(f'{args.data_output_dir}/test_sface.npy'), np.load(f'{args.data_output_dir}/test_facenet.npy')], axis=1)
+    def concatenated_experiment(n_components=0.99):
+        scaler = MinMaxScaler()
 
-        pca = PCA(n_components=0.99)
+        X_train_fit_sface = scaler.fit_transform(np.load(f'{args.data_output_dir}/train_sface.npy'))
+        X_val_fit_sface = scaler.transform(np.load(f'{args.data_output_dir}/val_sface.npy'))
+        X_test_fit_sface = scaler.transform(np.load(f'{args.data_output_dir}/test_sface.npy'))
+
+        X_train_fit_facenet = scaler.fit_transform(np.load(f'{args.data_output_dir}/train_facenet.npy'))
+        X_val_fit_facenet = scaler.transform(np.load(f'{args.data_output_dir}/val_facenet.npy'))
+        X_test_fit_facenet = scaler.transform(np.load(f'{args.data_output_dir}/test_facenet.npy'))
+
+
+        print('Loading Data')
+        X_train = np.concatenate([X_train_fit_sface, X_train_fit_facenet], axis=1)
+        X_val = np.concatenate([X_val_fit_sface, X_val_fit_facenet], axis=1)
+        X_test = np.concatenate([X_test_fit_sface, X_test_fit_facenet], axis=1)
+
+        print('Applying PCA')
+        pca = PCA(n_components=n_components)
         X_train = pca.fit_transform(X_train)
         X_val = pca.transform(X_val)
         X_test = pca.transform(X_test)
-
-
 
         print('Preparing Pipeline')
         pipeline = Pipeline([
@@ -86,7 +97,7 @@ if __name__ == '__main__':
         print("Test set")
         evaluate_results(y_test, pipeline.predict(X_test))
 
-    concatenated_experiment()
+    concatenated_experiment(n_components=0.99)
 
 
 
