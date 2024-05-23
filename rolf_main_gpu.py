@@ -224,7 +224,18 @@ if __name__ == "__main__":
         return pipeline
 
     def embedded_model(X, y):
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('mlp', PyTorchMLPClassifier(input_size=X.shape[1],
+                                         hidden_size=300, num_classes=len(np.unique(y)),
+                                         num_epochs=200, batch_size=32, learning_rate=0.001,
+                                         class_weight=class_weights))])
 
+        pipeline.fit(X, y)
+
+        logger.info("Embedded Model Fitted")
+        
+        return pipeline
 
 
     def pdm_model(X, y):
