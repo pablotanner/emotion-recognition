@@ -234,7 +234,7 @@ if __name__ == "__main__":
         pipeline.fit(X, y)
 
         logger.info("Embedded Model Fitted")
-        
+
         return pipeline
 
 
@@ -375,9 +375,9 @@ if __name__ == "__main__":
         X_val_fit_sface = scaler.transform(np.load('val_sface.npy'))
         X_test_fit_sface = scaler.transform(np.load('test_sface.npy'))
 
-        X_train_fit_facenet = scaler.fit_transform(np.load(f'{args.data_output_dir}/train_facenet.npy'))
-        X_val_fit_facenet = scaler.transform(np.load(f'{args.data_output_dir}/val_facenet.npy'))
-        X_test_fit_facenet = scaler.transform(np.load(f'{args.data_output_dir}/test_facenet.npy'))
+        X_train_fit_facenet = scaler.fit_transform(np.load('train_facenet.npy'))
+        X_val_fit_facenet = scaler.transform(np.load('val_facenet.npy'))
+        X_test_fit_facenet = scaler.transform(np.load('test_facenet.npy'))
 
         logger.info("Concatenating SFace and Facenet features...")
         X_train = np.concatenate([X_train_fit_sface, X_train_fit_facenet], axis=1)
