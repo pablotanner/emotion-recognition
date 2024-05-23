@@ -97,6 +97,7 @@ class RolfLoader:
             "nonrigid_face_shape",
             "landmarks_3d",
             "hog",
+            "landmarks_3d_unstandardized",
             #"deepface",
             #"facenet",
             #"vggface",
@@ -264,3 +265,4 @@ class RolfLoader:
             pose = np.load(f"{features_path}_pose.npy")
             landmarks_3d = np.load(f"{features_path}_landmarks_3d.npy")
             self.features[dataset_type]['landmarks_3d'].append(standardize_3d_landmarks(landmarks_3d, pose))
+            self.features[dataset_type]['landmarks_3d_unstandardized'].append(landmarks_3d)
