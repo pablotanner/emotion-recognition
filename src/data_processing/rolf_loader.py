@@ -99,10 +99,10 @@ class RolfLoader:
             "hog",
             "landmarks_3d_unstandardized",
             #"deepface",
-            #"facenet",
+            "facenet",
             #"vggface",
             #"openface",
-            #"sface",
+            "sface",
             #"facenet512",
             #"arcface",
         ]
@@ -228,31 +228,11 @@ class RolfLoader:
         if 'hog' not in self._excluded_features:
             self.features[dataset_type]['hog'].append(np.load(f"{features_path}_hog.npy"))
 
-        """
-
-        if 'deepface' not in self._excluded_features:
-            self.features[dataset_type]['deepface'].append(np.load(f"{embeddings_path}_DeepFace.npy", mmap_mode='r'))
-
         if 'facenet' not in self._excluded_features:
-            self.features[dataset_type]['facenet'].append(np.load(f"{embeddings_path}_Facenet.npy", mmap_mode='r'))
-
-        if 'vggface' not in self._excluded_features:
-            self.features[dataset_type]['vggface'].append(np.load(f"{embeddings_path}_VGG-Face.npy", mmap_mode='r'))
-
-        if 'openface' not in self._excluded_features:
-            self.features[dataset_type]['openface'].append(np.load(f"{embeddings_path}_OpenFace.npy", mmap_mode='r'))
+            self.features[dataset_type]['facenet'].append(np.load(f"{features_path}_Facenet.npy"))
 
         if 'sface' not in self._excluded_features:
-            self.features[dataset_type]['sface'].append(np.load(f"{embeddings_path}_SFace.npy", mmap_mode='r'))
-
-        if 'facenet512' not in self._excluded_features:
-            self.features[dataset_type]['facenet512'].append(np.load(f"{embeddings_path}_Facenet512.npy", mmap_mode='r'))
-
-        if 'arcface' not in self._excluded_features:
-            self.features[dataset_type]['arcface'].append(np.load(f"{embeddings_path}_ArcFace.npy", mmap_mode='r'))
-
-        
-        """
+            self.features[dataset_type]['sface'].append(np.load(f"{features_path}_SFace.npy"))
 
         self.features[dataset_type]['facs_intensity'].append(np.load(f"{features_path}_facs_intensity.npy"))
         self.features[dataset_type]['facs_presence'].append(np.load(f"{features_path}_facs_presence.npy"))
