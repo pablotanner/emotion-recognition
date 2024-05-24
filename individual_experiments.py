@@ -133,13 +133,10 @@ if __name__ == '__main__':
             clf.fit(X_train, y_train)
             y_val_pred = clf.predict(X_val)
 
-            # Ensure predictions are discrete class labels
-            if hasattr(clf, "predict_proba"):
+            # If classifier is NN or MLP, we need to convert probabilities to class labels
+            if clf_name in ['NN', 'MLP']:
                 y_val_pred = np.argmax(clf.predict_proba(X_val), axis=1)
-            elif hasattr(clf, "decision_function"):
-                y_val_pred = (clf.decision_function(X_val) > 0).astype(int)
-            else:
-                y_val_pred = clf.predict(X_val)
+
             score = balanced_accuracy_score(y_val, y_val_pred)
 
             if score > best_score:
