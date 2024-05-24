@@ -43,7 +43,7 @@ if __name__ == '__main__':
             os.remove(f'{args.experiment_dir}/logs/{args.feature}.log')
         except:
             pass
-            
+
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         handlers=[
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     logger.info(f'Running experiments for feature {args.feature}')
 
     parameters = {
-        'SVM': {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'poly'], 'gamma': ['scale','auto']},
+        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'poly'], 'gamma': ['scale','auto']},
         'LinearSVC': {'C': [0.1, 1, 10, 100]},
         'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'split_criterion': [0,1]},
         'KNN': {'n_neighbors': [3, 5, 7, 9]},
