@@ -96,7 +96,7 @@ if __name__ == '__main__':
     best_classifiers = {}
 
 
-    for clf_name, clf in classifiers.items():
+    for clf_name, clf_class in classifiers.items():
         try:
             logger.info(f'Running experiments for classifier {clf_name}')
             param_grid = list(ParameterGrid(parameters[clf_name]))
@@ -108,16 +108,25 @@ if __name__ == '__main__':
             best_params = grid_search_state[clf_name]['best_params']
             tried_params = grid_search_state[clf_name]['tried_params']
 
+            clf = clf_class()
+
             with parallel_backend('threading'):
                 for params in param_grid:
                     if params in tried_params:
                         continue
 
+                logger.info(f'Fitting model with parameters {params}')
+
+                if clf_name == 'NN':
+                    # Reset the model for each new set of parameters
+                    clf = NeuralNetwork(input_dim=X_train.shape[1])
+                    clf.compile(optim.Adam(clf.parameters(), lr=0.001))
+                elif clf_name == 'MLP':
+                    clf = PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train)),
+                                               hidden_size=64)
+
                 clf.set_params(**params)
 
-                logger.info(f'Fitting model with parameters {params}')
-                if clf_name == 'NN':
-                    clf.compile(optim.Adam(clf.parameters(), lr=0.001))
                 clf.fit(X_train, y_train)
                 y_val_pred = clf.predict(X_val)
                 score = balanced_accuracy_score(y_val, y_val_pred)
