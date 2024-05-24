@@ -132,6 +132,14 @@ if __name__ == '__main__':
             logger.info(f'Fitting model with parameters {params}')
             clf.fit(X_train, y_train)
             y_val_pred = clf.predict(X_val)
+
+            # Ensure predictions are discrete class labels
+            if hasattr(clf, "predict_proba"):
+                y_val_pred = np.argmax(clf.predict_proba(X_val), axis=1)
+            elif hasattr(clf, "decision_function"):
+                y_val_pred = (clf.decision_function(X_val) > 0).astype(int)
+            else:
+                y_val_pred = clf.predict(X_val)
             score = balanced_accuracy_score(y_val, y_val_pred)
 
             if score > best_score:
