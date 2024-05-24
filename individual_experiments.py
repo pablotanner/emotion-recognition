@@ -38,7 +38,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         handlers=[
-                            logging.FileHandler(f'individual_logs/{args.feature}.log'),
+                            logging.FileHandler(f'{args.experiment_dir}/individual_logs/{args.feature}.log'),
                             logging.StreamHandler()
                         ])
 
