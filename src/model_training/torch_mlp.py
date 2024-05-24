@@ -62,3 +62,8 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
         with torch.no_grad():
             outputs = self.model(X_tensor)
         return torch.softmax(outputs, dim=1).cpu().numpy()
+
+    def set_params(self, **params):
+        for param, value in params.items():
+            setattr(self, param, value)
+        return self

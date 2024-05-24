@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_dim, class_weight=None):
+    def __init__(self, input_dim, class_weight=None, num_epochs=10, batch_size=32):
         super(NeuralNetwork, self).__init__()
         self.fc1 = nn.Linear(input_dim, 128)
         self.dropout1 = nn.Dropout(0.5)
@@ -12,6 +12,8 @@ class NeuralNetwork(nn.Module):
         self.dropout2 = nn.Dropout(0.5)
         self.fc3 = nn.Linear(64, 8)
         self.optimizer = None
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
 
         if isinstance(class_weight, dict):
             class_weight = torch.tensor([class_weight[i] for i in range(len(class_weight))], dtype=torch.float32)
@@ -29,20 +31,20 @@ class NeuralNetwork(nn.Module):
     def compile(self, optimizer):
         self.optimizer = optimizer
 
-    def fit(self, X_train, y_train, epochs=10, batch_size=32):
+    def fit(self, X_train, y_train):
         self.train()
         dataset = torch.utils.data.TensorDataset(torch.tensor(X_train, dtype=torch.float32),
                                                  torch.tensor(y_train, dtype=torch.long))
-        train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        train_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
-        for epoch in range(epochs):
+        for epoch in range(self.num_epochs):
             for inputs, labels in train_loader:
                 self.optimizer.zero_grad()
                 outputs = self.forward(inputs)
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-            print(f'Epoch {epoch + 1}/{epochs}, Loss: {loss.item()}')
+            print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {loss.item()}')
 
     def predict(self, X):
         self.eval()
@@ -60,3 +62,8 @@ class NeuralNetwork(nn.Module):
     def score(self, X, y):
         y_pred = self.predict(X)
         return accuracy_score(y, y_pred)
+
+    def set_params(self, **params):
+        for param, value in params.items():
+            setattr(self, param, value)
+        return self
