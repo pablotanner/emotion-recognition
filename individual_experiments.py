@@ -70,7 +70,7 @@ if __name__ == '__main__':
     feature_files = {
         'landmarks_3d': ['train_spatial_features.npy', 'val_spatial_features.npy', 'test_spatial_features.npy'],
         'embedded': ['train_embedded_features.npy', 'val_embedded_features.npy', 'test_embedded_features.npy'],
-        'facs': ['train_facs_features_features.npy', 'val_facs_features.npy', 'test_facs_features.npy'],
+        'facs': ['train_facs_features.npy', 'val_facs_features.npy', 'test_facs_features.npy'],
         'pdm': ['train_pdm_features.npy', 'val_pdm_features.npy', 'test_pdm_features.npy'],
         'hog': ['pca_train_hog_features.npy', 'pca_val_hog_features.npy', 'pca_test_hog_features.npy'],
     }
