@@ -82,7 +82,7 @@ if __name__ == '__main__':
         'RandomForest': RFC,
         'KNN': KNN,
         'LogisticRegression': LogisticRegression,
-        'MLP': PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train))),
+        'MLP': PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train)), hidden_size=64),
         'NN': NeuralNetwork(input_dim=X_train.shape[1]),
     }
 
