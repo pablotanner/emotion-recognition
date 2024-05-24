@@ -30,11 +30,20 @@ parser = argparse.ArgumentParser(description='Finding optimal classifier for dif
 parser.add_argument('--feature', type=str, help='Feature to use', default='landmarks_3d')
 parser.add_argument('--experiment-dir', type=str, help='Directory to checkpoint file', default='/local/scratch/ptanner/individual_experiments')
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
+parser.add_argument('--reset', action='store_true', help='Reset the checkpoints/logs')
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
+
+    if args.reset:
+        try:
+            os.remove(f'{args.experiment_dir}/checkpoints/{args.feature}.json')
+            os.remove(f'{args.experiment_dir}/logs/{args.feature}.log')
+        except:
+            pass
+            
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         handlers=[
@@ -82,8 +91,8 @@ if __name__ == '__main__':
         'RandomForest': RFC,
         'KNN': KNN,
         'LogisticRegression': LogisticRegression,
-        'MLP': PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train)), hidden_size=64),
-        'NN': NeuralNetwork(input_dim=X_train.shape[1]),
+        'MLP': PyTorchMLPClassifier,
+        'NN': NeuralNetwork
     }
 
 
@@ -97,60 +106,58 @@ if __name__ == '__main__':
 
 
     for clf_name, clf_class in classifiers.items():
-        try:
-            logger.info(f'Running experiments for classifier {clf_name}')
-            param_grid = list(ParameterGrid(parameters[clf_name]))
+        logger.info(f'Running experiments for classifier {clf_name}')
+        param_grid = list(ParameterGrid(parameters[clf_name]))
 
-            if clf_name not in grid_search_state:
-                grid_search_state[clf_name] = {'best_score': 0, 'best_params': None, 'tried_params': []}
+        if clf_name not in grid_search_state:
+            grid_search_state[clf_name] = {'best_score': 0, 'best_params': None, 'tried_params': []}
 
-            best_score = grid_search_state[clf_name]['best_score']
-            best_params = grid_search_state[clf_name]['best_params']
-            tried_params = grid_search_state[clf_name]['tried_params']
+        best_score = grid_search_state[clf_name]['best_score']
+        best_params = grid_search_state[clf_name]['best_params']
+        tried_params = grid_search_state[clf_name]['tried_params']
 
-            clf = clf_class()
 
-            with parallel_backend('threading'):
-                for params in param_grid:
-                    if params in tried_params:
-                        continue
+        for params in param_grid:
+            if params in tried_params:
+                continue
+            if clf_name == 'NN':
+                clf = NeuralNetwork(input_dim=X_train.shape[1], **params )
+                clf.compile(optim.Adam(clf.parameters(), lr=0.001))
+            elif clf_name == 'MLP':
+                clf = PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train)),
+                                           **params)
+            else:
+                clf = clf_class(**params)
 
-                logger.info(f'Fitting model with parameters {params}')
+            logger.info(f'Fitting model with parameters {params}')
+            clf.fit(X_train, y_train)
+            y_val_pred = clf.predict(X_val)
+            score = balanced_accuracy_score(y_val, y_val_pred)
 
-                if clf_name == 'NN':
-                    # Reset the model for each new set of parameters
-                    clf = NeuralNetwork(input_dim=X_train.shape[1])
-                    clf.compile(optim.Adam(clf.parameters(), lr=0.001))
-                elif clf_name == 'MLP':
-                    clf = PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train)),
-                                               hidden_size=64)
+            if score > best_score:
+                best_score = score
+                best_params = params
 
-                clf.set_params(**params)
+            # Update the checkpoint state
+            grid_search_state[clf_name]['best_score'] = best_score
+            grid_search_state[clf_name]['best_params'] = best_params
+            grid_search_state[clf_name]['tried_params'].append(params)
+            save_checkpoint(grid_search_state, checkpoint_file)
 
-                clf.fit(X_train, y_train)
-                y_val_pred = clf.predict(X_val)
-                score = balanced_accuracy_score(y_val, y_val_pred)
+        if clf_name == 'NN':
+            best_classifiers[clf_name] = NeuralNetwork(input_dim=X_train.shape[1], **best_params)
+            best_classifiers[clf_name].compile(optim.Adam(best_classifiers[clf_name].parameters(), lr=0.001))
+        elif clf_name == 'MLP':
+            best_classifiers[clf_name] = PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train)),
+                                           **best_params)
+        else:
+            best_classifiers[clf_name] = clf_class(**best_params)
+        best_classifiers[clf_name].fit(X_train, y_train)
+        logger.info(f'Best parameters for {clf_name}: {best_params}')
 
-                if score > best_score:
-                    best_score = score
-                    best_params = params
+        y_pred = best_classifiers[clf_name].predict(X_val)
+        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val, y_pred)}')
 
-                # Update the checkpoint state
-                grid_search_state[clf_name]['best_score'] = best_score
-                grid_search_state[clf_name]['best_params'] = best_params
-                grid_search_state[clf_name]['tried_params'].append(params)
-                save_checkpoint(grid_search_state, checkpoint_file)
-
-            best_classifiers[clf_name] = clf.set_params(**best_params)
-            best_classifiers[clf_name].fit(X_train, y_train)
-            logger.info(f'Best parameters for {clf_name}: {best_params}')
-
-            y_pred = best_classifiers[clf_name].predict(X_val)
-            logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val, y_pred)}')
-
-        except Exception as e:
-            logger.error(f'Error while fitting model: {e}')
-            continue
 
     for clf_name, best_clf in best_classifiers.items():
         y_pred = best_clf.predict(X_test)
