@@ -35,6 +35,8 @@ else:
     elif platform == "darwin":
         lib_path = path.join(dirname, shared_library_name)
 
+lib_path = '/home/user/ptanner/thundersvm/build/lib/libthundersvm.so'
+
 if path.exists(lib_path):
     thundersvm = CDLL(lib_path)
 else:
