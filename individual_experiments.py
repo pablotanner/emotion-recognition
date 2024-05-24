@@ -3,7 +3,8 @@ import json
 import logging
 import os
 import numpy as np
-from cuml.svm import LinearSVC, SVR
+from cuml.svm import LinearSVC
+from src.thundersvm import *
 from cuml.ensemble import RandomForestClassifier as RFC
 from cuml.neighbors import KNeighborsClassifier as KNN
 from cuml.linear_model import LogisticRegression
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     logger.info(f'Running experiments for feature {args.feature}')
 
     parameters = {
-        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'poly'], 'gamma': ['scale','auto']},
+        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'polynomial']},
         'LinearSVC': {'C': [0.1, 1, 10, 100]},
         'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'split_criterion': [0,1]},
         'KNN': {'n_neighbors': [3, 5, 7, 9]},
@@ -87,7 +88,7 @@ if __name__ == '__main__':
 
     classifiers = {
         'LinearSVC': LinearSVC,
-        'SVC': SVR,
+        'SVC': SVC,
         'RandomForest': RFC,
         'KNN': KNN,
         'LogisticRegression': LogisticRegression,
@@ -131,11 +132,13 @@ if __name__ == '__main__':
 
             logger.info(f'Fitting model with parameters {params}')
             clf.fit(X_train, y_train)
-            y_val_pred = clf.predict(X_val)
+
 
             # If classifier is NN or MLP, we need to convert probabilities to class labels
             if clf_name in ['NN', 'MLP']:
                 y_val_pred = np.argmax(clf.predict_proba(X_val), axis=1)
+            else:
+                y_val_pred = clf.predict(X_val)
 
             score = balanced_accuracy_score(y_val, y_val_pred)
 
