@@ -37,6 +37,10 @@ parser.add_argument('--reset', action='store_true', help='Reset the checkpoints/
 parser.add_argument('--gpu-id', type=int, help='GPU ID to use', default=0)
 args = parser.parse_args()
 
+# Set CUDA device
+os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
+
+
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
@@ -56,6 +60,9 @@ if __name__ == '__main__':
                         ])
 
     logger.info(f'Running experiments for feature {args.feature}')
+
+    if not os.path.exists(f'{args.experiment_dir}/{args.feature}'):
+        os.makedirs(f'{args.experiment_dir}/{args.feature}')
 
     parameters = {
         'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'polynomial'], 'gpu_id': [args.gpu_id]},
@@ -79,19 +86,42 @@ if __name__ == '__main__':
 
     logger.info('Loading and Resampling data')
 
-    scaler = StandardScaler()
+    X_shape = None
+
     if args.dummy:
         X_train, y_train = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
         X_val, y_val = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
         X_test, y_test = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
+    elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train'):
+        X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
+        y_train = np.load(f'{args.experiment_dir}/{args.feature}/y_train.npy')
+        X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
+        y_val = np.load(f'{args.experiment_dir}/{args.feature}/y_val.npy')
+        X_test = np.load(f'{args.experiment_dir}/{args.feature}/X_test.npy')
+        y_test = np.load(f'{args.experiment_dir}/{args.feature}/y_test.npy')
     else:
+        scaler = StandardScaler()
         X_train, y_train = ros.fit_resample(np.load(feature_files[args.feature][0]), np.load('y_train.npy'))
         X_val, y_val = ros.fit_resample(np.load(feature_files[args.feature][1]), np.load('y_val.npy'))
         X_test, y_test = ros.fit_resample(np.load(feature_files[args.feature][2]), np.load('y_test.npy'))
 
-    X_train = scaler.fit_transform(X_train)
-    X_val = scaler.transform(X_val)
-    X_test = scaler.transform(X_test)
+        X_train = scaler.fit_transform(X_train)
+        X_val = scaler.transform(X_val)
+        X_test = scaler.transform(X_test)
+
+        X_shape = X_train.shape[1]
+
+        np.save(f'{args.experiment_dir}/{args.feature}/X_train.npy', X_train)
+        np.save(f'{args.experiment_dir}/{args.feature}/y_train.npy', y_train)
+        np.save(f'{args.experiment_dir}/{args.feature}/X_val.npy', X_val)
+        np.save(f'{args.experiment_dir}/{args.feature}/y_val.npy', y_val)
+        np.save(f'{args.experiment_dir}/{args.feature}/X_test.npy', X_test)
+        np.save(f'{args.experiment_dir}/{args.feature}/y_test.npy', y_test)
+
+    del ros, scaler
+    del X_train, X_val, X_test
+
+    logger.info('Data loaded and resampled')
 
 
     classifiers = {
@@ -130,23 +160,23 @@ if __name__ == '__main__':
             if params in tried_params:
                 continue
             if clf_name == 'NN':
-                clf = NeuralNetwork(input_dim=X_train.shape[1], **params )
+                clf = NeuralNetwork(input_dim=X_shape, **params )
                 clf.compile(optim.Adam(clf.parameters(), lr=0.001))
             elif clf_name == 'MLP':
-                clf = PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train)),
+                clf = PyTorchMLPClassifier(input_size=X_shape, num_classes=len(np.unique(y_train)),
                                            **params)
             else:
                 clf = clf_class(**params)
 
             logger.info(f'Fitting model with parameters {params}')
-            clf.fit(X_train, y_train)
+            clf.fit(np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy'), y_train)
 
 
             # If classifier is NN or MLP, we need to convert probabilities to class labels
             if clf_name in ['NN', 'MLP']:
-                y_val_pred = np.argmax(clf.predict_proba(X_val), axis=1)
+                y_val_pred = np.argmax(clf.predict_proba(np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')), axis=1)
             else:
-                y_val_pred = clf.predict(X_val)
+                y_val_pred = clf.predict(np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy'))
 
             score = balanced_accuracy_score(y_val, y_val_pred)
 
@@ -161,22 +191,22 @@ if __name__ == '__main__':
             save_checkpoint(grid_search_state, checkpoint_file)
 
         if clf_name == 'NN':
-            best_classifiers[clf_name] = NeuralNetwork(input_dim=X_train.shape[1], **best_params)
+            best_classifiers[clf_name] = NeuralNetwork(input_dim=X_shape, **best_params)
             best_classifiers[clf_name].compile(optim.Adam(best_classifiers[clf_name].parameters(), lr=0.001))
         elif clf_name == 'MLP':
-            best_classifiers[clf_name] = PyTorchMLPClassifier(input_size=X_train.shape[1], num_classes=len(np.unique(y_train)),
+            best_classifiers[clf_name] = PyTorchMLPClassifier(input_size=X_shape, num_classes=len(np.unique(y_train)),
                                            **best_params)
         else:
             best_classifiers[clf_name] = clf_class(**best_params)
-        best_classifiers[clf_name].fit(X_train, y_train)
+        best_classifiers[clf_name].fit(np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy'), y_train)
         logger.info(f'Best parameters for {clf_name}: {best_params}')
 
-        y_pred = best_classifiers[clf_name].predict(X_val)
+        y_pred = best_classifiers[clf_name].predict(np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy'))
         logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val, y_pred)}')
 
 
     for clf_name, best_clf in best_classifiers.items():
-        y_pred = best_clf.predict(X_test)
+        y_pred = best_clf.predict(np.load(f'{args.experiment_dir}/{args.feature}/X_test.npy'))
         logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test, y_pred)}')
 
 
