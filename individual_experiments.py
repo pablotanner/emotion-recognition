@@ -4,6 +4,8 @@ import logging
 import os
 import numpy as np
 from cuml.svm import LinearSVC
+from sklearn.preprocessing import StandardScaler
+
 from src.thundersvm import *
 from cuml.ensemble import RandomForestClassifier as RFC
 from cuml.neighbors import KNeighborsClassifier as KNN
@@ -32,6 +34,7 @@ parser.add_argument('--feature', type=str, help='Feature to use', default='landm
 parser.add_argument('--experiment-dir', type=str, help='Directory to checkpoint file', default='/local/scratch/ptanner/individual_experiments')
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
 parser.add_argument('--reset', action='store_true', help='Reset the checkpoints/logs')
+parser.add_argument('--gpu-id', type=int, help='GPU ID to use', default=0)
 args = parser.parse_args()
 
 
@@ -55,7 +58,7 @@ if __name__ == '__main__':
     logger.info(f'Running experiments for feature {args.feature}')
 
     parameters = {
-        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'polynomial']},
+        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'polynomial'], 'gpu_id': [args.gpu_id]},
         'LinearSVC': {'C': [0.1, 1, 10, 100]},
         'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'split_criterion': [0,1]},
         'KNN': {'n_neighbors': [3, 5, 7, 9]},
@@ -76,6 +79,7 @@ if __name__ == '__main__':
 
     logger.info('Loading and Resampling data')
 
+    scaler = StandardScaler()
     if args.dummy:
         X_train, y_train = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
         X_val, y_val = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
@@ -84,6 +88,10 @@ if __name__ == '__main__':
         X_train, y_train = ros.fit_resample(np.load(feature_files[args.feature][0]), np.load('y_train.npy'))
         X_val, y_val = ros.fit_resample(np.load(feature_files[args.feature][1]), np.load('y_val.npy'))
         X_test, y_test = ros.fit_resample(np.load(feature_files[args.feature][2]), np.load('y_test.npy'))
+
+    X_train = scaler.fit_transform(X_train)
+    X_val = scaler.transform(X_val)
+    X_test = scaler.transform(X_test)
 
 
     classifiers = {
