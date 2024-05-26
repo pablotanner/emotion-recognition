@@ -164,12 +164,19 @@ if __name__ == '__main__':
     np.save(f'{args.experiment_dir}/y_val.npy', y_val)
     np.save(f'{args.experiment_dir}/y_test.npy', y_test)
 
-    for feature_name, feature_splits in feature_splits_dict.items():
-        if feature_name in ['landmarks_3d', 'facs_intensity', 'facs_presence']:
-            preprocess_and_save_features(feature_splits['train'][feature_name], feature_splits['val'][feature_name], feature_splits['test'][feature_name], feature_name, feature_type='linear')
-        elif feature_name in ['hog', 'facenet', 'sface', 'nonrigid_face_shape']:
-            preprocess_and_save_features(feature_splits['train'][feature_name], feature_splits['val'][feature_name], feature_splits['test'][feature_name], feature_name, feature_type='nonlinear')
-        else:
-            logger.info(f'Feature {feature_name} not supported for preprocessing')
-            continue
+
+    feature_types = {
+        'landmarks_3d': 'linear',
+        'facs_intensity': 'linear',
+        'facs_presence': 'linear',
+        'hog': 'nonlinear',
+        'facenet': 'nonlinear',
+        'sface': 'nonlinear',
+        'nonrigid_face_shape': 'nonlinear'
+    }
+
+    for feature_name, linearity in feature_types.items():
+        preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity)
         logger.info(f'Preprocessed and saved {feature_name}')
+
+    logger.info('Experiment completed')
