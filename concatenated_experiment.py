@@ -1,5 +1,7 @@
 import argparse
 import logging
+import os
+
 import numpy as np
 from keras import Input, Model
 from keras.callbacks import EarlyStopping
@@ -64,37 +66,42 @@ def apply_autoencoder(X_scaled, encoder):
     return encoder.predict(X_scaled)
 
 def preprocess_and_save_features(X_train, X_val, X_test, feature_name, feature_type, n_components=None, autoencoder_components=None, use_minmax=False):
+    # Check if the feature is already preprocessed
+    if f'{args.experiment_dir}/train_{feature_name}.npy' in os.listdir(args.experiment_dir):
+        logger.info(f'{feature_name} already preprocessed')
+        return
+
     logger.info(f'Scaling {feature_name}...')
     X_train = np.array(X_train)
     X_val = np.array(X_val)
     X_test = np.array(X_test)
     # Step 1: Scaling
     if use_minmax:
-        standard_scaler, minmax_scaler, X_train_scaled = fit_scalers(X_train)
-        X_val_scaled = apply_scalers(X_val, standard_scaler, minmax_scaler)
-        X_test_scaled = apply_scalers(X_test, standard_scaler, minmax_scaler)
+        standard_scaler, minmax_scaler, X_train = fit_scalers(X_train)
+        X_val = apply_scalers(X_val, standard_scaler, minmax_scaler)
+        X_test = apply_scalers(X_test, standard_scaler, minmax_scaler)
     else:
         scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_val_scaled = scaler.transform(X_val)
-        X_test_scaled = scaler.transform(X_test)
+        X_train = scaler.fit_transform(X_train)
+        X_val = scaler.transform(X_val)
+        X_test = scaler.transform(X_test)
 
     logger.info(f'Dimensionality Reduction for {feature_name}...')
     # Step 2: Dimensionality Reduction
-    if feature_type == 'linear':
+    if feature_type == 'linear' and X_train.shape[1] > 50:
         if n_components is None:
             n_components = min(X_train.shape[1], 50)
-        pca, X_train_reduced = fit_pca(X_train_scaled, n_components)
-        X_val_reduced = apply_pca(X_val_scaled, pca)
-        X_test_reduced = apply_pca(X_test_scaled, pca)
-    elif feature_type == 'nonlinear':
+        pca, X_train_reduced = fit_pca(X_train, n_components)
+        X_val_reduced = apply_pca(X_val, pca)
+        X_test_reduced = apply_pca(X_test, pca)
+    elif feature_type == 'nonlinear' and X_train.shape[1] > 50:
         if autoencoder_components is None:
             autoencoder_components = min(X_train.shape[1], 50)
-        encoder, X_train_reduced = fit_autoencoder(X_train_scaled, autoencoder_components)
-        X_val_reduced = apply_autoencoder(X_val_scaled, encoder)
-        X_test_reduced = apply_autoencoder(X_test_scaled, encoder)
+        encoder, X_train_reduced = fit_autoencoder(X_train, autoencoder_components)
+        X_val_reduced = apply_autoencoder(X_val, encoder)
+        X_test_reduced = apply_autoencoder(X_test, encoder)
     else:
-        X_train_reduced, X_val_reduced, X_test_reduced = X_train_scaled, X_val_scaled, X_test_scaled
+        X_train_reduced, X_val_reduced, X_test_reduced = X_train, X_val, X_test
 
     logger.info(f'Saving {feature_name}...')
     np.save(f'{args.experiment_dir}/train_{feature_name}.npy', X_train_reduced)
