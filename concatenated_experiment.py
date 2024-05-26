@@ -67,7 +67,7 @@ def apply_autoencoder(X_scaled, encoder):
 
 def preprocess_and_save_features(X_train, X_val, X_test, feature_name, feature_type, n_components=None, autoencoder_components=None, use_minmax=False):
     # Check if the feature is already preprocessed
-    if f'{args.experiment_dir}/train_{feature_name}.npy' in os.listdir(args.experiment_dir):
+    if f'train_{feature_name}.npy' in os.listdir(args.experiment_dir):
         logger.info(f'{feature_name} already preprocessed')
         return
 
