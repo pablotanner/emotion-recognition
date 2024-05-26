@@ -65,6 +65,9 @@ def apply_autoencoder(X_scaled, encoder):
 
 def preprocess_and_save_features(X_train, X_val, X_test, feature_name, feature_type, n_components=None, autoencoder_components=None, use_minmax=False):
     logger.info(f'Scaling {feature_name}...')
+    X_train = np.array(X_train)
+    X_val = np.array(X_val)
+    X_test = np.array(X_test)
     # Step 1: Scaling
     if use_minmax:
         standard_scaler, minmax_scaler, X_train_scaled = fit_scalers(X_train)
