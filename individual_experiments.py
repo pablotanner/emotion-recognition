@@ -62,7 +62,7 @@ if __name__ == '__main__':
     parameters = {
         'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'polynomial'], 'gpu_id': [args.gpu_id]},
         'LinearSVC': {'C': [0.1, 1, 10, 100]},
-        'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'split_criterion': [0,1]},
+        'RandomForest': {'n_estimators': [100, 200, 300], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'split_criterion': [0,1]},
         'KNN': {'n_neighbors': [3, 5, 7, 9]},
         'LogisticRegression': {'C': [0.1, 1, 10, 100]},
         'MLP': {'hidden_size': [64, 128, 256], 'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01, 0.1]},
