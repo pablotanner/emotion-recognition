@@ -2,7 +2,6 @@ import argparse
 import json
 import logging
 import os
-import numpy as np
 from cuml.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 
@@ -16,7 +15,7 @@ from torch import optim
 from src.model_training.torch_mlp import PyTorchMLPClassifier
 from src.model_training.torch_neural_network import NeuralNetwork
 from sklearn.model_selection import ParameterGrid
-from joblib import parallel_backend
+import gc
 
 def save_checkpoint(grid_search_state, filename):
     with open(filename, 'w') as f:
@@ -118,15 +117,15 @@ if __name__ == '__main__':
         np.save(f'{args.experiment_dir}/{args.feature}/X_test.npy', X_test)
         np.save(f'{args.experiment_dir}/{args.feature}/y_test.npy', y_test)
 
-    del ros, scaler
-    del X_train, X_val, X_test
+    del ros, scaler, X_train, X_val, X_test
+    gc.collect()
 
     logger.info('Data loaded and resampled')
 
 
     classifiers = {
         'LinearSVC': LinearSVC,
-        #'SVC': SVC,
+        'SVC': SVC,
         'RandomForest': RFC,
         'KNN': KNN,
         'LogisticRegression': LogisticRegression,
@@ -169,14 +168,21 @@ if __name__ == '__main__':
                 clf = clf_class(**params)
 
             logger.info(f'Fitting model with parameters {params}')
-            clf.fit(np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy'), y_train)
+            X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
+            clf.fit(X_train, y_train)
+            del X_train
+            gc.collect()
 
+            X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
 
             # If classifier is NN or MLP, we need to convert probabilities to class labels
             if clf_name in ['NN', 'MLP']:
-                y_val_pred = np.argmax(clf.predict_proba(np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')), axis=1)
+                y_val_pred = np.argmax(clf.predict_proba(X_val), axis=1)
             else:
-                y_val_pred = clf.predict(np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy'))
+                y_val_pred = clf.predict(X_val)
+
+            del X_val
+            gc.collect()
 
             score = balanced_accuracy_score(y_val, y_val_pred)
 
@@ -198,10 +204,17 @@ if __name__ == '__main__':
                                            **best_params)
         else:
             best_classifiers[clf_name] = clf_class(**best_params)
-        best_classifiers[clf_name].fit(np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy'), y_train)
+
+        X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
+        best_classifiers[clf_name].fit(X_train, y_train)
+        del X_train
+        gc.collect()
         logger.info(f'Best parameters for {clf_name}: {best_params}')
 
-        y_pred = best_classifiers[clf_name].predict(np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy'))
+        X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
+        y_pred = best_classifiers[clf_name].predict(X_val)
+        del X_val
+        gc.collect()
         logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val, y_pred)}')
 
 

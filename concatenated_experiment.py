@@ -1,13 +1,12 @@
 import argparse
 import logging
-import os
-
 import numpy as np
 from keras import Input, Model
-from keras.src.callbacks import EarlyStopping
-from keras.src.layers import Dense
+from keras.callbacks import EarlyStopping
+from keras.layers import Dense
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from cuml.preprocessing import StandardScaler, MinMaxScaler
+
 
 from src.data_processing.rolf_loader import RolfLoader
 
@@ -176,7 +175,11 @@ if __name__ == '__main__':
     }
 
     for feature_name, linearity in feature_types.items():
-        preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity)
+        if linearity == 'linear':
+            preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, n_components=50)
+        else:
+            preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, autoencoder_components=50)
+
         logger.info(f'Preprocessed and saved {feature_name}')
 
     logger.info('Experiment completed')
