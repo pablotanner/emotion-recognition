@@ -36,10 +36,6 @@ parser.add_argument('--reset', action='store_true', help='Reset the checkpoints/
 parser.add_argument('--gpu-id', type=int, help='GPU ID to use', default=0)
 args = parser.parse_args()
 
-# Set CUDA device
-os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
-
-
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
