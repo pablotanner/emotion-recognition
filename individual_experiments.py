@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
     classifiers = {
         'LinearSVC': LinearSVC,
-        'SVC': SVC,
+        #'SVC': SVC,
         'RandomForest': RFC,
         'KNN': KNN,
         'LogisticRegression': LogisticRegression,
