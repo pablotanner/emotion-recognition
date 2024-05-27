@@ -2,10 +2,9 @@ import argparse
 import json
 import logging
 import os
-from cuml.svm import LinearSVC
+import numpy as np
+from cuml.svm import LinearSVC, SVC
 from sklearn.preprocessing import StandardScaler
-
-from src.thundersvm import *
 from cuml.ensemble import RandomForestClassifier as RFC
 from cuml.neighbors import KNeighborsClassifier as KNN
 from cuml.linear_model import LogisticRegression
@@ -16,6 +15,7 @@ from src.model_training.torch_mlp import PyTorchMLPClassifier
 from src.model_training.torch_neural_network import NeuralNetwork
 from sklearn.model_selection import ParameterGrid
 import gc
+from src.util.dataframe_converter import convert_to_dask_df
 
 def save_checkpoint(grid_search_state, filename):
     with open(filename, 'w') as f:
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         os.makedirs(f'{args.experiment_dir}/{args.feature}')
 
     parameters = {
-        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'polynomial'], 'gpu_id': [args.gpu_id]},
+        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'polynomial']},
         'LinearSVC': {'C': [0.1, 1, 10, 100]},
         'RandomForest': {'n_estimators': [100, 200, 300], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'split_criterion': [0,1]},
         'KNN': {'n_neighbors': [3, 5, 7, 9]},
@@ -87,6 +87,8 @@ if __name__ == '__main__':
         X_train, y_train = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
         X_val, y_val = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
         X_test, y_test = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
+
+        X_shape = X_train.shape[1]
     elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train'):
         X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
         y_train = np.load(f'{args.experiment_dir}/{args.feature}/y_train.npy')
@@ -94,6 +96,8 @@ if __name__ == '__main__':
         y_val = np.load(f'{args.experiment_dir}/{args.feature}/y_val.npy')
         X_test = np.load(f'{args.experiment_dir}/{args.feature}/X_test.npy')
         y_test = np.load(f'{args.experiment_dir}/{args.feature}/y_test.npy')
+
+        X_shape = X_train.shape[1]
     else:
         scaler = StandardScaler()
         X_train, y_train = ros.fit_resample(np.load(feature_files[args.feature][0]), np.load('y_train.npy'))
@@ -113,7 +117,9 @@ if __name__ == '__main__':
         np.save(f'{args.experiment_dir}/{args.feature}/X_test.npy', X_test)
         np.save(f'{args.experiment_dir}/{args.feature}/y_test.npy', y_test)
 
-    del ros, scaler, X_train, X_val, X_test
+
+    dask_data = convert_to_dask_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10)
+    del ros, scaler, X_train, X_val, X_test, y_train, y_val, y_test
     gc.collect()
 
     logger.info('Data loaded and resampled')
@@ -121,7 +127,7 @@ if __name__ == '__main__':
 
     classifiers = {
         'LinearSVC': LinearSVC,
-        #'SVC': SVC,
+        'SVC': SVC,
         'RandomForest': RFC,
         'KNN': KNN,
         'LogisticRegression': LogisticRegression,
@@ -158,29 +164,24 @@ if __name__ == '__main__':
                 clf = NeuralNetwork(input_dim=X_shape, **params )
                 clf.compile(optim.Adam(clf.parameters(), lr=0.001))
             elif clf_name == 'MLP':
-                clf = PyTorchMLPClassifier(input_size=X_shape, num_classes=len(np.unique(y_train)),
-                                           **params)
+                clf = PyTorchMLPClassifier(input_size=X_shape, num_classes=8,**params)
             else:
                 clf = clf_class(**params)
 
             logger.info(f'Fitting model with parameters {params}')
-            X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
-            clf.fit(X_train, y_train)
-            del X_train
-            gc.collect()
-
-            X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
+            clf.fit(dask_data['X_train'], dask_data['y_train'])
+            #del X_train
+            #gc.collect()
 
             # If classifier is NN or MLP, we need to convert probabilities to class labels
             if clf_name in ['NN', 'MLP']:
-                y_val_pred = np.argmax(clf.predict_proba(X_val), axis=1)
+                y_val_pred = np.argmax(clf.predict_proba(dask_data['X_val']), axis=1)
             else:
-                y_val_pred = clf.predict(X_val)
+                y_val_pred = clf.predict(dask_data['X_val'])
+            #del X_val
+            #gc.collect()
 
-            del X_val
-            gc.collect()
-
-            score = balanced_accuracy_score(y_val, y_val_pred)
+            score = balanced_accuracy_score(dask_data['y_val'], y_val_pred)
 
             if score > best_score:
                 best_score = score
@@ -196,27 +197,26 @@ if __name__ == '__main__':
             best_classifiers[clf_name] = NeuralNetwork(input_dim=X_shape, **best_params)
             best_classifiers[clf_name].compile(optim.Adam(best_classifiers[clf_name].parameters(), lr=0.001))
         elif clf_name == 'MLP':
-            best_classifiers[clf_name] = PyTorchMLPClassifier(input_size=X_shape, num_classes=len(np.unique(y_train)),
-                                           **best_params)
+            best_classifiers[clf_name] = PyTorchMLPClassifier(input_size=X_shape, num_classes=9, **best_params)
         else:
             best_classifiers[clf_name] = clf_class(**best_params)
 
-        X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
-        best_classifiers[clf_name].fit(X_train, y_train)
-        del X_train
-        gc.collect()
+        #X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
+        best_classifiers[clf_name].fit(dask_data['X_train'], dask_data['y_train'])
+        #del X_train
+        #gc.collect()
         logger.info(f'Best parameters for {clf_name}: {best_params}')
 
-        X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
-        y_pred = best_classifiers[clf_name].predict(X_val)
-        del X_val
-        gc.collect()
-        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val, y_pred)}')
+        #X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
+        y_pred = best_classifiers[clf_name].predict(dask_data["X_val"])
+        #del X_val
+        #gc.collect()
+        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(dask_data["y_val"], y_pred)}')
 
 
     for clf_name, best_clf in best_classifiers.items():
-        y_pred = best_clf.predict(np.load(f'{args.experiment_dir}/{args.feature}/X_test.npy'))
-        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test, y_pred)}')
+        y_pred = best_clf.predict(dask_data["X_test"])
+        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(dask_data["y_test"], y_pred)}')
 
 
 
