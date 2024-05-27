@@ -230,7 +230,7 @@ if __name__ == "__main__":
                                          #hidden_size=300, num_classes=len(np.unique(y)),
                                          #num_epochs=200, batch_size=32, learning_rate=0.001,
                                          #class_weight=class_weights))])
-            ('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True, class_weight=class_weights))])
+            ('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True, class_weight='balanced'))])
 
         pipeline.fit(X, y)
 

@@ -1,6 +1,10 @@
 import numpy as np
 import dask.dataframe as dd
 import pandas as pd
+import cudf
+import dask_cudf
+
+
 
 
 def convert_to_dask_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10):
@@ -31,6 +35,36 @@ def convert_to_dask_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitio
     }
 
     return dask_data
+
+def convert_to_cudf_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10):
+    """
+    Convert NumPy arrays or Pandas DataFrames to Dask-cuDF DataFrames.
+
+    Parameters:
+    X_train, X_val, X_test: Features for training, validation, and testing.
+    y_train, y_val, y_test: Labels for training, validation, and testing.
+    npartitions: Number of partitions for the Dask DataFrames (default is 10).
+
+    Returns:
+    A dictionary containing the converted Dask-cuDF DataFrames.
+    """
+
+    def to_dask_cudf(df, npartitions):
+        if isinstance(df, np.ndarray):
+            df = pd.DataFrame(df)
+        ddf = dd.from_pandas(df, npartitions=npartitions)
+        return dask_cudf.from_dask_dataframe(ddf)
+
+    dask_cudf_data = {
+        'X_train': to_dask_cudf(X_train, npartitions),
+        'X_val': to_dask_cudf(X_val, npartitions),
+        'X_test': to_dask_cudf(X_test, npartitions),
+        'y_train': to_dask_cudf(y_train, npartitions),
+        'y_val': to_dask_cudf(y_val, npartitions),
+        'y_test': to_dask_cudf(y_test, npartitions)
+    }
+
+    return dask_cudf_data
 
 
 def convert_and_save_to_disk(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10, path='./dask_data'):
