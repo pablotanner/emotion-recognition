@@ -129,6 +129,11 @@ if __name__ == '__main__':
     X_test = dask_data['X_test']
     y_test = dask_data['y_test']
 
+    # Convert y to series
+    y_train = y_train.iloc[:, 0]
+    y_val = y_val.iloc[:, 0]
+    y_test = y_test.iloc[:, 0]
+
     logger.info('Data loaded and resampled')
 
 
@@ -176,7 +181,11 @@ if __name__ == '__main__':
                 clf = clf_class(**params)
 
             logger.info(f'Fitting model with parameters {params}')
-            clf.fit(X_train.compute(), y_train.compute())
+
+            if clf_name == 'LinearSVC':
+                clf.fit(X_train.compute().to_numpy(), y_train.compute())
+            else:
+                clf.fit(X_train.compute(), y_train.compute())
             #del X_train
             #gc.collect()
 
@@ -188,7 +197,7 @@ if __name__ == '__main__':
             #del X_val
             #gc.collect()
 
-            score = balanced_accuracy_score(y_val.compute(), y_val_pred)
+            score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred.to_numpy())
 
             if score > best_score:
                 best_score = score
@@ -208,8 +217,12 @@ if __name__ == '__main__':
         else:
             best_classifiers[clf_name] = clf_class(**best_params)
 
+        # If classifier is LinearSVC, we need to convert data to numpy
+        if clf_name == 'LinearSVC':
+            best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute())
+        else:
+            best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
         #X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
-        best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
         #del X_train
         #gc.collect()
         logger.info(f'Best parameters for {clf_name}: {best_params}')
@@ -218,11 +231,15 @@ if __name__ == '__main__':
         y_pred = best_classifiers[clf_name].predict(X_val.compute())
         #del X_val
         #gc.collect()
-        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute(), y_pred)}')
+        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute(), y_pred.to_numpy())}')
 
     for clf_name, best_clf in best_classifiers.items():
+        if clf_name == 'LinearSVC':
+            best_clf.fit(X_train.compute().to_numpy(), y_train.compute())
+        else:
+            best_clf.fit(X_train.compute(), y_train.compute())
         y_pred = best_clf.predict(X_test.compute())
-        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute(), y_pred)}')
+        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute(), y_pred.to_numpy())}')
 
 
 
