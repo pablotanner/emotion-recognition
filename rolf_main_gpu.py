@@ -5,7 +5,7 @@ import os
 import numpy as np
 import torch.optim as optim
 #import cupy as cp
-from cuml.svm import LinearSVC
+from cuml.svm import LinearSVC, SVC
 from cuml.preprocessing import StandardScaler
 #from cuml.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression as CUMLLogisticRegression
@@ -226,10 +226,11 @@ if __name__ == "__main__":
     def embedded_model(X, y):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('mlp', PyTorchMLPClassifier(input_size=X.shape[1],
-                                         hidden_size=300, num_classes=len(np.unique(y)),
-                                         num_epochs=200, batch_size=32, learning_rate=0.001,
-                                         class_weight=class_weights))])
+            #('mlp', PyTorchMLPClassifier(input_size=X.shape[1],
+                                         #hidden_size=300, num_classes=len(np.unique(y)),
+                                         #num_epochs=200, batch_size=32, learning_rate=0.001,
+                                         #class_weight=class_weights))])
+            ('svm', SVC(C=1, gamma='scale', kernel='rbf', probability=True, class_weight=class_weights))])
 
         pipeline.fit(X, y)
 

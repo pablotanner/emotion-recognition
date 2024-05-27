@@ -27,7 +27,7 @@ args = parser.parse_args()
 
 
 def batch_generator(X_path, batch_size):
-    X_data = np.load(X_path, mmap_mode='r')  # Use memory-mapped mode to avoid loading the whole array into memory
+    X_data = np.load(X_path, mmap_mode='r',allow_pickle=True)  # Use memory-mapped mode to avoid loading the whole array into memory
     n_samples = X_data.shape[0]
     indices = np.arange(n_samples)
 
@@ -46,7 +46,7 @@ def partial_fit_scalers(standard_scaler, minmax_scaler, X_path, batch_size):
         minmax_scaler.partial_fit(X_batch_standard_scaled)
 
 def transform_in_batches(scaler, X_path, batch_size, output_path):
-    X_data = np.load(X_path, mmap_mode='r')
+    X_data = np.load(X_path, mmap_mode='r', allow_pickle=True)
     n_samples = X_data.shape[0]
     scaled_data = np.memmap(output_path, dtype='float32', mode='w+', shape=X_data.shape)
 
@@ -109,9 +109,9 @@ def preprocess_and_save_features(X_train_path, X_val_path, X_test_path, feature_
         transform_in_batches(standard_scaler, X_val_path, batch_size, scaled_val_path)
         transform_in_batches(standard_scaler, X_test_path, batch_size, scaled_test_path)
 
-        X_train = np.load(scaled_train_path, mmap_mode='r')
-        X_val = np.load(scaled_val_path, mmap_mode='r')
-        X_test = np.load(scaled_test_path, mmap_mode='r')
+        X_train = np.load(scaled_train_path, mmap_mode='r', allow_pickle=True)
+        X_val = np.load(scaled_val_path, mmap_mode='r', allow_pickle=True)
+        X_test = np.load(scaled_test_path, mmap_mode='r', allow_pickle=True)
 
     else:
         standard_scaler = StandardScaler()
@@ -129,9 +129,9 @@ def preprocess_and_save_features(X_train_path, X_val_path, X_test_path, feature_
         transform_in_batches(standard_scaler, X_val_path, batch_size, scaled_val_path)
         transform_in_batches(standard_scaler, X_test_path, batch_size, scaled_test_path)
 
-        X_train = np.load(scaled_train_path, mmap_mode='r')
-        X_val = np.load(scaled_val_path, mmap_mode='r')
-        X_test = np.load(scaled_test_path, mmap_mode='r')
+        X_train = np.load(scaled_train_path, mmap_mode='r', allow_pickle=True)
+        X_val = np.load(scaled_val_path, mmap_mode='r', allow_pickle=True)
+        X_test = np.load(scaled_test_path, mmap_mode='r', allow_pickle=True)
 
     logger.info(f'Dimensionality Reduction for {feature_name}...')
 
