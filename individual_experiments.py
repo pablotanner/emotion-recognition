@@ -15,7 +15,7 @@ from src.model_training.torch_mlp import PyTorchMLPClassifier
 from src.model_training.torch_neural_network import NeuralNetwork
 from sklearn.model_selection import ParameterGrid
 import gc
-from src.util.dataframe_converter import convert_to_cudf_df
+from src.util.dataframe_converter import convert_to_cudf_df, convert_to_dask_df
 
 def save_checkpoint(grid_search_state, filename):
     with open(filename, 'w') as f:

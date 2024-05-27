@@ -27,7 +27,7 @@ args = parser.parse_args()
 
 
 def batch_generator(X_path, batch_size):
-    X_data = np.load(X_path, mmap_mode='r',allow_pickle=True)  # Use memory-mapped mode to avoid loading the whole array into memory
+    X_data = np.load(X_path, mmap_mode='r')  # Use memory-mapped mode to avoid loading the whole array into memory
     n_samples = X_data.shape[0]
     indices = np.arange(n_samples)
 
@@ -46,7 +46,7 @@ def partial_fit_scalers(standard_scaler, minmax_scaler, X_path, batch_size):
         minmax_scaler.partial_fit(X_batch_standard_scaled)
 
 def transform_in_batches(scaler, X_path, batch_size, output_path):
-    X_data = np.load(X_path, mmap_mode='r', allow_pickle=True)
+    X_data = np.load(X_path, mmap_mode='r')
     n_samples = X_data.shape[0]
     scaled_data = np.memmap(output_path, dtype='float32', mode='w+', shape=X_data.shape)
 
@@ -55,7 +55,11 @@ def transform_in_batches(scaler, X_path, batch_size, output_path):
         X_batch = X_data[start_idx:end_idx]
         scaled_data[start_idx:end_idx] = scaler.transform(X_batch)
 
-    return scaled_data
+    # Flush the memmap array to disk
+    del scaled_data
+
+    # Reload the data to return as a numpy array
+    return np.load(output_path, mmap_mode='r')
 
 def fit_pca(X_train_scaled, n_components):
     pca = PCA(n_components=n_components)
