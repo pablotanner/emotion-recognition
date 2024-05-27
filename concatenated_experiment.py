@@ -6,7 +6,6 @@ import numpy as np
 from keras import Input, Model
 from keras.callbacks import EarlyStopping
 from keras.layers import Dense
-#from sklearn.decomposition import PCA
 from cuml.decomposition import IncrementalPCA as PCA
 from cuml.preprocessing import StandardScaler, MinMaxScaler
 
@@ -22,44 +21,22 @@ parser.add_argument('--test_features_dir', type=str, help='Path to /features fol
 parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)', default='/local/scratch/ptanner/')
 parser.add_argument('--experiment-dir', type=str, help='Directory to experiment dir', default='/local/scratch/ptanner/concatenated_experiment')
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
-parser.add_argument('--batch-size', type=int, help='Batch size for scaling', default=1000)
 args = parser.parse_args()
 
 
-def batch_generator(X_path, batch_size):
-    X_data = np.load(X_path, mmap_mode='r')  # Use memory-mapped mode to avoid loading the whole array into memory
-    n_samples = X_data.shape[0]
-    indices = np.arange(n_samples)
+def fit_scalers(X_train):
+    standard_scaler = StandardScaler()
+    X_train_standard_scaled = standard_scaler.fit_transform(X_train)
 
-    for start_idx in range(0, n_samples, batch_size):
-        end_idx = min(start_idx + batch_size, n_samples)
-        batch_indices = indices[start_idx:end_idx]
-        X_batch = X_data[batch_indices]
-        yield X_batch
+    minmax_scaler = MinMaxScaler(feature_range=(-5, 5))
+    X_train_scaled = minmax_scaler.fit_transform(X_train_standard_scaled)
 
-def partial_fit_scalers(standard_scaler, minmax_scaler, X_path, batch_size):
-    for X_batch in batch_generator(X_path, batch_size):
-        standard_scaler.partial_fit(X_batch)
+    return standard_scaler, minmax_scaler, X_train_scaled
 
-    for X_batch in batch_generator(X_path, batch_size):
-        X_batch_standard_scaled = standard_scaler.transform(X_batch)
-        minmax_scaler.partial_fit(X_batch_standard_scaled)
 
-def transform_in_batches(scaler, X_path, batch_size, output_path):
-    X_data = np.load(X_path, mmap_mode='r')
-    n_samples = X_data.shape[0]
-    scaled_data = np.memmap(output_path, dtype='float32', mode='w+', shape=X_data.shape)
-
-    for start_idx in range(0, n_samples, batch_size):
-        end_idx = min(start_idx + batch_size, n_samples)
-        X_batch = X_data[start_idx:end_idx]
-        scaled_data[start_idx:end_idx] = scaler.transform(X_batch)
-
-    # Flush the memmap array to disk
-    del scaled_data
-
-    # Reload the data to return as a numpy array
-    return np.load(output_path, mmap_mode='r')
+def apply_scalers(X, standard_scaler, minmax_scaler):
+    X_standard_scaled = standard_scaler.transform(X)
+    return minmax_scaler.transform(X_standard_scaled)
 
 def fit_pca(X_train_scaled, n_components):
     pca = PCA(n_components=n_components)
@@ -68,7 +45,6 @@ def fit_pca(X_train_scaled, n_components):
 
 def apply_pca(X_scaled, pca):
     return pca.transform(X_scaled)
-
 
 def fit_autoencoder(X_train_scaled, autoencoder_components):
     input_dim = X_train_scaled.shape[1]
@@ -89,55 +65,38 @@ def fit_autoencoder(X_train_scaled, autoencoder_components):
 def apply_autoencoder(X_scaled, encoder):
     return encoder.predict(X_scaled)
 
-def preprocess_and_save_features(X_train_path, X_val_path, X_test_path, feature_name, feature_type, n_components=None, autoencoder_components=None, use_minmax=False, batch_size=args.batch_size):
+def preprocess_and_save_features(X_train, X_val, X_test, feature_name, feature_type, n_components=None, autoencoder_components=None, use_minmax=False):
     # Check if the feature is already preprocessed
     if f'train_{feature_name}.npy' in os.listdir(args.experiment_dir):
         logger.info(f'{feature_name} already preprocessed')
         return
 
     logger.info(f'Scaling {feature_name}...')
+    X_train = np.array(X_train)
+    X_val = np.array(X_val)
+    X_test = np.array(X_test)
     # Step 1: Scaling
     if use_minmax:
-        standard_scaler = StandardScaler()
-        minmax_scaler = MinMaxScaler(feature_range=(-5, 5))
-
-        # Perform partial_fit on the training data
-        partial_fit_scalers(standard_scaler, minmax_scaler, X_train_path, batch_size)
-
-        # Transform the data in batches
-        scaled_train_path = f'{args.experiment_dir}/scaled_train_{feature_name}.npy'
-        scaled_val_path = f'{args.experiment_dir}/scaled_val_{feature_name}.npy'
-        scaled_test_path = f'{args.experiment_dir}/scaled_test_{feature_name}.npy'
-
-        transform_in_batches(standard_scaler, X_train_path, batch_size, scaled_train_path)
-        transform_in_batches(standard_scaler, X_val_path, batch_size, scaled_val_path)
-        transform_in_batches(standard_scaler, X_test_path, batch_size, scaled_test_path)
-
-        X_train = np.load(scaled_train_path, mmap_mode='r', allow_pickle=True)
-        X_val = np.load(scaled_val_path, mmap_mode='r', allow_pickle=True)
-        X_test = np.load(scaled_test_path, mmap_mode='r', allow_pickle=True)
-
+        standard_scaler, minmax_scaler, X_train = fit_scalers(X_train)
+        X_val = apply_scalers(X_val, standard_scaler, minmax_scaler)
+        X_test = apply_scalers(X_test, standard_scaler, minmax_scaler)
     else:
-        standard_scaler = StandardScaler()
+        scaler = StandardScaler()
 
-        # Perform partial_fit on the training data
-        for X_batch in batch_generator(X_train_path, batch_size):
-            standard_scaler.partial_fit(X_batch)
+        n = X_train.shape[0]  # number of rows
+        batch_size = 1000  # number of rows in each call to partial_fit
+        index = 0  # helper-var
 
-        # Transform the data in batches
-        scaled_train_path = f'{args.experiment_dir}/scaled_train_{feature_name}.npy'
-        scaled_val_path = f'{args.experiment_dir}/scaled_val_{feature_name}.npy'
-        scaled_test_path = f'{args.experiment_dir}/scaled_test_{feature_name}.npy'
+        while index < n:
+            partial_size = min(batch_size, n - index)  # needed because last loop is possibly incomplete
+            partial_x = X_train[index:index + partial_size]
+            scaler.partial_fit(partial_x)
+            index += partial_size
 
-        transform_in_batches(standard_scaler, X_train_path, batch_size, scaled_train_path)
-        transform_in_batches(standard_scaler, X_val_path, batch_size, scaled_val_path)
-        transform_in_batches(standard_scaler, X_test_path, batch_size, scaled_test_path)
+        X_train = scaler.transform(X_train)
+        X_val = scaler.transform(X_val)
+        X_test = scaler.transform(X_test)
 
-        X_train = np.load(scaled_train_path, mmap_mode='r', allow_pickle=True)
-        X_val = np.load(scaled_val_path, mmap_mode='r', allow_pickle=True)
-        X_test = np.load(scaled_test_path, mmap_mode='r', allow_pickle=True)
-
-    logger.info(f'Dimensionality Reduction for {feature_name}...')
 
     logger.info(f'Dimensionality Reduction for {feature_name}...')
     # Step 2: Dimensionality Reduction
@@ -175,16 +134,6 @@ if __name__ == '__main__':
 
     logger.info(f'Starting experiment')
 
-
-    feature_types = {
-        'landmarks_3d': 'linear',
-        'facs_intensity': 'linear',
-        'facs_presence': 'linear',
-        'hog': 'nonlinear',
-        'facenet': 'nonlinear',
-        'sface': 'nonlinear',
-        'nonrigid_face_shape': 'nonlinear'
-    }
 
     if args.dummy:
         num_samples = 1000
@@ -225,35 +174,34 @@ if __name__ == '__main__':
             'test': np.random.randint(0, 8, num_samples)
         }
     else:
-        if not os.path.exists(f'{args.experiment_dir}/unprocessed/train_landmarks_3d.npy'):
-            data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
-                                     args.test_features_dir, args.main_id_dir)
-            feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+        data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
+                                 args.test_features_dir, args.main_id_dir)
+        feature_splits_dict, emotions_splits_dict = data_loader.get_data()
 
-            # Save the emotion labels
-            y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict[
-                'test']
-            np.save(f'{args.experiment_dir}/y_train.npy', y_train)
-            np.save(f'{args.experiment_dir}/y_val.npy', y_val)
-            np.save(f'{args.experiment_dir}/y_test.npy', y_test)
 
-            for feature in feature_types.keys():
-                np.save(f'{args.experiment_dir}/unprocessed/train_{feature}.npy', feature_splits_dict['train'][feature])
-                np.save(f'{args.experiment_dir}/unprocessed/val_{feature}.npy', feature_splits_dict['val'][feature])
-                np.save(f'{args.experiment_dir}/unprocessed/test_{feature}.npy', feature_splits_dict['test'][feature])
+    # Save the emotion labels
+    y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
+    np.save(f'{args.experiment_dir}/y_train.npy', y_train)
+    np.save(f'{args.experiment_dir}/y_val.npy', y_val)
+    np.save(f'{args.experiment_dir}/y_test.npy', y_test)
 
+
+    feature_types = {
+        'landmarks_3d': 'linear',
+        'facs_intensity': 'linear',
+        'facs_presence': 'linear',
+        'hog': 'nonlinear',
+        'facenet': 'nonlinear',
+        'sface': 'nonlinear',
+        'nonrigid_face_shape': 'nonlinear'
+    }
 
     for feature_name, linearity in feature_types.items():
-        # Paths
-        X_train_path = f'{args.experiment_dir}/unprocessed/train_{feature_name}.npy'
-        X_val_path = f'{args.experiment_dir}/unprocessed/val_{feature_name}.npy'
-        X_test_path = f'{args.experiment_dir}/unprocessed/test_{feature_name}.npy'
         if linearity == 'linear':
-            #preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, n_components=50)
-            preprocess_and_save_features(X_train_path, X_val_path, X_test_path, feature_name, linearity, n_components=50, use_minmax=True)
+            preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, n_components=50)
         else:
-            #preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, autoencoder_components=50)
-            preprocess_and_save_features(X_train_path, X_val_path, X_test_path, feature_name, linearity, autoencoder_components=50, use_minmax=True)
+            preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, autoencoder_components=50)
+
         logger.info(f'Preprocessed and saved {feature_name}')
 
     logger.info('Experiment completed')
