@@ -128,6 +128,13 @@ if __name__ == '__main__':
     y_val = dask_data['y_val']
     X_test = dask_data['X_test']
     y_test = dask_data['y_test']
+    
+    X_train.dtype = np.float64
+    X_val.dtype = np.float64
+    X_test.dtype = np.float64
+    y_train.dtype = np.int64
+    y_val.dtype = np.int64
+    y_test.dtype = np.int64
 
     logger.info('Data loaded and resampled')
 
