@@ -118,7 +118,7 @@ if __name__ == '__main__':
         np.save(f'{args.experiment_dir}/{args.feature}/y_test.npy', y_test)
 
 
-    dask_data = convert_to_dask_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10)
+    dask_data = convert_to_cudf_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10)
     del ros, scaler, X_train, X_val, X_test, y_train, y_val, y_test
     gc.collect()
 
