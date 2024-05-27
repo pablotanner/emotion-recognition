@@ -10,6 +10,8 @@ from cuml.preprocessing import StandardScaler
 #from cuml.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
+from sklearn.utils import compute_class_weight
+
 from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
 from src.model_training.torch_neural_network import NeuralNetwork
 
@@ -62,6 +64,24 @@ if __name__ == '__main__':
 
     feature = args.feature
 
+
+    probabilities_val = {}
+    probabilities_test = {}
+
+    X_train_path = feature_paths[feature]['train']
+    X_val_path = feature_paths[feature]['val']
+    X_test_path = feature_paths[feature]['test']
+
+    y_train = np.load('y_train.npy')
+    y_val = np.load('y_val.npy')
+    y_test = np.load('y_test.npy')
+
+    class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+    class_weights = {i: class_weights[i] for i in range(len(class_weights))}
+
+    input_shape = np.load(X_test_path).shape[1]
+    num_classes = len(np.unique(y_train))
+
     pipelines = []
 
     pipelines.append(Pipeline([
@@ -76,17 +96,17 @@ if __name__ == '__main__':
 
     pipelines.append(Pipeline([
         ('scaler', StandardScaler()),
-        ('nn', NeuralNetwork(batch_size=128, num_epochs=10))
+        ('nn', NeuralNetwork(batch_size=128, num_epochs=10, class_weight=class_weights, input_dim=input_shape))
     ]))
 
     pipelines.append(Pipeline([
         ('scaler', StandardScaler()),
-        ('mlp', MLP(hidden_size=256, batch_size=32, learning_rate=0.01, num_epochs=30))
+        ('mlp', MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30, num_classes=num_classes, input_size=input_shape))
     ]))
 
     pipelines.append(Pipeline([
             ('scaler', StandardScaler()),
-            ('svm', SVC(C=0.1, probability=True, class_weight='balanced'))
+            ('svm', SVC(C=0.1, probability=True, kernel='rbf', class_weight='balanced'))
     ]))
 
     pipelines.append(Pipeline([
@@ -94,17 +114,6 @@ if __name__ == '__main__':
             ('rf', RandomForestClassifier(n_estimators=400, max_depth=15, min_samples_split=2, class_weight='balanced'))
         ]))
 
-
-    probabilities_val = {}
-    probabilities_test = {}
-
-    X_train_path = feature_paths[feature]['train']
-    X_val_path = feature_paths[feature]['val']
-    X_test_path = feature_paths[feature]['test']
-
-    y_train = np.load('y_train.npy')
-    y_val = np.load('y_val.npy')
-    y_test = np.load('y_test.npy')
 
     for pipeline in pipelines:
         logger.info(f"Training with {pipeline.steps[-1][0]}")
