@@ -70,11 +70,6 @@ if __name__ == '__main__':
 
     pipelines.append(Pipeline([
         ('scaler', StandardScaler()),
-        ('knn', KNeighborsClassifier(n_neighbors=9))
-    ]))
-
-    pipelines.append(Pipeline([
-        ('scaler', StandardScaler()),
         ('lr', LogisticRegression(C=0.1, class_weight='balanced'))
     ]))
 
