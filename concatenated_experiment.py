@@ -6,7 +6,8 @@ import numpy as np
 from keras import Input, Model
 from keras.callbacks import EarlyStopping
 from keras.layers import Dense
-from sklearn.decomposition import PCA
+#from sklearn.decomposition import PCA
+from cuml.decomposition import IncrementalPCA as PCA
 from cuml.preprocessing import StandardScaler, MinMaxScaler
 
 
@@ -21,6 +22,7 @@ parser.add_argument('--test_features_dir', type=str, help='Path to /features fol
 parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)', default='/local/scratch/ptanner/')
 parser.add_argument('--experiment-dir', type=str, help='Directory to experiment dir', default='/local/scratch/ptanner/concatenated_experiment')
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
+parser.add_argument('--batch-size', type=int, help='Batch size for scaling', default=1000)
 args = parser.parse_args()
 
 
@@ -83,7 +85,7 @@ def fit_autoencoder(X_train_scaled, autoencoder_components):
 def apply_autoencoder(X_scaled, encoder):
     return encoder.predict(X_scaled)
 
-def preprocess_and_save_features(X_train_path, X_val_path, X_test_path, feature_name, feature_type, n_components=None, autoencoder_components=None, use_minmax=False, batch_size=2000):
+def preprocess_and_save_features(X_train_path, X_val_path, X_test_path, feature_name, feature_type, n_components=None, autoencoder_components=None, use_minmax=False, batch_size=args.batch_size):
     # Check if the feature is already preprocessed
     if f'train_{feature_name}.npy' in os.listdir(args.experiment_dir):
         logger.info(f'{feature_name} already preprocessed')
