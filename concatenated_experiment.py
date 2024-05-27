@@ -1,7 +1,9 @@
 import argparse
 import logging
 import os
-
+import dask.dataframe as dd
+import dask_cudf
+import pandas as pd
 import numpy as np
 from keras import Input, Model
 from keras.callbacks import EarlyStopping
@@ -75,51 +77,61 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name, feature_t
     X_train = np.array(X_train)
     X_val = np.array(X_val)
     X_test = np.array(X_test)
-    # Step 1: Scaling
-    if use_minmax:
-        standard_scaler, minmax_scaler, X_train = fit_scalers(X_train)
-        X_val = apply_scalers(X_val, standard_scaler, minmax_scaler)
-        X_test = apply_scalers(X_test, standard_scaler, minmax_scaler)
-    else:
-        scaler = StandardScaler()
 
-        n = X_train.shape[0]  # number of rows
-        batch_size = 1000  # number of rows in each call to partial_fit
-        index = 0  # helper-var
+    # Convert to Dask DataFrames
+    X_train_dask = dd.from_pandas(pd.DataFrame(X_train), npartitions=10)
+    X_val_dask = dd.from_pandas(pd.DataFrame(X_val), npartitions=10)
+    X_test_dask = dd.from_pandas(pd.DataFrame(X_test), npartitions=10)
 
-        while index < n:
-            partial_size = min(batch_size, n - index)  # needed because last loop is possibly incomplete
-            partial_x = X_train[index:index + partial_size]
-            scaler.partial_fit(partial_x)
-            index += partial_size
+    # Initialize Dask StandardScaler
+    scaler = StandardScaler()
 
-        X_train = scaler.transform(X_train)
-        X_val = scaler.transform(X_val)
-        X_test = scaler.transform(X_test)
+    # Perform partial fit on chunks of data
+    for chunk in X_train_dask.to_delayed():
+        chunk = chunk.compute()
+        scaler.partial_fit(chunk)
+
+    # Transform the data in chunks
+    X_train_scaled = X_train_dask.map_partitions(scaler.transform)
+    X_val_scaled = X_val_dask.map_partitions(scaler.transform)
+    X_test_scaled = X_test_dask.map_partitions(scaler.transform)
+
+    # If needed save and delete
+    # np.save(os.path.join(args.experiment_dir, f'train_{feature_name}_scaled.npy'), X_train_scaled.compute())
+    # np.save(os.path.join(args.experiment_dir, f'val_{feature_name}_scaled.npy'), X_val_scaled.compute())
+    # np.save(os.path.join(args.experiment_dir, f'test_{feature_name}_scaled.npy'), X_test_scaled.compute())
+
+    # Persist data to ensure it is computed and stays in memory for subsequent operations
+    X_train_scaled = X_train_scaled.persist()
+    X_val_scaled = X_val_scaled.persist()
+    X_test_scaled = X_test_scaled.persist()
 
 
     logger.info(f'Dimensionality Reduction for {feature_name}...')
+
     # Step 2: Dimensionality Reduction
     if feature_type == 'linear' and X_train.shape[1] > 50:
         if n_components is None:
             n_components = min(X_train.shape[1], 50)
-        pca, X_train_reduced = fit_pca(X_train, n_components)
-        X_val_reduced = apply_pca(X_val, pca)
-        X_test_reduced = apply_pca(X_test, pca)
+        pca = PCA(n_components=n_components)
+        X_train_reduced = pca.fit_transform(X_train_scaled)
+        X_val_reduced = pca.transform(X_val_scaled)
+        X_test_reduced = pca.transform(X_test_scaled)
     elif feature_type == 'nonlinear' and X_train.shape[1] > 50:
         if autoencoder_components is None:
             autoencoder_components = min(X_train.shape[1], 50)
-        encoder, X_train_reduced = fit_autoencoder(X_train, autoencoder_components)
-        X_val_reduced = apply_autoencoder(X_val, encoder)
-        X_test_reduced = apply_autoencoder(X_test, encoder)
+        encoder, X_train_reduced = fit_autoencoder(X_train_scaled, autoencoder_components)
+        X_val_reduced = apply_autoencoder(X_val_scaled, encoder)
+        X_test_reduced = apply_autoencoder(X_test_scaled, encoder)
     else:
-        X_train_reduced, X_val_reduced, X_test_reduced = X_train, X_val, X_test
+        X_train_reduced, X_val_reduced, X_test_reduced = X_train_scaled, X_val_scaled, X_test_scaled
 
-    logger.info(f'Saving {feature_name}...')
-    np.save(f'{args.experiment_dir}/train_{feature_name}.npy', X_train_reduced)
-    np.save(f'{args.experiment_dir}/val_{feature_name}.npy', X_val_reduced)
-    np.save(f'{args.experiment_dir}/test_{feature_name}.npy', X_test_reduced)
+    # Save the preprocessed features
+    np.save(os.path.join(args.experiment_dir, f'train_{feature_name}.npy'), X_train_reduced.compute())
+    np.save(os.path.join(args.experiment_dir, f'val_{feature_name}.npy'), X_val_reduced.compute())
+    np.save(os.path.join(args.experiment_dir, f'test_{feature_name}.npy'), X_test_reduced.compute())
 
+    logger.info(f'{feature_name} preprocessing complete.')
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     experiment_name = input("Enter experiment name: ")
