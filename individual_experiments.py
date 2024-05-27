@@ -60,7 +60,7 @@ if __name__ == '__main__':
         os.makedirs(f'{args.experiment_dir}/{args.feature}')
 
     parameters = {
-        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'polynomial']},
+        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'poly']},
         'LinearSVC': {'C': [0.1, 1, 10, 100]},
         'RandomForest': {'n_estimators': [100, 200, 300], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'split_criterion': [0,1]},
         'KNN': {'n_neighbors': [3, 5, 7, 9]},
