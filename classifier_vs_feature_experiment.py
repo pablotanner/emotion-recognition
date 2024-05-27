@@ -46,6 +46,7 @@ parser = argparse.ArgumentParser(
     description='Training same feature on different classifiers or different features on same classifier')
 parser.add_argument('--experiment-dir', type=str, help='Directory to checkpoint file',
                     default='/local/scratch/ptanner/cf_experiments')
+parser.add_argument('--feature', type=str, help='Feature to use for training', default='pdm')
 args = parser.parse_args()
 
 if __name__ == '__main__':
@@ -59,7 +60,7 @@ if __name__ == '__main__':
                         ])
     logger.info("Starting Experiment")
 
-    feature = 'hog'
+    feature = args.feature
 
     pipelines = []
 
@@ -123,7 +124,7 @@ if __name__ == '__main__':
         # Use probabilities as input to the stacking classifier
         X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
 
-        stacking_pipeline = Pipeline([('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight='balanced'))])
+        stacking_pipeline = Pipeline([('log_reg', LogisticRegression(C=1, class_weight='balanced'))])
 
         stacking_pipeline.fit(X_stack, y_val)
         stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
