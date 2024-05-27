@@ -122,6 +122,13 @@ if __name__ == '__main__':
     del ros, scaler, X_train, X_val, X_test, y_train, y_val, y_test
     gc.collect()
 
+    X_train = dask_data['X_train']
+    y_train = dask_data['y_train']
+    X_val = dask_data['X_val']
+    y_val = dask_data['y_val']
+    X_test = dask_data['X_test']
+    y_test = dask_data['y_test']
+
     logger.info('Data loaded and resampled')
 
 
@@ -169,19 +176,19 @@ if __name__ == '__main__':
                 clf = clf_class(**params)
 
             logger.info(f'Fitting model with parameters {params}')
-            clf.fit(dask_data['X_train'], dask_data['y_train'])
+            clf.fit(X_train.compute(), y_train.compute())
             #del X_train
             #gc.collect()
 
             # If classifier is NN or MLP, we need to convert probabilities to class labels
             if clf_name in ['NN', 'MLP']:
-                y_val_pred = np.argmax(clf.predict_proba(dask_data['X_val']), axis=1)
+                y_val_pred = np.argmax(clf.predict_proba(X_val.compute()), axis=1)
             else:
-                y_val_pred = clf.predict(dask_data['X_val'])
+                y_val_pred = clf.predict(X_val.compute())
             #del X_val
             #gc.collect()
 
-            score = balanced_accuracy_score(dask_data['y_val'], y_val_pred)
+            score = balanced_accuracy_score(y_val.compute(), y_val_pred)
 
             if score > best_score:
                 best_score = score
@@ -202,21 +209,20 @@ if __name__ == '__main__':
             best_classifiers[clf_name] = clf_class(**best_params)
 
         #X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
-        best_classifiers[clf_name].fit(dask_data['X_train'], dask_data['y_train'])
+        best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
         #del X_train
         #gc.collect()
         logger.info(f'Best parameters for {clf_name}: {best_params}')
 
         #X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
-        y_pred = best_classifiers[clf_name].predict(dask_data["X_val"])
+        y_pred = best_classifiers[clf_name].predict(X_val.compute())
         #del X_val
         #gc.collect()
-        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(dask_data["y_val"], y_pred)}')
-
+        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute(), y_pred)}')
 
     for clf_name, best_clf in best_classifiers.items():
-        y_pred = best_clf.predict(dask_data["X_test"])
-        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(dask_data["y_test"], y_pred)}')
+        y_pred = best_clf.predict(X_test.compute())
+        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute(), y_pred)}')
 
 
 
