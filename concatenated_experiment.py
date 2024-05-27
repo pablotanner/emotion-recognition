@@ -170,6 +170,16 @@ if __name__ == '__main__':
     logger.info(f'Starting experiment')
 
 
+    feature_types = {
+        'landmarks_3d': 'linear',
+        'facs_intensity': 'linear',
+        'facs_presence': 'linear',
+        'hog': 'nonlinear',
+        'facenet': 'nonlinear',
+        'sface': 'nonlinear',
+        'nonrigid_face_shape': 'nonlinear'
+    }
+
     if args.dummy:
         num_samples = 1000
 
@@ -209,35 +219,22 @@ if __name__ == '__main__':
             'test': np.random.randint(0, 8, num_samples)
         }
     else:
-        data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
-                                 args.test_features_dir, args.main_id_dir)
-        feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+        if not os.path.exists(f'{args.experiment_dir}/unprocessed/train_landmarks_3d.npy'):
+            data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
+                                     args.test_features_dir, args.main_id_dir)
+            feature_splits_dict, emotions_splits_dict = data_loader.get_data()
 
+            # Save the emotion labels
+            y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict[
+                'test']
+            np.save(f'{args.experiment_dir}/y_train.npy', y_train)
+            np.save(f'{args.experiment_dir}/y_val.npy', y_val)
+            np.save(f'{args.experiment_dir}/y_test.npy', y_test)
 
-    # Save the emotion labels
-    y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
-    np.save(f'{args.experiment_dir}/y_train.npy', y_train)
-    np.save(f'{args.experiment_dir}/y_val.npy', y_val)
-    np.save(f'{args.experiment_dir}/y_test.npy', y_test)
-
-
-    feature_types = {
-        'landmarks_3d': 'linear',
-        'facs_intensity': 'linear',
-        'facs_presence': 'linear',
-        'hog': 'nonlinear',
-        'facenet': 'nonlinear',
-        'sface': 'nonlinear',
-        'nonrigid_face_shape': 'nonlinear'
-    }
-
-    # First save unprocessed features in /unprocessed
-    for feature in feature_splits_dict['train']:
-        if f'train_{feature}.npy' in os.listdir(f'{args.experiment_dir}/unprocessed'):
-            continue
-        np.save(f'{args.experiment_dir}/unprocessed/train_{feature}.npy', feature_splits_dict['train'][feature])
-        np.save(f'{args.experiment_dir}/unprocessed/val_{feature}.npy', feature_splits_dict['val'][feature])
-        np.save(f'{args.experiment_dir}/unprocessed/test_{feature}.npy', feature_splits_dict['test'][feature])
+            for feature in feature_types.keys():
+                np.save(f'{args.experiment_dir}/unprocessed/train_{feature}.npy', feature_splits_dict['train'][feature])
+                np.save(f'{args.experiment_dir}/unprocessed/val_{feature}.npy', feature_splits_dict['val'][feature])
+                np.save(f'{args.experiment_dir}/unprocessed/test_{feature}.npy', feature_splits_dict['test'][feature])
 
 
     for feature_name, linearity in feature_types.items():
