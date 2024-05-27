@@ -231,7 +231,7 @@ if __name__ == '__main__':
         y_pred = best_classifiers[clf_name].predict(X_val.compute())
         #del X_val
         #gc.collect()
-        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute(), y_pred.to_numpy())}')
+        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred.to_numpy())}')
 
     for clf_name, best_clf in best_classifiers.items():
         if clf_name == 'LinearSVC':
@@ -239,7 +239,7 @@ if __name__ == '__main__':
         else:
             best_clf.fit(X_train.compute(), y_train.compute())
         y_pred = best_clf.predict(X_test.compute())
-        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute(), y_pred.to_numpy())}')
+        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute().to_numpy(), y_pred.to_numpy())}')
 
 
 
