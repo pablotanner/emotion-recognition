@@ -32,6 +32,10 @@ class NeuralNetwork(nn.Module):
         self.optimizer = optimizer
 
     def fit(self, X_train, y_train):
+        if self.optimizer is None:
+            # Default optimizer
+            self.optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
+
         self.train()
         dataset = torch.utils.data.TensorDataset(torch.tensor(X_train, dtype=torch.float32),
                                                  torch.tensor(y_train, dtype=torch.long))
