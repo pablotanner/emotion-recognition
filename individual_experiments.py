@@ -208,9 +208,7 @@ if __name__ == '__main__':
 
             logger.info(f'Fitting model with parameters {params}')
 
-            if clf_name == 'LinearSVC':
-                clf.fit(X_train.compute().to_numpy(), y_train.compute())
-            elif clf_name in ['NN', 'MLP']:
+            if clf_name in ['NN', 'MLP','LinearSVC']:
                 clf.fit(X_train.compute().to_numpy(), y_train.compute())
             else:
                 clf.fit(X_train.compute(), y_train.compute())
@@ -248,7 +246,7 @@ if __name__ == '__main__':
             best_classifiers[clf_name] = clf_class(**best_params)
 
         # If classifier is LinearSVC, we need to convert data to numpy
-        if clf_name == 'LinearSVC':
+        if clf_name in ['NN', 'MLP','LinearSVC']:
             best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute())
         else:
             best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
@@ -258,18 +256,27 @@ if __name__ == '__main__':
         logger.info(f'Best parameters for {clf_name}: {best_params}')
 
         #X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
-        y_pred = best_classifiers[clf_name].predict(X_val.compute())
-        #del X_val
-        #gc.collect()
-        logger.info(f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred.to_numpy())}')
+        if clf_name in ['NN', 'MLP']:
+            y_pred = np.argmax(best_classifiers[clf_name].predict_proba(X_val.compute().to_numpy()), axis=1)
+            logger.info(
+                f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred)}')
+        else:
+            y_pred = best_classifiers[clf_name].predict(X_val.compute())
+            logger.info(
+                f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred.to_numpy())}')
 
     for clf_name, best_clf in best_classifiers.items():
-        if clf_name == 'LinearSVC':
+        if clf_name in ['NN', 'MLP','LinearSVC']:
             best_clf.fit(X_train.compute().to_numpy(), y_train.compute())
         else:
             best_clf.fit(X_train.compute(), y_train.compute())
-        y_pred = best_clf.predict(X_test.compute())
-        logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute().to_numpy(), y_pred.to_numpy())}')
+
+        if clf_name in ['NN', 'MLP']:
+            y_pred = np.argmax(best_clf.predict_proba(X_test.compute().to_numpy()), axis=1)
+            logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute().to_numpy(), y_pred)}')
+        else:
+            y_pred = best_clf.predict(X_test.compute())
+            logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute().to_numpy(), y_pred.to_numpy())}')
 
 
 
