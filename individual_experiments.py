@@ -90,11 +90,11 @@ if __name__ == '__main__':
         X_shape = X_train.shape[1]
     elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train.npy'):
         X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy').astype(np.float32)
-        y_train = np.load(f'{args.experiment_dir}/{args.feature}/y_train.npy').astype(np.float32)
+        y_train = np.load(f'{args.experiment_dir}/{args.feature}/y_train.npy')
         X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy').astype(np.float32)
-        y_val = np.load(f'{args.experiment_dir}/{args.feature}/y_val.npy').astype(np.float32)
+        y_val = np.load(f'{args.experiment_dir}/{args.feature}/y_val.npy')
         X_test = np.load(f'{args.experiment_dir}/{args.feature}/X_test.npy').astype(np.float32)
-        y_test = np.load(f'{args.experiment_dir}/{args.feature}/y_test.npy').astype(np.float32)
+        y_test = np.load(f'{args.experiment_dir}/{args.feature}/y_test.npy')
 
         X_shape = X_train.shape[1]
     else:
@@ -116,9 +116,11 @@ if __name__ == '__main__':
         np.save(f'{args.experiment_dir}/{args.feature}/X_test.npy', X_test)
         np.save(f'{args.experiment_dir}/{args.feature}/y_test.npy', y_test)
 
+        del scaler
+
 
     dask_data = convert_to_cudf_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10)
-    del ros, scaler, X_train, X_val, X_test, y_train, y_val, y_test
+    del ros, X_train, X_val, X_test, y_train, y_val, y_test
     gc.collect()
 
     X_train = dask_data['X_train']
