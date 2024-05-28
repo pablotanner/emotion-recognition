@@ -88,7 +88,7 @@ if __name__ == '__main__':
         X_test, y_test = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
 
         X_shape = X_train.shape[1]
-    elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train'):
+    elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train.npy'):
         X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy').astype(np.float32)
         y_train = np.load(f'{args.experiment_dir}/{args.feature}/y_train.npy').astype(np.float32)
         X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy').astype(np.float32)
