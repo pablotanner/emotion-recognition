@@ -114,8 +114,14 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name, use_minma
     logger.info(f'Dimensionality Reduction for {feature_name}...')
 
     # Step 2: Dimensionality Reduction
-    if X_train.shape[1] < 50:
-        pca = PCA(n_components=0.95)
+    if X_train.shape[1] > 50:
+        pca_components = {
+            'landmarks_3d': 100,
+            'hog': 200,
+            'sface': 50,
+            'facenet': 50,
+        }
+        pca = PCA(n_components=pca_components[feature_name])
         X_train = pca.fit_transform(X_train)
         X_val = pca.transform(X_val)
         X_test = pca.transform(X_test)
