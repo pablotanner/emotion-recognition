@@ -208,29 +208,41 @@ if __name__ == '__main__':
 
             logger.info(f'Fitting model with parameters {params}')
 
-            if clf_name in ['NN', 'MLP','LinearSVC']:
-                clf.fit(X_train.compute().to_numpy(), y_train.compute())
-            else:
-                clf.fit(X_train.compute(), y_train.compute())
-            #del X_train
-            #gc.collect()
+            try:
+                if clf_name in ['NN', 'MLP','LinearSVC']:
+                    clf.fit(X_train.compute().to_numpy(), y_train.compute())
+                elif clf_name in ['RandomForest']:
+                    clf.fit(X_train.compute().to_numpy(), y_train.compute().to_numpy())
+                else:
+                    clf.fit(X_train.compute(), y_train.compute())
+                #del X_train
+                #gc.collect()
 
-            # If classifier is NN or MLP, we need to convert probabilities to class labels
-            if clf_name in ['NN', 'MLP']:
-                y_val_pred = np.argmax(clf.predict_proba(X_val.compute().to_numpy()), axis=1)
-                score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred)
-            else:
-                y_val_pred = clf.predict(X_val.compute())
-                score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred.to_numpy())
+                # If classifier is NN or MLP, we need to convert probabilities to class labels
+                if clf_name in ['NN', 'MLP']:
+                    y_val_pred = np.argmax(clf.predict_proba(X_val.compute().to_numpy()), axis=1)
+                    score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred)
+                elif clf_name in ['RandomForest']:
+                    y_val_pred = clf.predict(X_val.compute().to_numpy())
+                    score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred)
+                else:
+                    y_val_pred = clf.predict(X_val.compute())
+                    score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred.to_numpy())
 
-            #del X_val
-            #gc.collect()
+                #del X_val
+                #gc.collect()
 
-
-            if score > best_score:
-                best_score = score
-                best_params = params
-
+            except MemoryError:
+                logger.error(f'Memory error occurred while training {clf_name} with params {params}')
+                score = 0
+            except Exception as e:
+                logger.error(f'Error occurred while training {clf_name} with params {params}')
+                logger.error(e)
+                score = 0
+            finally:
+                if score > best_score:
+                    best_score = score
+                    best_params = params
             # Update the checkpoint state
             grid_search_state[clf_name]['best_score'] = best_score
             grid_search_state[clf_name]['best_params'] = best_params
@@ -248,6 +260,8 @@ if __name__ == '__main__':
         # If classifier is LinearSVC, we need to convert data to numpy
         if clf_name in ['NN', 'MLP','LinearSVC']:
             best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute())
+        elif clf_name in ['RandomForest']:
+            best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute().to_numpy())
         else:
             best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
         #X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
@@ -260,6 +274,10 @@ if __name__ == '__main__':
             y_pred = np.argmax(best_classifiers[clf_name].predict_proba(X_val.compute().to_numpy()), axis=1)
             logger.info(
                 f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred)}')
+        elif clf_name in ['RandomForest']:
+            y_pred = best_classifiers[clf_name].predict(X_val.compute().to_numpy())
+            logger.info(
+                f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred)}')
         else:
             y_pred = best_classifiers[clf_name].predict(X_val.compute())
             logger.info(
@@ -268,11 +286,16 @@ if __name__ == '__main__':
     for clf_name, best_clf in best_classifiers.items():
         if clf_name in ['NN', 'MLP','LinearSVC']:
             best_clf.fit(X_train.compute().to_numpy(), y_train.compute())
+        elif clf_name in ['RandomForest']:
+            best_clf.fit(X_train.compute().to_numpy(), y_train.compute().to_numpy())
         else:
             best_clf.fit(X_train.compute(), y_train.compute())
 
         if clf_name in ['NN', 'MLP']:
             y_pred = np.argmax(best_clf.predict_proba(X_test.compute().to_numpy()), axis=1)
+            logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute().to_numpy(), y_pred)}')
+        elif clf_name in ['RandomForest']:
+            y_pred = best_clf.predict(X_test.compute().to_numpy())
             logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute().to_numpy(), y_pred)}')
         else:
             y_pred = best_clf.predict(X_test.compute())
