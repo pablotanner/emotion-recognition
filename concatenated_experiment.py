@@ -34,10 +34,10 @@ args = parser.parse_args()
 feature_types = {
     'landmarks_3d': 'linear',
     'facs_intensity': 'linear',
-    'facs_presence': 'linear',
-    'hog': 'nonlinear',
-    'facenet': 'nonlinear',
-    'sface': 'nonlinear',
+    #'facs_presence': 'linear',
+    #'hog': 'nonlinear',
+    #'facenet': 'nonlinear',
+    #'sface': 'nonlinear',
     'nonrigid_face_shape': 'nonlinear'
 }
 
@@ -48,7 +48,6 @@ def load_and_concatenate_features(dataset_type):
 
     if os.path.exists(path):
         return path
-
 
     X_list = []
 
@@ -78,6 +77,8 @@ def load_and_concatenate_features(dataset_type):
     logger.info('Data loaded and concatenated')
 
     np.save(path, X)
+
+    logger.info('Data saved')
 
     return path
 
@@ -239,16 +240,17 @@ if __name__ == '__main__':
                 preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, autoencoder_components=50)
 
     gc.collect()
-    logger.info(f'Loading Data')
+    logger.info(f'Preparing concatenated data')
     y_train = np.load(f'{args.experiment_dir}/y_train.npy')
-    #y_val = np.load(f'{args.experiment_dir}/y_val.npy')
-    #y_test = np.load(f'{args.experiment_dir}/y_test.npy')
 
     X_train_path = load_and_concatenate_features('train')
-    #X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
-    #X_test = np.concatenate([np.load(f'{args.experiment_dir}/test_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
+    X_val_path = load_and_concatenate_features('val')
+    X_test_path = load_and_concatenate_features('test')
 
-    X_train = np.load(X_train_path, mmap_mode='r')
+
+    logger.info(f'Loading Data, fitting MLP, and evaluating results')
+
+    X_train = np.load(X_train_path)
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
@@ -262,9 +264,8 @@ if __name__ == '__main__':
 
     y_val = np.load(f'{args.experiment_dir}/y_val.npy')
 
-    X_val_path = load_and_concatenate_features('val')
 
-    X_val = np.load(X_val_path, mmap_mode='r')
+    X_val = np.load(X_val_path)
     
     y_pred = mlp.predict(X_val)
     del X_val
