@@ -44,6 +44,12 @@ feature_types = {
 def load_and_concatenate_features(dataset_type):
     logger.info('Loading Data')
 
+    path = f'{args.experiment_dir}/{dataset_type}_concatenated_features.npy'
+
+    if os.path.exists(path):
+        return path
+
+
     X_list = []
 
     for feature in feature_types.keys():
@@ -71,7 +77,9 @@ def load_and_concatenate_features(dataset_type):
 
     logger.info('Data loaded and concatenated')
 
-    return X
+    np.save(path, X)
+
+    return path
 
 
 def fit_scalers(X_train):
@@ -236,10 +244,11 @@ if __name__ == '__main__':
     #y_val = np.load(f'{args.experiment_dir}/y_val.npy')
     #y_test = np.load(f'{args.experiment_dir}/y_test.npy')
 
-    X_train = load_and_concatenate_features('train')
+    X_train_path = load_and_concatenate_features('train')
     #X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
     #X_test = np.concatenate([np.load(f'{args.experiment_dir}/test_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
 
+    X_train = np.load(X_train_path, mmap_mode='r')
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
@@ -253,8 +262,10 @@ if __name__ == '__main__':
 
     y_val = np.load(f'{args.experiment_dir}/y_val.npy')
 
-    X_val = load_and_concatenate_features('val')
+    X_val_path = load_and_concatenate_features('val')
 
+    X_val = np.load(X_val_path, mmap_mode='r')
+    
     y_pred = mlp.predict(X_val)
     del X_val
 
