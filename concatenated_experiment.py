@@ -29,6 +29,44 @@ parser.add_argument('--dummy', action='store_true', help='Use dummy data')
 parser.add_argument('--skip-loading',  action='store_true', help='Skip preprocessing and loading data')
 args = parser.parse_args()
 
+feature_types = {
+    'landmarks_3d': 'linear',
+    'facs_intensity': 'linear',
+    'facs_presence': 'linear',
+    'hog': 'nonlinear',
+    'facenet': 'nonlinear',
+    'sface': 'nonlinear',
+    'nonrigid_face_shape': 'nonlinear'
+}
+
+def load_and_concatenate_features(dataset_type):
+    logger.info('Loading Data')
+
+    X_list = []
+
+    for feature in feature_types.keys():
+        logger.info(f'Loading {feature}...')
+
+        # Use memory mapping to load data
+        file_path = f'{args.experiment_dir}/{dataset_type}_{feature}.npy'
+        data = np.load(file_path, mmap_mode='r').astype(np.float32)
+        X_list.append(data)
+
+        # Explicitly free memory
+        del data
+        gc.collect()
+
+    logger.info(f'Concatenating features for {dataset_type}...')
+    X = np.concatenate(X_list, axis=1)
+
+    # Free the list memory
+    del X_list
+    gc.collect()
+
+    logger.info('Data loaded and concatenated')
+
+    return X
+
 
 def fit_scalers(X_train):
     standard_scaler = StandardScaler()
@@ -128,16 +166,6 @@ if __name__ == '__main__':
 
     logger.info(f'Starting experiment')
 
-    feature_types = {
-        'landmarks_3d': 'linear',
-        'facs_intensity': 'linear',
-        'facs_presence': 'linear',
-        'hog': 'nonlinear',
-        'facenet': 'nonlinear',
-        'sface': 'nonlinear',
-        'nonrigid_face_shape': 'nonlinear'
-    }
-
     if not args.skip_loading:
         if args.dummy:
             num_samples = 1000
@@ -202,13 +230,7 @@ if __name__ == '__main__':
     #y_val = np.load(f'{args.experiment_dir}/y_val.npy')
     #y_test = np.load(f'{args.experiment_dir}/y_test.npy')
 
-    X_train = []
-
-    for feature in feature_types.keys():
-        logger.info(f'Loading {feature}...')
-        X_train.append(np.load(f'{args.experiment_dir}/train_{feature}.npy').astype(np.float32))
-
-    X_train = np.concatenate(X_train, axis=1)
+    X_train = load_and_concatenate_features('train')
     #X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
     #X_test = np.concatenate([np.load(f'{args.experiment_dir}/test_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
 
@@ -222,14 +244,10 @@ if __name__ == '__main__':
     logger.info(f'Fitting MLP')
     mlp.fit(X_train, y_train)
     del X_train, y_train
-    X_val = []
+    
     y_val = np.load(f'{args.experiment_dir}/y_val.npy')
 
-    for feature in feature_types.keys():
-        logger.info(f'Loading (for X_val) {feature}...')
-        X_val.append(np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32))
-
-    X_val = np.concatenate(X_val, axis=1)
+    X_val = load_and_concatenate_features('val')
 
     y_pred = mlp.predict(X_val)
     del X_val
