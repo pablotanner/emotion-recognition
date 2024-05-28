@@ -1,4 +1,5 @@
 import argparse
+import gc
 import logging
 import os
 import numpy as np
@@ -195,12 +196,19 @@ if __name__ == '__main__':
             else:
                 preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, autoencoder_components=50)
 
+    gc.collect()
     logger.info(f'Loading Data')
     y_train = np.load(f'{args.experiment_dir}/y_train.npy')
     #y_val = np.load(f'{args.experiment_dir}/y_val.npy')
     #y_test = np.load(f'{args.experiment_dir}/y_test.npy')
 
-    X_train = np.concatenate([np.load(f'{args.experiment_dir}/train_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
+    X_train = []
+
+    for feature in feature_types.keys():
+        logger.info(f'Loading {feature}...')
+        X_train.append(np.load(f'{args.experiment_dir}/train_{feature}.npy').astype(np.float32))
+
+    X_train = np.concatenate(X_train, axis=1)
     #X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
     #X_test = np.concatenate([np.load(f'{args.experiment_dir}/test_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
 
@@ -214,9 +222,14 @@ if __name__ == '__main__':
     logger.info(f'Fitting MLP')
     mlp.fit(X_train, y_train)
     del X_train, y_train
-
+    X_val = []
     y_val = np.load(f'{args.experiment_dir}/y_val.npy')
-    X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
+
+    for feature in feature_types.keys():
+        logger.info(f'Loading (for X_val) {feature}...')
+        X_val.append(np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32))
+
+    X_val = np.concatenate(X_val, axis=1)
 
     y_pred = mlp.predict(X_val)
     del X_val
