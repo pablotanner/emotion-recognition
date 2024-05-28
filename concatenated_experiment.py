@@ -3,9 +3,6 @@ import gc
 import logging
 import os
 import numpy as np
-from keras import Input, Model
-from keras.callbacks import EarlyStopping
-from keras.layers import Dense
 #from cuml.decomposition import IncrementalPCA as PCA
 #from cuml.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import IncrementalPCA as PCA
@@ -88,48 +85,9 @@ def load_and_concatenate_features(dataset_type):
     return path
 
 
-def fit_scalers(X_train):
-    standard_scaler = StandardScaler()
-    X_train_standard_scaled = standard_scaler.fit_transform(X_train)
-
-    minmax_scaler = MinMaxScaler(feature_range=(-5, 5))
-    X_train_scaled = minmax_scaler.fit_transform(X_train_standard_scaled)
-
-    return standard_scaler, minmax_scaler, X_train_scaled
 
 
-def apply_scalers(X, standard_scaler, minmax_scaler):
-    X_standard_scaled = standard_scaler.transform(X)
-    return minmax_scaler.transform(X_standard_scaled)
-
-def fit_pca(X_train_scaled, n_components):
-    pca = PCA(n_components=n_components)
-    X_train_reduced = pca.fit_transform(X_train_scaled)
-    return pca, X_train_reduced
-
-def apply_pca(X_scaled, pca):
-    return pca.transform(X_scaled)
-
-def fit_autoencoder(X_train_scaled, autoencoder_components):
-    input_dim = X_train_scaled.shape[1]
-    input_layer = Input(shape=(input_dim,))
-    encoded = Dense(autoencoder_components, activation='relu')(input_layer)
-    decoded = Dense(input_dim, activation='sigmoid')(encoded)
-
-    autoencoder = Model(input_layer, decoded)
-    encoder = Model(input_layer, encoded)
-
-    autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
-    early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-    autoencoder.fit(X_train_scaled, X_train_scaled, epochs=100, batch_size=256, shuffle=True, validation_split=0.1, callbacks=[early_stopping])
-
-    X_train_reduced = encoder.predict(X_train_scaled)
-    return encoder, X_train_reduced
-
-def apply_autoencoder(X_scaled, encoder):
-    return encoder.predict(X_scaled)
-
-def preprocess_and_save_features(X_train, X_val, X_test, feature_name, feature_type, n_components=None, autoencoder_components=None, use_minmax=False):
+def preprocess_and_save_features(X_train, X_val, X_test, feature_name, use_minmax=False):
     # Check if the feature is already preprocessed
     if f'train_{feature_name}.npy' in os.listdir(args.experiment_dir):
         logger.info(f'{feature_name} already preprocessed')
@@ -140,9 +98,14 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name, feature_t
     X_val = np.array(X_val)
     X_test = np.array(X_test)
 
-    # Initialize Dask StandardScaler
-    scaler = StandardScaler()
+    # Initialize Scaler
+    if use_minmax:
+        scaler = MinMaxScaler(feature_range=(-5, 5))
+        X_train = scaler.fit_transform(X_train)
+        X_val = scaler.transform(X_val)
+        X_test = scaler.transform(X_test)
 
+    scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_val = scaler.transform(X_val)
     X_test = scaler.transform(X_test)
@@ -151,27 +114,21 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name, feature_t
     logger.info(f'Dimensionality Reduction for {feature_name}...')
 
     # Step 2: Dimensionality Reduction
-    if feature_type == 'linear' and X_train.shape[1] > 50:
-        if n_components is None:
-            n_components = min(X_train.shape[1], 50)
-        pca = PCA(n_components=n_components)
+    if X_train.shape[1] < 50:
+        pca = PCA(n_components=0.95)
         X_train = pca.fit_transform(X_train)
         X_val = pca.transform(X_val)
         X_test = pca.transform(X_test)
-    elif feature_type == 'nonlinear' and X_train.shape[1] > 50:
-        if autoencoder_components is None:
-            autoencoder_components = min(X_train.shape[1], 50)
-        encoder, X_train = fit_autoencoder(X_train, autoencoder_components)
-        X_val = apply_autoencoder(X_val, encoder)
-        X_test = apply_autoencoder(X_test, encoder)
 
 
     # Save the preprocessed features
-    np.save(os.path.join(args.experiment_dir, f'train_{feature_name}.npy'), X_train)
-    np.save(os.path.join(args.experiment_dir, f'val_{feature_name}.npy'), X_val)
-    np.save(os.path.join(args.experiment_dir, f'test_{feature_name}.npy'), X_test)
+    np.save(f'{args.experiment_dir}/train_{feature_name}.npy', X_train)
+    np.save(f'{args.experiment_dir}/val_{feature_name}.npy', X_val)
+    np.save(f'{args.experiment_dir}/test_{feature_name}.npy', X_test)
 
     logger.info(f'{feature_name} preprocessing complete.')
+
+
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     experiment_name = input("Enter experiment name: ")
@@ -188,6 +145,7 @@ if __name__ == '__main__':
 
     if not args.skip_loading:
         if args.dummy:
+            logger.info('USING DUMMY DATA')
             num_samples = 1000
 
             feature_splits_dict = {
@@ -226,6 +184,8 @@ if __name__ == '__main__':
                 'test': np.random.randint(0, 8, num_samples)
             }
         else:
+            logger.info(f'Loading Data with RolfLoader')
+
             data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
                                      args.test_features_dir, args.main_id_dir)
             feature_splits_dict, emotions_splits_dict = data_loader.get_data()
@@ -237,13 +197,17 @@ if __name__ == '__main__':
         np.save(f'{args.experiment_dir}/y_val.npy', y_val)
         np.save(f'{args.experiment_dir}/y_test.npy', y_test)
 
-
+        logger.info(f'Preprocessing Data and Saving...')
         for feature_name, linearity in feature_types.items():
-            if linearity == 'linear':
-                preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, n_components=50)
-            else:
-                preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, autoencoder_components=50)
+            use_mm = feature_name in ['landmarks_3d', 'hog', 'sface', 'facenet','facs_intensity']
 
+            preprocess_and_save_features(
+                feature_splits_dict['train'][feature_name],
+                feature_splits_dict['val'][feature_name],
+                feature_splits_dict['test'][feature_name],
+                feature_name,
+                use_minmax=use_mm,
+            )
     gc.collect()
     logger.info(f'Preparing concatenated data')
     y_train = np.load(f'{args.experiment_dir}/y_train.npy')
@@ -253,10 +217,9 @@ if __name__ == '__main__':
     X_test_path = load_and_concatenate_features('test')
 
 
-    logger.info(f'Loading Data, fitting MLP, and evaluating results')
-
     X_train = np.load(X_train_path)
 
+    logger.info(f'Prepared/Loaded concat data...')
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
@@ -278,7 +241,7 @@ if __name__ == '__main__':
 
     y_val = np.load(f'{args.experiment_dir}/y_val.npy')
     X_val = np.load(X_val_path)
-    
+
     for model in models:
         logger.info(f'Training {model.__class__.__name__}...')
         model.fit(X_train, y_train)
