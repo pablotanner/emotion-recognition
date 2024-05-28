@@ -9,13 +9,18 @@ from keras.layers import Dense
 #from cuml.decomposition import IncrementalPCA as PCA
 #from cuml.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import IncrementalPCA as PCA
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.utils import compute_class_weight
-
+from cuml.svm import SVC
 from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
 from src.model_training.torch_mlp import PyTorchMLPClassifier
+from src.model_training.torch_neural_network import NeuralNetwork
+
 import cupy as cp
 
 # Experiments for optimizing EmoRec with concatenated feature approach (feature fusion)
@@ -34,10 +39,10 @@ args = parser.parse_args()
 feature_types = {
     'landmarks_3d': 'linear',
     'facs_intensity': 'linear',
-    #'facs_presence': 'linear',
-    #'hog': 'nonlinear',
-    #'facenet': 'nonlinear',
-    #'sface': 'nonlinear',
+    'facs_presence': 'linear',
+    'hog': 'nonlinear',
+    'facenet': 'nonlinear',
+    'sface': 'nonlinear',
     'nonrigid_face_shape': 'nonlinear'
 }
 
@@ -255,23 +260,58 @@ if __name__ == '__main__':
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
+    nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=10, batch_size=128)
+    rf = RandomForestClassifier(n_estimators=100, class_weight=class_weights)
+    svm = SVC(class_weight=class_weights, probability=True, kernel='rbf', C=1)
+    nn.__class__.__name__ = 'NeuralNetwork'
+    rf.__class__.__name__ = 'RandomForestClassifier'
+    svm.__class__.__name__ = 'SVC'
 
-    mlp = PyTorchMLPClassifier(X_train.shape[1],num_classes=8, class_weight=class_weights, hidden_size=64, num_epochs=10, batch_size=64, learning_rate=0.01)
+    models = [
+        nn,
+        svm,
+        rf,
+    ]
 
-    logger.info(f'Fitting MLP')
-    mlp.fit(X_train, y_train)
-    del X_train, y_train
+    probabilities_val = {}
+
 
     y_val = np.load(f'{args.experiment_dir}/y_val.npy')
-
-
     X_val = np.load(X_val_path)
     
-    y_pred = mlp.predict(X_val)
+    for model in models:
+        logger.info(f'Training {model.__class__.__name__}...')
+        model.fit(X_train, y_train)
+        proba = model.predict_proba(X_val)
+        bal_acc_val = balanced_accuracy_score(y_val, np.argmax(proba, axis=1))
+        logger.info(f'Balanced Accuracy of {model.__class__.__name__} (Validation Set): {bal_acc_val}')
+
+        probabilities_val[model.__class__.__name__] = proba
+    
+    del X_train, y_train
     del X_val
 
-    bal_acc = balanced_accuracy_score(y_val, y_pred)
-    logger.info(f'Balanced Accuracy: {bal_acc}')
-    evaluate_results(y_val, y_pred)
+    gc.collect()
 
-    logger.info('Experiment completed')
+    def evaluate_stacking(probabilities, y_val):
+        """
+        Perform score fusion with stacking classifier
+        """
+        # Use probabilities as input to the stacking classifier
+        X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
+
+        stacking_pipeline = Pipeline([('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight='balanced'))])
+
+        stacking_pipeline.fit(X_stack, y_val)
+        stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
+
+        logger.info(f"Accuracy of stacking classifier (Validation Set): {stacking_accuracy}")
+
+        balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack))
+        logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
+
+        # Return the stacking pipeline
+        return stacking_pipeline
+
+    # Use stacking
+    stacking_pipeline = evaluate_results(probabilities_val, y_val)
