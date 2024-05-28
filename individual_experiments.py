@@ -68,6 +68,14 @@ if __name__ == '__main__':
         'hog': ['pca_train_hog_features.npy', 'pca_val_hog_features.npy', 'pca_test_hog_features.npy'],
     }
 
+    dtypes = {
+        'landmarks_3d': np.float16,
+        'embedded': np.float32,
+        'facs': np.float16,
+        'pdm': np.float16,
+        'hog': np.float32
+    }
+
     ros = RandomOverSampler(random_state=0)
 
     logger.info('Loading and Resampling data')
@@ -80,6 +88,16 @@ if __name__ == '__main__':
         X_test, y_test = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
 
         X_shape = X_train.shape[1]
+    elif os.path.exists(f'{args.experiment_dir}/{args.feature}/indi_train.npy'):
+        X_train = np.load(f'{args.experiment_dir}/{args.feature}/indi_train.npy').astype(dtypes[args.feature])
+        X_val = np.load(f'{args.experiment_dir}/{args.feature}/indi_val.npy').astype(dtypes[args.feature])
+        X_test = np.load(f'{args.experiment_dir}/{args.feature}/indi_test.npy').astype(dtypes[args.feature])
+        y_train = np.load('y_train.npy')
+        y_val = np.load('y_val.npy')
+        y_test = np.load('y_test.npy')
+
+
+
     elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train.npy'):
 
         """
@@ -109,7 +127,11 @@ if __name__ == '__main__':
 
         logger.info('Data loaded and scaled')
 
+        np.save(f'{args.experiment_dir}/{args.feature}/indi_train.npy', X_train)
+        np.save(f'{args.experiment_dir}/{args.feature}/indi_val.npy', X_val)
+        np.save(f'{args.experiment_dir}/{args.feature}/indi_test.npy', X_test)
 
+        logger.info('Indi data saved')
         X_shape = X_train.shape[1]
     else:
         scaler = StandardScaler()
@@ -162,6 +184,12 @@ if __name__ == '__main__':
         'MLP': {'hidden_size': [64, 128, 256],'class_weight':[class_weights], 'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01, 0.1]},
         'NN':  {'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'class_weight':[class_weights]}
     }
+
+    # If feature is dtype float16 we can add additional parameters to the grid search
+    if dtypes[args.feature] == np.float16:
+        parameters['SVC']['C'] = [0.1, 1, 10]
+
+
 
 
     classifiers = {
