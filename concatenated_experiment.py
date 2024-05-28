@@ -8,10 +8,13 @@ from keras.layers import Dense
 #from cuml.decomposition import IncrementalPCA as PCA
 #from cuml.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import IncrementalPCA as PCA
+from sklearn.metrics import balanced_accuracy_score
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.utils import compute_class_weight
 
-
+from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
+from src.model_training.torch_mlp import PyTorchMLPClassifier
 
 # Experiments for optimizing EmoRec with concatenated feature approach (feature fusion)
 parser = argparse.ArgumentParser(description='Optimizing EmoRec with feature fusion approach')
@@ -22,6 +25,7 @@ parser.add_argument('--test_features_dir', type=str, help='Path to /features fol
 parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)', default='/local/scratch/ptanner/')
 parser.add_argument('--experiment-dir', type=str, help='Directory to experiment dir', default='/local/scratch/ptanner/concatenated_experiment')
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
+parser.add_argument('--skip-loading',  action='store_true', help='Skip preprocessing and loading data')
 args = parser.parse_args()
 
 
@@ -123,58 +127,6 @@ if __name__ == '__main__':
 
     logger.info(f'Starting experiment')
 
-
-    if args.dummy:
-        num_samples = 1000
-
-        feature_splits_dict = {
-            'train': {
-                'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-                'facs_intensity': np.random.rand(num_samples, 20),
-                'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-                'nonrigid_face_shape': np.random.rand(num_samples, 13),
-                'hog': np.random.rand(num_samples, 3000),
-                'sface': np.random.rand(num_samples, 512),
-                'facenet': np.random.rand(num_samples, 512)
-            },
-            'val': {
-                'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-                'facs_intensity': np.random.rand(num_samples, 20),
-                'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-                'nonrigid_face_shape': np.random.rand(num_samples, 13),
-                'hog': np.random.rand(num_samples, 3000),
-                'sface': np.random.rand(num_samples, 512),
-                'facenet': np.random.rand(num_samples, 512)
-            },
-            'test': {
-                'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-                'facs_intensity': np.random.rand(num_samples, 20),
-                'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-                'nonrigid_face_shape': np.random.rand(num_samples, 13),
-                'hog': np.random.rand(num_samples, 3000),
-                'sface': np.random.rand(num_samples, 512),
-                'facenet': np.random.rand(num_samples, 512)
-            },
-        }
-        # 8 Classes
-        emotions_splits_dict = {
-            'train': np.random.randint(0, 8, num_samples),
-            'val': np.random.randint(0, 8, num_samples),
-            'test': np.random.randint(0, 8, num_samples)
-        }
-    else:
-        data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
-                                 args.test_features_dir, args.main_id_dir)
-        feature_splits_dict, emotions_splits_dict = data_loader.get_data()
-
-
-    # Save the emotion labels
-    y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
-    np.save(f'{args.experiment_dir}/y_train.npy', y_train)
-    np.save(f'{args.experiment_dir}/y_val.npy', y_val)
-    np.save(f'{args.experiment_dir}/y_test.npy', y_test)
-
-
     feature_types = {
         'landmarks_3d': 'linear',
         'facs_intensity': 'linear',
@@ -185,12 +137,86 @@ if __name__ == '__main__':
         'nonrigid_face_shape': 'nonlinear'
     }
 
-    for feature_name, linearity in feature_types.items():
-        if linearity == 'linear':
-            preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, n_components=50)
-        else:
-            preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, autoencoder_components=50)
+    if not args.skip_loading:
+        if args.dummy:
+            num_samples = 1000
 
-        logger.info(f'Preprocessed and saved {feature_name}')
+            feature_splits_dict = {
+                'train': {
+                    'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+                    'facs_intensity': np.random.rand(num_samples, 20),
+                    'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+                    'nonrigid_face_shape': np.random.rand(num_samples, 13),
+                    'hog': np.random.rand(num_samples, 3000),
+                    'sface': np.random.rand(num_samples, 512),
+                    'facenet': np.random.rand(num_samples, 512)
+                },
+                'val': {
+                    'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+                    'facs_intensity': np.random.rand(num_samples, 20),
+                    'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+                    'nonrigid_face_shape': np.random.rand(num_samples, 13),
+                    'hog': np.random.rand(num_samples, 3000),
+                    'sface': np.random.rand(num_samples, 512),
+                    'facenet': np.random.rand(num_samples, 512)
+                },
+                'test': {
+                    'landmarks_3d': np.random.rand(num_samples, 68 * 3),
+                    'facs_intensity': np.random.rand(num_samples, 20),
+                    'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
+                    'nonrigid_face_shape': np.random.rand(num_samples, 13),
+                    'hog': np.random.rand(num_samples, 3000),
+                    'sface': np.random.rand(num_samples, 512),
+                    'facenet': np.random.rand(num_samples, 512)
+                },
+            }
+            # 8 Classes
+            emotions_splits_dict = {
+                'train': np.random.randint(0, 8, num_samples),
+                'val': np.random.randint(0, 8, num_samples),
+                'test': np.random.randint(0, 8, num_samples)
+            }
+        else:
+            data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
+                                     args.test_features_dir, args.main_id_dir)
+            feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+
+
+        # Save the emotion labels
+        y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
+        np.save(f'{args.experiment_dir}/y_train.npy', y_train)
+        np.save(f'{args.experiment_dir}/y_val.npy', y_val)
+        np.save(f'{args.experiment_dir}/y_test.npy', y_test)
+
+
+        for feature_name, linearity in feature_types.items():
+            if linearity == 'linear':
+                preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, n_components=50)
+            else:
+                preprocess_and_save_features(feature_splits_dict['train'][feature_name], feature_splits_dict['val'][feature_name], feature_splits_dict['test'][feature_name], feature_name, linearity, autoencoder_components=50)
+
+    logger.info(f'Loading Data')
+    y_train = np.load(f'{args.experiment_dir}/y_train.npy')
+    y_val = np.load(f'{args.experiment_dir}/y_val.npy')
+    y_test = np.load(f'{args.experiment_dir}/y_test.npy')
+
+    X_train = np.concatenate([np.load(f'{args.experiment_dir}/train_{feature}.npy') for feature in feature_types.keys()], axis=1)
+    X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy') for feature in feature_types.keys()], axis=1)
+    X_test = np.concatenate([np.load(f'{args.experiment_dir}/test_{feature}.npy') for feature in feature_types.keys()], axis=1)
+
+
+    class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+    class_weights = {i: class_weights[i] for i in range(len(class_weights))}
+
+
+    mlp = PyTorchMLPClassifier(X_train.shape[1],num_classes=8, class_weight=class_weights, hidden_size=64, num_epochs=10, batch_size=64, learning_rate=0.01)
+
+    logger.info(f'Fitting MLP')
+    mlp.fit(X_train, y_train)
+    y_pred = mlp.predict(X_val)
+
+    bal_acc = balanced_accuracy_score(y_val, y_pred)
+    logger.info(f'Balanced Accuracy: {bal_acc}')
+    evaluate_results(y_val, y_pred)
 
     logger.info('Experiment completed')

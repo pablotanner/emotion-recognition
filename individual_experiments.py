@@ -211,7 +211,7 @@ if __name__ == '__main__':
             best_classifiers[clf_name] = NeuralNetwork(input_dim=X_shape, **best_params)
             best_classifiers[clf_name].compile(optim.Adam(best_classifiers[clf_name].parameters(), lr=0.001))
         elif clf_name == 'MLP':
-            best_classifiers[clf_name] = PyTorchMLPClassifier(input_size=X_shape, num_classes=9, **best_params)
+            best_classifiers[clf_name] = PyTorchMLPClassifier(input_size=X_shape, num_classes=8, **best_params)
         else:
             best_classifiers[clf_name] = clf_class(**best_params)
 
