@@ -188,8 +188,8 @@ if __name__ == '__main__':
     # If feature is dtype float16 we can add additional parameters to the grid search
     if dtypes[args.feature] == np.float16:
         parameters['SVC']['C'] = [0.1, 1, 10]
-    if args.feature in ['hog', 'embedded']:
-        parameters['SVC']['C'] = [1]
+    if args.feature in ['hog']:
+        parameters['SVC']['C'] = [0.1]
 
 
 
