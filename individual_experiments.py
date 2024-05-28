@@ -5,7 +5,8 @@ import os
 import numpy as np
 from cuml.svm import LinearSVC, SVC
 from sklearn.preprocessing import StandardScaler
-from cuml.ensemble import RandomForestClassifier as RFC
+#from cuml.ensemble import RandomForestClassifier as RFC
+from sklearn.ensemble import RandomForestClassifier
 from cuml.neighbors import KNeighborsClassifier as KNN
 from cuml.linear_model import LogisticRegression
 from imblearn.over_sampling import RandomOverSampler
@@ -33,7 +34,6 @@ parser.add_argument('--feature', type=str, help='Feature to use', default='landm
 parser.add_argument('--experiment-dir', type=str, help='Directory to checkpoint file', default='/local/scratch/ptanner/individual_experiments')
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
 parser.add_argument('--reset', action='store_true', help='Reset the checkpoints/logs')
-parser.add_argument('--gpu-id', type=int, help='GPU ID to use', default=0)
 args = parser.parse_args()
 
 
@@ -60,12 +60,12 @@ if __name__ == '__main__':
         os.makedirs(f'{args.experiment_dir}/{args.feature}')
 
     parameters = {
-        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'poly']},
-        'LinearSVC': {'C': [0.1, 1, 10, 100]},
-        'RandomForest': {'n_estimators': [100, 200, 300], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'split_criterion': [0,1]},
-        'LogisticRegression': {'C': [0.1, 1, 10, 100]},
-        'MLP': {'hidden_size': [64, 128, 256], 'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01, 0.1]},
-        'NN':  {'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128]}
+        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'poly'], 'class_weight':['balanced']},
+        'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
+        'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
+        'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
+        'MLP': {'hidden_size': [64, 128, 256],'class_weight':['balanced'], 'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01, 0.1]},
+        'NN':  {'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'class_weight':['balanced']}
     }
 
     feature_files = {
@@ -89,12 +89,34 @@ if __name__ == '__main__':
 
         X_shape = X_train.shape[1]
     elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train.npy'):
+
+        """
         X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy').astype(np.float32)
         y_train = np.load(f'{args.experiment_dir}/{args.feature}/y_train.npy')
         X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy').astype(np.float32)
         y_val = np.load(f'{args.experiment_dir}/{args.feature}/y_val.npy')
         X_test = np.load(f'{args.experiment_dir}/{args.feature}/X_test.npy').astype(np.float32)
         y_test = np.load(f'{args.experiment_dir}/{args.feature}/y_test.npy')
+        """
+
+        # Instead of oversampling, we use original date at cost of having to use scikit rf
+        scaler = StandardScaler()
+
+        logger.info('Loading and scaling data')
+
+        X_train = np.load(feature_files[args.feature][0]).astype(np.float32)
+        X_train = scaler.fit_transform(X_train)
+
+        y_train = np.load('y_train.npy')
+        X_val = np.load(feature_files[args.feature][1]).astype(np.float32)
+        X_val = scaler.transform(X_val)
+        y_val = np.load('y_val.npy')
+        X_test = np.load(feature_files[args.feature][2]).astype(np.float32)
+        X_test = scaler.transform(X_test)
+        y_test = np.load('y_test.npy')
+
+        logger.info('Data loaded and scaled')
+
 
         X_shape = X_train.shape[1]
     else:
@@ -140,11 +162,11 @@ if __name__ == '__main__':
 
     classifiers = {
         'LinearSVC': LinearSVC,
-        'RandomForest': RFC,
+        'SVC': SVC,
         'LogisticRegression': LogisticRegression,
         'MLP': PyTorchMLPClassifier,
         'NN': NeuralNetwork,
-        'SVC': SVC,
+        'RandomForest': RandomForestClassifier,
     }
 
 
@@ -173,7 +195,7 @@ if __name__ == '__main__':
             if params in tried_params:
                 continue
             if clf_name == 'NN':
-                clf = NeuralNetwork(input_dim=X_shape, **params )
+                clf = NeuralNetwork(input_dim=X_shape, **params)
                 clf.compile(optim.Adam(clf.parameters(), lr=0.001))
             elif clf_name == 'MLP':
                 clf = PyTorchMLPClassifier(input_size=X_shape, num_classes=8,**params)
