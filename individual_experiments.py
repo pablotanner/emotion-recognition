@@ -96,7 +96,7 @@ if __name__ == '__main__':
         y_val = np.load('y_val.npy')
         y_test = np.load('y_test.npy')
 
-
+        X_shape = X_train.shape[1]
 
     elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train.npy'):
 
