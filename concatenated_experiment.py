@@ -197,12 +197,12 @@ if __name__ == '__main__':
 
     logger.info(f'Loading Data')
     y_train = np.load(f'{args.experiment_dir}/y_train.npy')
-    y_val = np.load(f'{args.experiment_dir}/y_val.npy')
-    y_test = np.load(f'{args.experiment_dir}/y_test.npy')
+    #y_val = np.load(f'{args.experiment_dir}/y_val.npy')
+    #y_test = np.load(f'{args.experiment_dir}/y_test.npy')
 
-    X_train = np.concatenate([np.load(f'{args.experiment_dir}/train_{feature}.npy') for feature in feature_types.keys()], axis=1)
-    X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy') for feature in feature_types.keys()], axis=1)
-    X_test = np.concatenate([np.load(f'{args.experiment_dir}/test_{feature}.npy') for feature in feature_types.keys()], axis=1)
+    X_train = np.concatenate([np.load(f'{args.experiment_dir}/train_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
+    #X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
+    #X_test = np.concatenate([np.load(f'{args.experiment_dir}/test_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
 
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
@@ -213,7 +213,13 @@ if __name__ == '__main__':
 
     logger.info(f'Fitting MLP')
     mlp.fit(X_train, y_train)
+    del X_train, y_train
+
+    y_val = np.load(f'{args.experiment_dir}/y_val.npy')
+    X_val = np.concatenate([np.load(f'{args.experiment_dir}/val_{feature}.npy').astype(np.float32) for feature in feature_types.keys()], axis=1)
+
     y_pred = mlp.predict(X_val)
+    del X_val
 
     bal_acc = balanced_accuracy_score(y_val, y_pred)
     logger.info(f'Balanced Accuracy: {bal_acc}')
