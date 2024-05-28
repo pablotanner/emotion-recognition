@@ -11,7 +11,11 @@ from matplotlib import pyplot as plt
 FIRST = "36"
 SECOND = "395"
 
-image = mpimg.imread(f"../../data/images/{FIRST}.jpg")
+image = None
+
+if __name__ == "__main__":
+    image = mpimg.imread(f"../../data/images/{FIRST}.jpg")
+
 
 def rotation_matrix(rx, ry, rz):
     """Create a 3x3 rotation matrix from rotation angles."""
@@ -182,4 +186,4 @@ def standardize_3d_landmarks(landmarks, pose):
 
 
 
-compare_landmarks(FIRST, SECOND, use_standardization=True)
+#compare_landmarks(FIRST, SECOND, use_standardization=True)
