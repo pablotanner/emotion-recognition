@@ -210,6 +210,8 @@ if __name__ == '__main__':
 
             if clf_name == 'LinearSVC':
                 clf.fit(X_train.compute().to_numpy(), y_train.compute())
+            elif clf_name in ['NN', 'MLP']:
+                clf.fit(X_train.compute().to_numpy(), y_train.compute())
             else:
                 clf.fit(X_train.compute(), y_train.compute())
             #del X_train
@@ -217,13 +219,15 @@ if __name__ == '__main__':
 
             # If classifier is NN or MLP, we need to convert probabilities to class labels
             if clf_name in ['NN', 'MLP']:
-                y_val_pred = np.argmax(clf.predict_proba(X_val.compute()), axis=1)
+                y_val_pred = np.argmax(clf.predict_proba(X_val.compute().to_numpy()), axis=1)
+                score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred)
             else:
                 y_val_pred = clf.predict(X_val.compute())
+                score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred.to_numpy())
+
             #del X_val
             #gc.collect()
 
-            score = balanced_accuracy_score(y_val.compute().to_numpy(), y_val_pred.to_numpy())
 
             if score > best_score:
                 best_score = score
