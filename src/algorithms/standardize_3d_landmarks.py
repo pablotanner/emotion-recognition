@@ -1,7 +1,17 @@
-from tkinter import Image
+from matplotlib import image as mpimg
 
 import numpy as np
 from matplotlib import pyplot as plt
+
+# 36 For Surprised and Front Facing
+# 45 For unaligned
+# 395 Looks to right
+# 467 Looks to left
+
+FIRST = "36"
+SECOND = "395"
+
+image = mpimg.imread(f"../../data/images/{FIRST}.jpg")
 
 def rotation_matrix(rx, ry, rz):
     """Create a 3x3 rotation matrix from rotation angles."""
@@ -53,6 +63,7 @@ def reshape_3d_landmarks(landmarks):
 
 
 def visualize_landmark_difference(landmarks1, landmarks2):
+    global image
     x1 = landmarks1[:, 0]
     y1 = landmarks1[:, 1]
     z1 = landmarks1[:, 2]
@@ -78,12 +89,38 @@ def visualize_landmark_difference(landmarks1, landmarks2):
     ax.set_title('3D Plot of Transformed Facial Landmarks')
 
     # Make scale equal
-    ax.set_aspect('equal')
+    ax.set_aspect('auto')
+
+    # Make plot view, so that coordinates at index 51 are closest to camera
+    ax.view_init(elev=90, azim=90)
 
 
     # For both landmarks, make the points at x16, y16, z16 and x21, y21, z21 red
     ax.scatter(x1[16], y1[16], z1[16], color='black')
     ax.scatter(x2[16], y2[16], z2[16], color='black')
+
+    # Define the grid for the image with fewer points
+    img_x_len, img_y_len = image.shape[1], image.shape[0]
+    x = np.linspace(np.min([x1.min(), x2.min()]), np.max([x1.max(), x2.max()]), img_x_len)
+    y = np.linspace(np.min([y1.min(), y2.min()]), np.max([y1.max(), y2.max()]), img_y_len)
+    x, y = np.meshgrid(x, y)
+    z = np.full_like(x, -np.min([z1.min(), z2.min()]) + 5)
+
+    # Normalize the image if it's not in the range [0, 1]
+    if image.max() > 1.0:
+        image = image / 255.0
+
+    # If image is grayscale, convert it to RGB by repeating the gray values in 3 channels
+    if len(image.shape) == 2:
+        image = np.stack((image,) * 3, axis=-1)
+
+    # If the image does not have an alpha channel, add one
+    if image.shape[2] == 3:
+        image = np.concatenate((image, np.ones((image.shape[0], image.shape[1], 1))), axis=-1)
+
+    # Add the image as a texture on the surface
+    ax.plot_surface(x, y, z, rstride=10, cstride=10, facecolors=image, shade=False)
+
 
     # Show the plot
     plt.show()
@@ -144,13 +181,5 @@ def standardize_3d_landmarks(landmarks, pose):
 
 
 
-# 36 For Surprised and Front Facing
-# 45 For unaligned
-# 395 Looks to right
-# 467 Looks to left
 
-FIRST = "36"
-SECOND = "395"
-
-
-#compare_landmarks(FIRST, SECOND, use_standardization=True)
+compare_landmarks(FIRST, SECOND, use_standardization=True)

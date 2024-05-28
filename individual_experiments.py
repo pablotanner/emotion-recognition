@@ -60,7 +60,7 @@ if __name__ == '__main__':
         os.makedirs(f'{args.experiment_dir}/{args.feature}')
 
     parameters = {
-        'SVC': {'C': [0.1, 1, 10, 100], 'kernel': ['rbf', 'poly'], 'class_weight':['balanced']},
+        'SVC': {'C': [0.1, 1], 'kernel': ['rbf', 'poly'], 'class_weight':['balanced']},
         'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
         'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
         'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
