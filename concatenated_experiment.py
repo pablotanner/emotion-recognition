@@ -16,6 +16,7 @@ from sklearn.utils import compute_class_weight
 from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
 from src.model_training.torch_mlp import PyTorchMLPClassifier
+import cupy as cp
 
 # Experiments for optimizing EmoRec with concatenated feature approach (feature fusion)
 parser = argparse.ArgumentParser(description='Optimizing EmoRec with feature fusion approach')
@@ -27,6 +28,7 @@ parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. 
 parser.add_argument('--experiment-dir', type=str, help='Directory to experiment dir', default='/local/scratch/ptanner/concatenated_experiment')
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
 parser.add_argument('--skip-loading',  action='store_true', help='Skip preprocessing and loading data')
+parser.add_argument('--load-gpu', action='store_true', help='Load data to GPU')
 args = parser.parse_args()
 
 feature_types = {
@@ -49,7 +51,11 @@ def load_and_concatenate_features(dataset_type):
 
         # Use memory mapping to load data
         file_path = f'{args.experiment_dir}/{dataset_type}_{feature}.npy'
-        data = np.load(file_path, mmap_mode='r').astype(np.float32)
+
+        if args.load_gpu:
+            data = cp.load(file_path, mmap_mode='r').astype(np.float32)
+        else:
+            data = np.load(file_path, mmap_mode='r').astype(np.float32)
         X_list.append(data)
 
         # Explicitly free memory
@@ -244,7 +250,7 @@ if __name__ == '__main__':
     logger.info(f'Fitting MLP')
     mlp.fit(X_train, y_train)
     del X_train, y_train
-    
+
     y_val = np.load(f'{args.experiment_dir}/y_val.npy')
 
     X_val = load_and_concatenate_features('val')
