@@ -11,6 +11,7 @@ from cuml.neighbors import KNeighborsClassifier as KNN
 from cuml.linear_model import LogisticRegression
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.metrics import make_scorer, balanced_accuracy_score
+from sklearn.utils import compute_class_weight
 from torch import optim
 from src.model_training.torch_mlp import PyTorchMLPClassifier
 from src.model_training.torch_neural_network import NeuralNetwork
@@ -58,15 +59,6 @@ if __name__ == '__main__':
 
     if not os.path.exists(f'{args.experiment_dir}/{args.feature}'):
         os.makedirs(f'{args.experiment_dir}/{args.feature}')
-
-    parameters = {
-        'SVC': {'C': [0.1, 1], 'kernel': ['rbf', 'poly'], 'class_weight':['balanced']},
-        'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
-        'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
-        'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
-        'MLP': {'hidden_size': [64, 128, 256],'class_weight':['balanced'], 'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01, 0.1]},
-        'NN':  {'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'class_weight':['balanced']}
-    }
 
     feature_files = {
         'landmarks_3d': ['train_spatial_features.npy', 'val_spatial_features.npy', 'test_spatial_features.npy'],
@@ -140,6 +132,8 @@ if __name__ == '__main__':
 
         del scaler
 
+    class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+    class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
     dask_data = convert_to_cudf_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10)
     del ros, X_train, X_val, X_test, y_train, y_val, y_test
@@ -158,6 +152,16 @@ if __name__ == '__main__':
     y_test = y_test.iloc[:, 0]
 
     logger.info('Data loaded and resampled')
+
+
+    parameters = {
+        'SVC': {'C': [0.1, 1], 'kernel': ['rbf', 'poly'], 'class_weight':['balanced']},
+        'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
+        'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
+        'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
+        'MLP': {'hidden_size': [64, 128, 256],'class_weight':[class_weights], 'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01, 0.1]},
+        'NN':  {'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'class_weight':[class_weights]}
+    }
 
 
     classifiers = {
