@@ -17,7 +17,7 @@ from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
 from src.model_training.torch_mlp import PyTorchMLPClassifier
 from src.model_training.torch_neural_network import NeuralNetwork
-
+import joblib
 import cupy as cp
 
 # Experiments for optimizing EmoRec with concatenated feature approach (feature fusion)
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
     nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=10, batch_size=128)
     rf = RandomForestClassifier(n_estimators=100, class_weight=class_weights)
-    svm = SVC(class_weight=class_weights, probability=True, kernel='rbf', C=1)
+    svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=1)
     nn.__class__.__name__ = 'NeuralNetwork'
     rf.__class__.__name__ = 'RandomForestClassifier'
     svm.__class__.__name__ = 'SVC'
@@ -251,6 +251,7 @@ if __name__ == '__main__':
     for model in models:
         logger.info(f'Training {model.__class__.__name__}...')
         model.fit(X_train, y_train)
+        joblib.dump(model, f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib')
         proba = model.predict_proba(X_val)
         bal_acc_val = balanced_accuracy_score(y_val, np.argmax(proba, axis=1))
         logger.info(f'Balanced Accuracy of {model.__class__.__name__} (Validation Set): {bal_acc_val}')
