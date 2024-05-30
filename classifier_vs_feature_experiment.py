@@ -13,10 +13,10 @@ from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
 from src.model_training.torch_neural_network import NeuralNetwork
 
 def get_tuned_classifiers(feature, class_weights, input_dim):
-
-
     """
     Returns a dictionary of tuned classifiers for a given feature.
+
+    Classifiers were tuned by running grid search for each classifier and each feature (with StandardScaler).
     """
     if feature == 'pdm':
         return {
