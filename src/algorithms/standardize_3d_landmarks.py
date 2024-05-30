@@ -184,6 +184,34 @@ def standardize_3d_landmarks(landmarks, pose):
     return np.asarray(x + y + z)
 
 
+def visualize_3d_landmarks(id, use_standardization=True):
+    """
+    Visualizes a single 3d landmark coordinate set (as 2d), hide any grid etc
+    """
 
+    # Dont show axis, grid, labels, etc
+    landmarks = reshape_3d_landmarks(get_3d_landmarks(id))
+
+    if use_standardization:
+        pose = get_pose(id)
+        landmarks = apply_transformation(landmarks, pose[3], pose[4], pose[5], pose[0], pose[1], pose[2])
+
+    # Just show in 2D
+    x = landmarks[:, 0]
+    y = landmarks[:, 1]
+
+    # Make dots red, smaller
+    plt.scatter(x, y, color='red', s=20)
+    plt.gca().invert_yaxis()
+    plt.axis('off')
+    plt.show()
+
+
+
+left = 4164
+mid = 1285
+right = 4704
+
+#visualize_3d_landmarks(right)
 
 #compare_landmarks(FIRST, SECOND, use_standardization=True)

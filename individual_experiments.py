@@ -169,6 +169,7 @@ if __name__ == '__main__':
 
 
     parameters = {
+        'ProbaSVC': {'C': [0.1, 1, 10], 'kernel': ['rbf','poly'], 'probability': [True], 'class_weight':['balanced']},
         'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf','poly'], 'class_weight':['balanced']},
         'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
         'RandomForest': {'n_estimators': [200, 300, 400], 'max_depth': [15, 20, None], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
@@ -180,6 +181,7 @@ if __name__ == '__main__':
 
 
     classifiers = {
+        'ProbaSVC': SVC,
         'LinearSVC': LinearSVC,
         'SVC': SVC,
         'LogisticRegression': LogisticRegression,
@@ -199,7 +201,8 @@ if __name__ == '__main__':
 
 
     for clf_name, clf_class in classifiers.items():
-        if clf_name not in ['MLP', 'NN', 'RandomForest']:
+        # Temporary, because need to rerun for SVC with probability=True
+        if clf_name != 'ProbaSVC':
             continue
         logger.info(f'Running experiments for classifier {clf_name}')
         param_grid = list(ParameterGrid(parameters[clf_name]))
