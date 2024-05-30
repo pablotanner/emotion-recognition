@@ -16,6 +16,8 @@ class NeuralNetwork(nn.Module):
         self.batch_size = batch_size
 
         if isinstance(class_weight, dict):
+            # Make sure class_weight keys are ints
+            class_weight = {int(k): v for k, v in class_weight.items()}
             class_weight = torch.tensor([class_weight[i] for i in range(len(class_weight))], dtype=torch.float32)
 
         self.criterion = nn.CrossEntropyLoss(weight=class_weight)

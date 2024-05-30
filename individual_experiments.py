@@ -171,9 +171,9 @@ if __name__ == '__main__':
     parameters = {
         'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf','poly'], 'class_weight':['balanced']},
         'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
-        'RandomForest': {'n_estimators': [100, 200, 300, 400], 'max_depth': [10, 15, 20], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
+        'RandomForest': {'n_estimators': [200, 300, 400], 'max_depth': [15, 20, None], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
         'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
-        'MLP': {'hidden_size': [64, 128, 256],'class_weight':[class_weights], 'num_epochs': [30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01]},
+        'MLP': {'hidden_size': [128, 256],'class_weight':[class_weights], 'num_epochs': [30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01]},
         'NN':  {'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'class_weight':[class_weights]}
     }
 
@@ -199,6 +199,8 @@ if __name__ == '__main__':
 
 
     for clf_name, clf_class in classifiers.items():
+        if clf_name not in ['MLP', 'NN', 'RandomForest']:
+            continue
         logger.info(f'Running experiments for classifier {clf_name}')
         param_grid = list(ParameterGrid(parameters[clf_name]))
 
@@ -258,6 +260,10 @@ if __name__ == '__main__':
                 if score > best_score:
                     best_score = score
                     best_params = params
+                    logger.info(f'(NEW BEST) Validation score for {clf_name} with params {params}: {score}')
+                else:
+                    logger.info(f'Validation score for {clf_name} with params {params}: {score}')
+
             # Update the checkpoint state
             grid_search_state[clf_name]['best_score'] = best_score
             grid_search_state[clf_name]['best_params'] = best_params
