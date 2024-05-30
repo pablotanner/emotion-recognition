@@ -100,7 +100,7 @@ def filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=
     selector = SelectKBest(f_classif, k=k_features)
 
 
-    X_train = selector.fit_transform(np.load(X_train_path).astype(np.float32), np.load(y_train))
+    X_train = selector.fit_transform(np.load(X_train_path).astype(np.float32), y_train)
     X_val = selector.transform(np.load(X_val_path).astype(np.float32))
     X_test = selector.transform(np.load(X_test_path).astype(np.float32))
 
