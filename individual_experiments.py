@@ -66,15 +66,16 @@ if __name__ == '__main__':
         'facs': ['train_facs_features.npy', 'val_facs_features.npy', 'test_facs_features.npy'],
         'pdm': ['train_pdm_features.npy', 'val_pdm_features.npy', 'test_pdm_features.npy'],
         'hog': ['pca_train_hog_features.npy', 'pca_val_hog_features.npy', 'pca_test_hog_features.npy'],
+        'facs_intensity': ['train_facs_intensity.npy', 'val_facs_intensity.npy', 'test_facs_intensity.npy'],
     }
 
-    ros = RandomOverSampler(random_state=0)
 
     logger.info('Loading and Resampling data')
 
     X_shape = None
 
     if args.dummy:
+        ros = RandomOverSampler(random_state=0)
         X_train, y_train = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
         X_val, y_val = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
         X_test, y_test = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
@@ -90,7 +91,7 @@ if __name__ == '__main__':
 
         X_shape = X_train.shape[1]
 
-    elif os.path.exists(f'{args.experiment_dir}/{args.feature}/X_train.npy'):
+    else:
 
         """
         X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy').astype(np.float32)
@@ -125,32 +126,13 @@ if __name__ == '__main__':
 
         logger.info('Indi data saved')
         X_shape = X_train.shape[1]
-    else:
-        scaler = StandardScaler()
-        X_train, y_train = ros.fit_resample(np.load(feature_files[args.feature][0]), np.load('y_train.npy'))
-        X_val, y_val = ros.fit_resample(np.load(feature_files[args.feature][1]), np.load('y_val.npy'))
-        X_test, y_test = ros.fit_resample(np.load(feature_files[args.feature][2]), np.load('y_test.npy'))
 
-        X_train = scaler.fit_transform(X_train)
-        X_val = scaler.transform(X_val)
-        X_test = scaler.transform(X_test)
-
-        X_shape = X_train.shape[1]
-
-        np.save(f'{args.experiment_dir}/{args.feature}/X_train.npy', X_train)
-        np.save(f'{args.experiment_dir}/{args.feature}/y_train.npy', y_train)
-        np.save(f'{args.experiment_dir}/{args.feature}/X_val.npy', X_val)
-        np.save(f'{args.experiment_dir}/{args.feature}/y_val.npy', y_val)
-        np.save(f'{args.experiment_dir}/{args.feature}/X_test.npy', X_test)
-        np.save(f'{args.experiment_dir}/{args.feature}/y_test.npy', y_test)
-
-        del scaler
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
     dask_data = convert_to_cudf_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10)
-    del ros, X_train, X_val, X_test, y_train, y_val, y_test
+    del X_train, X_val, X_test, y_train, y_val, y_test
     gc.collect()
 
     X_train = dask_data['X_train']
@@ -201,9 +183,6 @@ if __name__ == '__main__':
 
 
     for clf_name, clf_class in classifiers.items():
-        # Temporary, because need to rerun for SVC with probability=True
-        if clf_name != 'ProbaSVC':
-            continue
         logger.info(f'Running experiments for classifier {clf_name}')
         param_grid = list(ParameterGrid(parameters[clf_name]))
 
