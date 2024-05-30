@@ -1,9 +1,7 @@
 import argparse
 import logging
-
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from cuml.svm import LinearSVC, SVC
 from cuml.preprocessing import StandardScaler
@@ -11,10 +9,68 @@ from cuml.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
 from sklearn.utils import compute_class_weight
-
 from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
 from src.model_training.torch_neural_network import NeuralNetwork
 
+def get_tuned_classifiers(feature, class_weights, input_dim):
+
+
+    """
+    Returns a dictionary of tuned classifiers for a given feature.
+    """
+    if feature == 'pdm':
+        return {
+            'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
+            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=20,
+                                                   min_samples_split=2, criterion='entropy', class_weight='balanced'),
+            'LogisticRegression': LogisticRegression(C=10, class_weight='balanced'),
+            'MLP': MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                       num_classes=8, input_size=input_dim),
+            'NN': NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim)
+        }
+    elif feature == 'facs':
+        return {
+            'SVC': None,
+            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=20,
+                                                   min_samples_split=2, criterion='entropy', class_weight='balanced'),
+            'LogisticRegression': LogisticRegression(C=10, class_weight='balanced'),
+            'MLP': MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                       num_classes=8, input_size=input_dim),
+            'NN': NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim)
+        }
+    elif feature == 'landmarks_3d':
+        return {
+            'SVC': SVC(C=10, probability=True, kernel='rbf', class_weight='balanced'),
+            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            'RandomForest': None,
+            'LogisticRegression': LogisticRegression(C=10, class_weight='balanced'),
+            'MLP': None,
+            'NN': None,
+        }
+    elif feature == 'embedded':
+        return {
+            'SVC': SVC(C=0.5, probability=True, kernel='rbf', class_weight='balanced'),
+            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            'RandomForest': None,
+            'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
+            'MLP': MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                       num_classes=8, input_size=input_dim),
+            'NN': NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim)
+        }
+    elif feature == 'hog':
+        return {
+            'SVC': SVC(C=0.1, probability=True, kernel='rbf', class_weight='balanced'),
+            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            'RandomForest': None,
+            'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
+            'MLP': MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=20,
+                       num_classes=8, input_size=input_dim),
+            'NN': None
+        }
+    else:
+        raise ValueError(f"Feature {feature} not supported.")
 
 feature_paths = {
     'hog': {
@@ -84,36 +140,13 @@ if __name__ == '__main__':
 
     pipelines = []
 
-    pipelines.append(Pipeline([
-            ('scaler', StandardScaler()),
-            ('linearSVM', LinearSVC(C=0.1, probability=True, class_weight='balanced'))
-        ]))
 
-    pipelines.append(Pipeline([
-        ('scaler', StandardScaler()),
-        ('lr', LogisticRegression(C=0.1, class_weight='balanced'))
-    ]))
-
-    pipelines.append(Pipeline([
-        ('scaler', StandardScaler()),
-        ('nn', NeuralNetwork(batch_size=128, num_epochs=10, class_weight=class_weights, input_dim=input_shape))
-    ]))
-
-    pipelines.append(Pipeline([
-        ('scaler', StandardScaler()),
-        ('mlp', MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30, num_classes=num_classes, input_size=input_shape))
-    ]))
-
-    pipelines.append(Pipeline([
-            ('scaler', StandardScaler()),
-            ('svm', SVC(C=0.1, probability=True, kernel='rbf', class_weight='balanced'))
-    ]))
-
-    pipelines.append(Pipeline([
-            ('scaler', StandardScaler()),
-            ('rf', RandomForestClassifier(n_estimators=400, max_depth=15, min_samples_split=2, class_weight='balanced'))
-        ]))
-
+    for name, classifier in get_tuned_classifiers(feature, class_weights, input_shape).items():
+        if classifier is not None:
+            pipelines.append(Pipeline([
+                ('scaler', StandardScaler()),
+                (name, classifier)
+            ]))
 
     for pipeline in pipelines:
         logger.info(f"Training with {pipeline.steps[-1][0]}")
