@@ -17,6 +17,8 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
         self.model = self._build_model()
 
         if self.class_weight is not None:
+            # Make sure class_weight keys are ints
+            self.class_weight = {int(k): v for k, v in self.class_weight.items()}
             weight_list = [self.class_weight[i] for i in range(self.num_classes)]
             weight_tensor = torch.tensor(weight_list, dtype=torch.float32).cuda()
             self.criterion = nn.CrossEntropyLoss(weight=weight_tensor)
