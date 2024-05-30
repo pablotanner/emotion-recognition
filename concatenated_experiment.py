@@ -7,6 +7,7 @@ import numpy as np
 #from cuml.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import IncrementalPCA as PCA
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
@@ -15,10 +16,10 @@ from sklearn.utils import compute_class_weight
 from cuml.svm import SVC
 from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
-from src.model_training.torch_mlp import PyTorchMLPClassifier
 from src.model_training.torch_neural_network import NeuralNetwork
 import joblib
 import cupy as cp
+from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
 
 # Experiments for optimizing EmoRec with concatenated feature approach (feature fusion)
 parser = argparse.ArgumentParser(description='Optimizing EmoRec with feature fusion approach')
@@ -84,6 +85,31 @@ def load_and_concatenate_features(dataset_type):
     logger.info('Data saved')
 
     return path
+
+
+def filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200):
+    X_selected_train_path = f'{args.experiment_dir}/train_selected.npy'
+    X_selected_val_path = f'{args.experiment_dir}/val_selected.npy'
+    X_selected_test_path = f'{args.experiment_dir}/test_selected.npy'
+
+
+    if os.path.exists(X_selected_train_path):
+        logger.info('Selected features already exist')
+        return X_selected_train_path, X_selected_val_path, X_selected_test_path
+    logger.info('Selecting features...')
+    selector = SelectKBest(f_classif, k=k_features)
+
+
+    X_train = selector.fit_transform(np.load(X_train_path).astype(np.float32), np.load(y_train))
+    X_val = selector.transform(np.load(X_val_path).astype(np.float32))
+    X_test = selector.transform(np.load(X_test_path).astype(np.float32))
+
+
+    np.save(X_selected_train_path, X_train)
+    np.save(X_selected_val_path, X_val)
+    np.save(X_selected_test_path, X_test)
+
+    return X_selected_train_path, X_selected_val_path, X_selected_test_path
 
 
 
@@ -227,23 +253,30 @@ if __name__ == '__main__':
     X_test_path = load_and_concatenate_features('test')
 
 
+    X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200)
+
+    logger.info(f'Loading concatenated data...')
+    
     X_train = np.load(X_train_path)
 
-    logger.info(f'Prepared/Loaded concat data...')
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
-    nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=10, batch_size=128)
-    rf = RandomForestClassifier(n_estimators=100, class_weight=class_weights)
+    nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=20, batch_size=128)
+    rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight=class_weights)
     svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=1)
+    mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
     nn.__class__.__name__ = 'NeuralNetwork'
     rf.__class__.__name__ = 'RandomForestClassifier'
     svm.__class__.__name__ = 'SVC'
+    mlp.__class__.__name__ = 'MLP'
+
 
     models = [
         nn,
         svm,
         rf,
+        mlp
     ]
 
     probabilities_val = {}
@@ -258,9 +291,13 @@ if __name__ == '__main__':
     y_test = np.load(f'{args.experiment_dir}/y_test.npy')
 
     for model in models:
-        logger.info(f'Training {model.__class__.__name__}...')
-        model.fit(X_train, y_train)
-        joblib.dump(model, f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib')
+        if os.path.exists(f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib'):
+            logger.info(f'Loading {model.__class__.__name__}...')
+            model = joblib.load(f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib')
+        else:
+            logger.info(f'Training {model.__class__.__name__}...')
+            model.fit(X_train, y_train)
+            joblib.dump(model, f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib')
         proba = model.predict_proba(X_val)
         bal_acc_val = balanced_accuracy_score(y_val, np.argmax(proba, axis=1))
         logger.info(f'Balanced Accuracy of {model.__class__.__name__} (Validation Set): {bal_acc_val}')
