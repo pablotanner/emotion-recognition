@@ -31,6 +31,7 @@ parser.add_argument('--experiment-dir', type=str, help='Directory to experiment 
 parser.add_argument('--dummy', action='store_true', help='Use dummy data')
 parser.add_argument('--skip-loading',  action='store_true', help='Skip preprocessing and loading data')
 parser.add_argument('--load-gpu', action='store_true', help='Load data to GPU')
+parser.add_argument('--no-normalization', action='store_true', help="Don't use any normalization/standardization")
 args = parser.parse_args()
 
 feature_types = {
@@ -93,28 +94,31 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name, use_minma
         logger.info(f'{feature_name} already preprocessed')
         return
 
-    logger.info(f'Scaling {feature_name}...')
     X_train = np.array(X_train)
     X_val = np.array(X_val)
     X_test = np.array(X_test)
 
-    # Initialize Scaler
-    if use_minmax:
-        scaler = MinMaxScaler(feature_range=(-5, 5))
+
+    if args.no_normalization:
+        logger.info('Skipping normalization')
+    else:
+        # Initialize Scaler
+        logger.info(f'Scaling {feature_name}...')
+        if use_minmax:
+            scaler = MinMaxScaler(feature_range=(-5, 5))
+            X_train = scaler.fit_transform(X_train)
+            X_val = scaler.transform(X_val)
+            X_test = scaler.transform(X_test)
+
+        scaler = StandardScaler()
         X_train = scaler.fit_transform(X_train)
         X_val = scaler.transform(X_val)
         X_test = scaler.transform(X_test)
 
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_val = scaler.transform(X_val)
-    X_test = scaler.transform(X_test)
-
-
-    logger.info(f'Dimensionality Reduction for {feature_name}...')
 
     # Step 2: Dimensionality Reduction
     if X_train.shape[1] > 50:
+        logger.info(f'Dimensionality Reduction for {feature_name}...')
         pca_components = {
             'landmarks_3d': 100,
             'hog': 200,
@@ -243,10 +247,15 @@ if __name__ == '__main__':
     ]
 
     probabilities_val = {}
+    probabilities_test = {}
+
 
 
     y_val = np.load(f'{args.experiment_dir}/y_val.npy')
     X_val = np.load(X_val_path)
+
+    X_test = np.load(X_test_path)
+    y_test = np.load(f'{args.experiment_dir}/y_test.npy')
 
     for model in models:
         logger.info(f'Training {model.__class__.__name__}...')
@@ -255,8 +264,12 @@ if __name__ == '__main__':
         proba = model.predict_proba(X_val)
         bal_acc_val = balanced_accuracy_score(y_val, np.argmax(proba, axis=1))
         logger.info(f'Balanced Accuracy of {model.__class__.__name__} (Validation Set): {bal_acc_val}')
-
         probabilities_val[model.__class__.__name__] = proba
+
+        proba_test = model.predict_proba(X_test)
+        bal_acc_test = balanced_accuracy_score(y_test, np.argmax(proba_test, axis=1))
+        logger.info(f'Balanced Accuracy of {model.__class__.__name__} (Test Set): {bal_acc_test}')
+        probabilities_test[model.__class__.__name__] = proba_test
     
     del X_train, y_train
     del X_val
@@ -270,7 +283,10 @@ if __name__ == '__main__':
         # Use probabilities as input to the stacking classifier
         X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
 
-        stacking_pipeline = Pipeline([('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight='balanced'))])
+        stacking_pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight='balanced'))
+        ])
 
         stacking_pipeline.fit(X_stack, y_val)
         stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
@@ -280,8 +296,17 @@ if __name__ == '__main__':
         balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack))
         logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
 
+
+        logger.info('Coefficients:')
+        for model, coef in zip(probabilities, stacking_pipeline.named_steps['log_reg'].coef_):
+            logger.info(f'{model}: {coef}')
         # Return the stacking pipeline
         return stacking_pipeline
 
     # Use stacking
-    stacking_pipeline = evaluate_results(probabilities_val, y_val)
+    stacking_pipeline = evaluate_stacking(probabilities_val, y_val)
+
+    # Evaluate test set with stacking pipeline
+    X_test_stack = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
+    test_balanced_accuracy = balanced_accuracy_score(y_test, stacking_pipeline.predict(X_test_stack))
+    logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {test_balanced_accuracy}")

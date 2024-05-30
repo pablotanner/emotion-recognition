@@ -31,7 +31,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
         }
     elif feature == 'facs':
         return {
-            'SVC': None,
+            'SVC':  SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
             'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=20,
                                                    min_samples_split=2, criterion='entropy', class_weight='balanced'),
