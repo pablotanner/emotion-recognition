@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from cuml.preprocessing import StandardScaler as CUMLStandardScaler
 from sklearn.utils import compute_class_weight
 import joblib
 from classifier_vs_feature_experiment import feature_paths, get_tuned_classifiers, evaluate_stacking
@@ -56,15 +57,25 @@ if __name__ == '__main__':
             logger.info(f"Found {feature} features already trained, loading model...")
             pipeline = joblib.load(f'{args.experiment_dir}/{args.classifier}/{feature}.joblib')
         else:
-            logger.info(f"Training on {feature} features")
+            logger.info(f"Scaling and then training on {feature} features")
             X_shape = np.load(feature_paths[feature]['test']).shape[1]
 
-            pipeline = Pipeline([
-                ('scaler', StandardScaler()),
-                (args.classifier, get_tuned_classifiers(feature, class_weights, X_shape)[args.classifier])
-            ])
-            pipeline.fit(np.load(feature_paths[feature]['train']), y_train)
-            logger.info(f"Training Complete on {feature} features")
+            # Try to scale with cuML, if it fails due to gpu memory error, use sklearn
+            try:
+                pipeline = Pipeline([
+                    ('scaler', CUMLStandardScaler()),
+                    (args.classifier, get_tuned_classifiers(feature, class_weights, X_shape)[args.classifier])
+                ])
+                pipeline.fit(np.load(feature_paths[feature]['train']), y_train)
+                logger.info(f"Scaled and Trained with cuML StandardScaler")
+            except MemoryError:
+                pipeline = Pipeline([
+                    ('scaler', StandardScaler()),
+                    (args.classifier, get_tuned_classifiers(feature, class_weights, X_shape)[args.classifier])
+                ])
+                pipeline.fit(np.load(feature_paths[feature]['train']), y_train)
+                logger.info(f"Scaled and Trained with SK StandardScaler")
+
             joblib.dump(pipeline, f'{args.experiment_dir}/{args.classifier}/{feature}.joblib')
             logger.info(f"Pipeline saved for {feature} features")
         probabilities_val[feature] = pipeline.predict_proba(np.load(feature_paths[feature]['val']))
