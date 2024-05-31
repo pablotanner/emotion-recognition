@@ -65,7 +65,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
         }
     elif feature == 'hog':
         return {
-            'SVC': SVC(C=1, probability=True, kernel='poly', class_weight='balanced'),
+            'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
             'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=15,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
@@ -105,14 +105,36 @@ feature_paths = {
     }
 }
 
-parser = argparse.ArgumentParser(
-    description='Training same feature on different classifiers or different features on same classifier')
-parser.add_argument('--experiment-dir', type=str, help='Directory to checkpoint file',
-                    default='/local/scratch/ptanner/cf_experiments')
-parser.add_argument('--feature', type=str, help='Feature to use for training', default='pdm')
-args = parser.parse_args()
+
+# Stacking
+def evaluate_stacking(probabilities, y_val):
+    """
+    Perform score fusion with stacking classifier
+    """
+    # Use probabilities as input to the stacking classifier
+    X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
+
+    stacking_pipeline = Pipeline([('log_reg', LogisticRegression(C=1, class_weight='balanced'))])
+
+    stacking_pipeline.fit(X_stack, y_val)
+    stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
+
+    logger.info(f"Accuracy of stacking classifier (Validation Set): {stacking_accuracy}")
+
+    balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack))
+    logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
+
+    # Return the stacking pipeline
+    return stacking_pipeline
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Training same feature on different classifiers or different features on same classifier')
+    parser.add_argument('--experiment-dir', type=str, help='Directory to checkpoint file',
+                        default='/local/scratch/ptanner/cf_experiments')
+    parser.add_argument('--feature', type=str, help='Feature to use for training', default='pdm')
+    args = parser.parse_args()
+
 
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO,
@@ -163,26 +185,7 @@ if __name__ == '__main__':
         logger.info(f"Balanced Accuracy on Validation: {bal_acc_val}")
         logger.info(f"Balanced Accuracy on Test: {bal_acc_test}")
 
-    # Stacking
-    def evaluate_stacking(probabilities, y_val):
-        """
-        Perform score fusion with stacking classifier
-        """
-        # Use probabilities as input to the stacking classifier
-        X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
 
-        stacking_pipeline = Pipeline([('log_reg', LogisticRegression(C=1, class_weight='balanced'))])
-
-        stacking_pipeline.fit(X_stack, y_val)
-        stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
-
-        logger.info(f"Accuracy of stacking classifier (Validation Set): {stacking_accuracy}")
-
-        balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack))
-        logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
-
-        # Return the stacking pipeline
-        return stacking_pipeline
 
     stacking_pipeline = evaluate_stacking(probabilities_val, y_val)
 
