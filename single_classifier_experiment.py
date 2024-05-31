@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from cuml.preprocessing import StandardScaler as CUMLStandardScaler
 from sklearn.utils import compute_class_weight
 import joblib
-from classifier_vs_feature_experiment import feature_paths, get_tuned_classifiers, evaluate_stacking
+from classifier_vs_feature_experiment import feature_paths, get_tuned_classifiers
 import os
 
 
