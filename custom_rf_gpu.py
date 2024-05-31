@@ -1,6 +1,8 @@
 
-from src.ensemble import RandomForestClassifier
 import numpy as np
+
+from src.ensemble import RandomForestClassifier
+
 # Try out custom RF classifier with GPU support
 
 

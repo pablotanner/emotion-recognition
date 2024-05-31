@@ -16,7 +16,6 @@
 
 import dask
 from dask.distributed import default_client
-from cuml.dask.ensemble.base import BaseRandomForestModel
 from cuml.dask.common.base import (
     DelayedPredictionMixin,
     DelayedPredictionProbaMixin,
@@ -26,6 +25,8 @@ from cuml.ensemble import RandomForestClassifier as cuRFC
 from cuml.dask.common.base import BaseEstimator
 from cuml.internals.safe_imports import gpu_only_import
 from cuml.internals.safe_imports import cpu_only_import
+
+from src.ensemble.base import BaseRandomForestModel
 
 np = cpu_only_import("numpy")
 cp = gpu_only_import("cupy")
