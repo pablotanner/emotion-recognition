@@ -1,7 +1,10 @@
 import argparse
 import logging
 import numpy as np
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils import compute_class_weight
 import joblib
 from classifier_vs_feature_experiment import feature_paths, get_tuned_classifiers, evaluate_stacking
@@ -51,29 +54,46 @@ if __name__ == '__main__':
     for feature in features:
         if os.path.exists(f'{args.experiment_dir}/{args.classifier}/{feature}.joblib'):
             logger.info(f"Found {feature} features already trained, loading model...")
-            clf = joblib.load(f'{args.experiment_dir}/{args.classifier}/{feature}.joblib')
+            pipeline = joblib.load(f'{args.experiment_dir}/{args.classifier}/{feature}.joblib')
         else:
             logger.info(f"Training on {feature} features")
             X_shape = np.load(feature_paths[feature]['test']).shape[1]
-            clf = get_tuned_classifiers(feature, class_weights, X_shape)[args.classifier]
-            clf.fit(np.load(feature_paths[feature]['train']), y_train)
+
+            pipeline = Pipeline([
+                ('scaler', StandardScaler()),
+                (args.classifier, get_tuned_classifiers(feature, class_weights, X_shape)[args.classifier])
+            ])
+            pipeline.fit(np.load(feature_paths[feature]['train']), y_train)
             logger.info(f"Training Complete on {feature} features")
-            joblib.dump(clf, f'{args.experiment_dir}/{args.classifier}/{feature}.joblib')
-            logger.info(f"Model saved for {feature} features")
-        probabilities_val[feature] = clf.predict_proba(np.load(feature_paths[feature]['val']))
-        probabilities_test[feature] = clf.predict_proba(np.load(feature_paths[feature]['test']))
+            joblib.dump(pipeline, f'{args.experiment_dir}/{args.classifier}/{feature}.joblib')
+            logger.info(f"Pipeline saved for {feature} features")
+        probabilities_val[feature] = pipeline.predict_proba(np.load(feature_paths[feature]['val']))
+        probabilities_test[feature] = pipeline.predict_proba(np.load(feature_paths[feature]['test']))
         bal_acc_val = balanced_accuracy_score(y_val, np.argmax(probabilities_val[feature], axis=1))
         bal_acc_test = balanced_accuracy_score(y_test, np.argmax(probabilities_test[feature], axis=1))
         logger.info(f"[{feature}] Balanced Accuracy on Validation: {bal_acc_val}")
         logger.info(f"[{feature}] Balanced Accuracy on Test: {bal_acc_test}")
 
     logger.info(f"---------------------{args.classifier} Stacking Results---------------------")
-    stacking_pipeline = evaluate_stacking(probabilities_val, y_val)
+
+    # Use probabilities as input to the stacking classifier
+    X_stack = np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1)
+
+    stacking_pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('log_reg', LogisticRegression(C=1, class_weight='balanced'))
+    ])
+
+    stacking_pipeline.fit(X_stack, y_val)
+
+    balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack))
+    logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
 
     # Evaluate the stacking classifier on the test set
     X_test_stack = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
     test_accuracy = stacking_pipeline.score(X_test_stack, y_test)
-    logger.info(f"Accuracy of stacking classifier (Test Set): {test_accuracy}")
+    logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {test_accuracy}")
+
 
     logger.info("Experiment Finished")
 
