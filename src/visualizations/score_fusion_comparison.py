@@ -16,13 +16,13 @@ feature_data = {
         'Stacking': 0.3692547380924225
     },
     'Landmarks': {
-        'ProbaSVC': None,
-        'LinearSVC': None,
-        'RandomForest': None,
-        'LogisticRegression': None,
-        'MLP': None,
-        'NN': None,
-        'Stacking': None
+        'ProbaSVC': 0.2913596826796941,
+        'LinearSVC': 0.4217226720638964,
+        'RandomForest': 0.38804498586189706,
+        'LogisticRegression': 0.3148474340711257,
+        'MLP': 0.3148474340711257,
+        'NN': 0.44205240616177544,
+        'Stacking': 0.3625032603740692
     },
     'PDM': {
         'ProbaSVC': 0.3124604609149185,

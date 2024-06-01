@@ -5,6 +5,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from cuml.svm import LinearSVC, SVC
 from cuml.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler as SKStandardScaler
 #from cuml.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
@@ -169,7 +170,12 @@ if __name__ == '__main__':
 
 
     for name, classifier in get_tuned_classifiers(feature, class_weights, input_shape).items():
-        if classifier is not None:
+        if classifier == 'SVC':
+            pipelines.append(Pipeline([
+                ('scaler', SKStandardScaler()),
+                (name, classifier)
+            ]))
+        elif classifier is not None:
             pipelines.append(Pipeline([
                 ('scaler', StandardScaler()),
                 (name, classifier)
