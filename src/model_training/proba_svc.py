@@ -7,7 +7,7 @@ from cuml.internals.input_utils import input_to_host_array, input_to_cuml_array,
 
 # cuML SVC where probability + class weight combination is fixed
 
-def _fit_proba(self, X, y, sample_weight, convert_dtype=True):
+def _fit_proba(self, X, y, sample_weight=None, convert_dtype=True):
     params = self.get_params()
     params["probability"] = False
 
