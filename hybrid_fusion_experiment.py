@@ -51,11 +51,12 @@ if __name__ == '__main__':
         return pipeline
 
     def prepare_pdm():
-        input_dim = np.load(feature_paths['pdm']['test']).shape[1]
+        #input_dim = np.load(feature_paths['pdm']['test']).shape[1]
 
         pipeline = Pipeline([
             ('scaler', CUMLStandardScaler()),
-            ('nn', NeuralNetwork(batch_size=128, num_epochs=50, class_weight=class_weights, input_dim=input_dim))
+            #('nn', NeuralNetwork(batch_size=128, num_epochs=50, class_weight=class_weights, input_dim=input_dim))
+            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
         pipeline.fit(np.load(feature_paths['pdm']['train']).astype(np.float32), y_train)
@@ -63,11 +64,12 @@ if __name__ == '__main__':
         return pipeline
 
     def prepare_emb():
-        input_dim = np.load(feature_paths['embedded']['test']).shape[1]
+        #input_dim = np.load(feature_paths['embedded']['test']).shape[1]
 
         pipeline = Pipeline([
-            ('scaler', CUMLStandardScaler()),
-            ('nn', NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim))
+            ('scaler', StandardScaler()),
+            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
+            #('nn', NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim))
         ])
 
         pipeline.fit(np.load(feature_paths['embedded']['train']).astype(np.float32), y_train)
