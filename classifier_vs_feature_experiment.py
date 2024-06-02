@@ -3,7 +3,8 @@ import logging
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
-from cuml.svm import LinearSVC, SVC
+from cuml.svm import LinearSVC
+from src.model_training import SVC
 from cuml.preprocessing import StandardScaler
 from sklearn.preprocessing import StandardScaler as SKStandardScaler
 #from cuml.ensemble import RandomForestClassifier
@@ -21,7 +22,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
     """
     if feature == 'pdm':
         return {
-            'SVC': SVC(C=0.1, probability=True, kernel='poly', class_weight='balanced'),
+            'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
             'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=20,
                                                    min_samples_split=2, criterion='entropy', class_weight='balanced'),
@@ -43,7 +44,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
         }
     elif feature == 'landmarks_3d':
         return {
-            'SVC': SVC(C=1, probability=True, kernel='poly', class_weight='balanced'),
+            'SVC': SVC(C=10, probability=True, kernel='rbf', class_weight='balanced'),
             'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=200, max_depth=15,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
@@ -55,7 +56,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
         }
     elif feature == 'embedded':
         return {
-            'SVC': SVC(C=1, probability=True, kernel='poly', class_weight='balanced'),
+            'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
             'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=300, max_depth=15,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
@@ -166,31 +167,34 @@ if __name__ == '__main__':
     input_shape = np.load(X_test_path).shape[1]
     num_classes = len(np.unique(y_train))
 
-    pipelines = []
+    pipelines = {}
 
 
     for name, classifier in get_tuned_classifiers(feature, class_weights, input_shape).items():
         if classifier == 'SVC':
-            pipelines.append(Pipeline([
+            pipelines[name] = Pipeline([
                 ('scaler', SKStandardScaler()),
-                (name, classifier)
-            ]))
+                ('classifier', classifier)
+            ])
         elif classifier is not None:
-            pipelines.append(Pipeline([
+            pipelines[name] = Pipeline([
                 ('scaler', StandardScaler()),
-                (name, classifier)
-            ]))
+                ('classifier', classifier)
+            ])
 
-    for pipeline in pipelines:
+
+    for name, pipeline in pipelines.items():
         logger.info(f"Training with {pipeline.steps[-1][0]}")
-        pipeline.fit(np.load(X_train_path), y_train)
-        probabilities_val[pipeline] = pipeline.predict_proba(np.load(X_val_path))
-        probabilities_test[pipeline] = pipeline.predict_proba(np.load(X_test_path))
-        bal_acc_val = balanced_accuracy_score(y_val, np.argmax(probabilities_val[pipeline], axis=1))
-        bal_acc_test = balanced_accuracy_score(y_test, np.argmax(probabilities_test[pipeline], axis=1))
+        pipeline.fit(np.load(X_train_path).astype(np.float32), y_train)
+        probabilities_val[name] = pipeline.predict_proba(np.load(X_val_path).astype(np.float32))
+        probabilities_test[name] = pipeline.predict_proba(np.load(X_test_path).astype(np.float32))
+
+        # Delete the pipeline to save memory
+        pipelines[name] = None
+        bal_acc_val = balanced_accuracy_score(y_val, np.argmax(probabilities_val[name], axis=1))
+        bal_acc_test = balanced_accuracy_score(y_test, np.argmax(probabilities_test[name], axis=1))
         logger.info(f"Balanced Accuracy on Validation: {bal_acc_val}")
         logger.info(f"Balanced Accuracy on Test: {bal_acc_test}")
-
 
 
     stacking_pipeline = evaluate_stacking(probabilities_val, y_val)

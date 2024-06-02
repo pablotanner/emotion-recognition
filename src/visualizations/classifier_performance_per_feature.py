@@ -5,6 +5,14 @@ import seaborn as sns
 
 # Visualize the performance of a classifier per feature, classifier params were always optimized for each feature
 
+NewSVC = {
+    'facs':0.4375747580746948,
+    'landmarks_3d': 0.48464970042099553, # ?
+    'embedded': 0.47852156857211503,
+    'hog': 0.5181242336010964,
+    'pdm':0.4901139641136941
+}
+
 SVC = {
     'facs':0.43858737723542457,
     'landmarks_3d':0.47852156857211503,
@@ -63,9 +71,10 @@ SequentialNN = {
 
 # Create a dataframe
 data = {
-    'SVC': SVC,
+    #'SVC': SVC,
+    #'ProbaSVC': ProbaSVC,
+    'SVC': NewSVC,
     'LinearSVC': LinearSVC,
-    'ProbaSVC': ProbaSVC,
     'RandomForest': RandomForest,
     'LogisticRegression': LogisticRegression,
     'MLP': MLP,
