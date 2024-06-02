@@ -12,9 +12,9 @@ y_val = np.load('y_val.npy')
 X_test = np.load('test_facs_features.npy').astype(np.float32)
 y_test = np.load('y_test.npy')
 
-svc = SVC(C=1, probability=True, kernel='rbf', class_weight='balanced')
+SVC._fit_proba = _fit_proba
 
-svc._fit_proba = _fit_proba
+svc = SVC(C=1, probability=True, kernel='rbf', class_weight='balanced')
 
 svc.fit(X_train, y_train)
 
