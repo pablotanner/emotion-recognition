@@ -132,10 +132,20 @@ class RolfLoader:
             'test': []
         }
 
+        self.valence_arousal = {
+            'train': {},
+            'val': {},
+            'test': {}
+        }
+
         self.get_ids_and_data()
 
         for key in self.emotions:
             self.emotions[key] = np.array(self.emotions[key]).astype(int)
+
+        for key in self.valence_arousal:
+            for feature_type in self.valence_arousal[key]:
+                self.valence_arousal[key][feature_type] = np.array(self.valence_arousal[key][feature_type]).astype(float)
 
 
     def get_data(self):
@@ -215,6 +225,11 @@ class RolfLoader:
 
         self.emotions[dataset_type].append(emotion)
 
+        valence = np.load(f"{self._annotations_dir[dataset_type]}/{file_id}_val.npy")
+        arousal = np.load(f"{self._annotations_dir[dataset_type]}/{file_id}_aro.npy")
+
+        self.valence_arousal[dataset_type]['valence'] = valence
+        self.valence_arousal[dataset_type]['arousal'] = arousal
 
 
     def load_feature_files(self, file_id, dataset_type):
