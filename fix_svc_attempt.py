@@ -1,8 +1,6 @@
 import numpy as np
-#from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import balanced_accuracy_score
 from src.model_training import SVC
-#from src.model_training.proba_svc import _fit_proba
 
 X_train = np.load('train_facs_features.npy').astype(np.float32)
 y_train = np.load('y_train.npy')

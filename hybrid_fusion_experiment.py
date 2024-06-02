@@ -6,8 +6,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
+from src.model_training import SVC
 from sklearn.utils import compute_class_weight
-from cuml.svm import SVC
 from classifier_vs_feature_experiment import feature_paths
 from src.model_training.proba_svc import _fit_proba
 from src.model_training.torch_neural_network import NeuralNetwork
@@ -39,13 +39,11 @@ if __name__ == '__main__':
 
     def prepare_lnd():
         #input_dim = np.load(feature_paths['landmarks_3d']['test']).shape[1]
-        svc = SVC(C=1, probability=True, kernel='rbf', class_weight='balanced')
-        svc._fit_proba = _fit_proba
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('nn', NeuralNetwork(batch_size=128, num_epochs=50, class_weight=class_weights, input_dim=input_dim))
-            ('svc', svc)
+            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
         pipeline.fit(np.load(feature_paths['landmarks_3d']['train']).astype(np.float32), y_train)
