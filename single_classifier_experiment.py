@@ -66,20 +66,20 @@ if __name__ == '__main__':
                     ('scaler', CUMLStandardScaler()),
                     (args.classifier, get_tuned_classifiers(feature, class_weights, X_shape)[args.classifier])
                 ])
-                pipeline.fit(np.load(feature_paths[feature]['train']), y_train)
+                pipeline.fit(np.load(feature_paths[feature]['train']).astype(np.float32), y_train)
                 logger.info(f"Scaled and Trained with cuML StandardScaler")
             except MemoryError:
                 pipeline = Pipeline([
                     ('scaler', StandardScaler()),
                     (args.classifier, get_tuned_classifiers(feature, class_weights, X_shape)[args.classifier])
                 ])
-                pipeline.fit(np.load(feature_paths[feature]['train']), y_train)
+                pipeline.fit(np.load(feature_paths[feature]['train']).astype(np.float32), y_train)
                 logger.info(f"Scaled and Trained with SK StandardScaler")
 
             joblib.dump(pipeline, f'{args.experiment_dir}/{args.classifier}/{feature}.joblib')
             logger.info(f"Pipeline saved for {feature} features")
-        probabilities_val[feature] = pipeline.predict_proba(np.load(feature_paths[feature]['val']))
-        probabilities_test[feature] = pipeline.predict_proba(np.load(feature_paths[feature]['test']))
+        probabilities_val[feature] = pipeline.predict_proba(np.load(feature_paths[feature]['val']).astype(np.float32))
+        probabilities_test[feature] = pipeline.predict_proba(np.load(feature_paths[feature]['test']).astype(np.float32))
         bal_acc_val = balanced_accuracy_score(y_val, np.argmax(probabilities_val[feature], axis=1))
         bal_acc_test = balanced_accuracy_score(y_test, np.argmax(probabilities_test[feature], axis=1))
         logger.info(f"[{feature}] Balanced Accuracy on Validation: {bal_acc_val}")
