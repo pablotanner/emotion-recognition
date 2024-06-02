@@ -17,40 +17,44 @@ feature_data = {
         'Stacking': 0.3692547380924225
     },
     'Landmarks': {
-        'ProbaSVC': 0.2913596826796941,
-        'LinearSVC': 0.4217226720638964,
-        'RandomForest': 0.38804498586189706,
-        'LogisticRegression': 0.3148474340711257,
-        'MLP': 0.3148474340711257,
-        'NN': 0.44205240616177544,
-        'Stacking': 0.3625032603740692
+        #'ProbaSVC': 0.2913596826796941,
+        'SVC': 0.4732473249614243,
+        'LinearSVC':  0.4256257484715912,
+        'RandomForest':  0.3841663282857978,
+        'LogisticRegression': 0.31380542667106126,
+        'MLP': 0.44577594287827127,
+        'NN':  0.44518033501070975,
+        'Stacking': 0.37392884492874146
     },
     'PDM': {
-        'ProbaSVC': 0.3124604609149185,
-        'LinearSVC':  0.4189193363161993,
-        'RandomForest': 0.337906768543917,
+        #'ProbaSVC': 0.3124604609149185,
+        'SVC': 0.4764234030931595,
+        'LinearSVC': 0.4189193363161993,
+        'RandomForest': 0.34047841481769736,
         'LogisticRegression': 0.307269345058387,
-        'MLP': 0.44854294908748243,
-        'NN': 0.46403045512672647,
-        'Stacking':  0.3804206848144531
+        'MLP':  0.45239632107062816,
+        'NN': 0.4621321563246723,
+        'Stacking':  0.3832770586013794
     },
     'Embedded': {
-        'ProbaSVC': 0.40424141346273734,
-        'LinearSVC':0.43354461215148543,
-        'RandomForest': 0.30798132888716295,
-        'LogisticRegression':0.31019616709176057,
-        'MLP': 0.45156378433595057,
+        #'ProbaSVC': 0.40424141346273734,
+        'SVC':  0.4597618607618611,
+        'LinearSVC': 0.43354461215148543,
+        'RandomForest': 0.3072075959992983,
+        'LogisticRegression': 0.31019456956600855,
+        'MLP': 0.4518447132536358,
         'NN':  0.45162023655398553,
         'Stacking': 0.4014541804790497
     },
     'HOG': {
-        'ProbaSVC': None,
-        'LinearSVC': None,
-        'RandomForest': None,
-        'LogisticRegression': None,
-        'MLP': None,
-        'NN': None,
-        'Stacking': None
+        #'ProbaSVC': None,
+        'SVC': 0.5099321335489762564,
+        'LinearSVC': 0.487737209183920,
+        'RandomForest': 0.367283566262456211,
+        'LogisticRegression': 0.383532178942321,
+        'MLP':  0.5027519378412977,
+        'NN': 0.52772918394083,
+        'Stacking': 0.438562010387592
     },
 }
 
@@ -88,8 +92,20 @@ classifier_data = {
         'Stacking': 0.5211633341989094,
     },
     'RandomForest': {
+        'HOG': 0.3802198084520477,
+        'Landmarks':0.38544798751144294,
+        'PDM':  0.33737962621494366,
+        'FACS': 0.36168514090132753,
+        'Embedded':  0.30020760127184215,
+        'Stacking':  0.5074006751493119,
     },
-    'ProbaSVC': {
+    'SVC': {
+        'HOG': 0.5099321335489762564,
+        'Landmarks': None,
+        'PDM': None,
+        'FACS': None,
+        'Embedded': None,
+        'Stacking': 0.5099321335489762564,
 
     },
 }
