@@ -7,13 +7,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.utils import compute_class_weight
-
+from cuml.svm import SVC
 from classifier_vs_feature_experiment import feature_paths
+from src.model_training.proba_svc import _fit_proba
 from src.model_training.torch_neural_network import NeuralNetwork
 
 
 # Experiment where I use hybrid of different features and classifiers to basically optimize score fusion results
-
 
 if __name__ == '__main__':
     y_train = np.load('y_train.npy')
@@ -38,11 +38,14 @@ if __name__ == '__main__':
 
 
     def prepare_lnd():
-        input_dim = np.load(feature_paths['landmarks_3d']['test']).shape[1]
+        #input_dim = np.load(feature_paths['landmarks_3d']['test']).shape[1]
+        svc = SVC(C=1, probability=True, kernel='rbf', class_weight='balanced')
+        svc._fit_proba = _fit_proba
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('nn', NeuralNetwork(batch_size=128, num_epochs=50, class_weight=class_weights, input_dim=input_dim))
+            #('nn', NeuralNetwork(batch_size=128, num_epochs=50, class_weight=class_weights, input_dim=input_dim))
+            ('svc', svc)
         ])
 
         pipeline.fit(np.load(feature_paths['landmarks_3d']['train']).astype(np.float32), y_train)
@@ -94,23 +97,23 @@ if __name__ == '__main__':
     probabilities_val = {}
     probabilities_test = {}
 
-    facs_pipeline = prepare_facs()
+    #facs_pipeline = prepare_facs()
     lnd_pipeline = prepare_lnd()
-    pdm_pipeline = prepare_pdm()
-    emb_pipeline = prepare_emb()
-    hog_pipeline = prepare_hog()
+    #pdm_pipeline = prepare_pdm()
+    #emb_pipeline = prepare_emb()
+    #hog_pipeline = prepare_hog()
 
-    probabilities_val['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['val']).astype(np.float32))
+    #probabilities_val['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['val']).astype(np.float32))
     probabilities_val['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(feature_paths['landmarks_3d']['val']).astype(np.float32))
-    probabilities_val['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['val']).astype(np.float32))
-    probabilities_val['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['val']).astype(np.float32))
-    probabilities_val['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['val']).astype(np.float32))
+    #probabilities_val['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['val']).astype(np.float32))
+    #probabilities_val['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['val']).astype(np.float32))
+    #probabilities_val['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['val']).astype(np.float32))
 
-    probabilities_test['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['test']).astype(np.float32))
+    #probabilities_test['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['test']).astype(np.float32))
     probabilities_test['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(feature_paths['landmarks_3d']['test']).astype(np.float32))
-    probabilities_test['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['test']).astype(np.float32))
-    probabilities_test['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['test']).astype(np.float32))
-    probabilities_test['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['test']).astype(np.float32))
+    #probabilities_test['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['test']).astype(np.float32))
+    #probabilities_test['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['test']).astype(np.float32))
+    #probabilities_test['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['test']).astype(np.float32))
 
     # Stacking
     X_stack_val = np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1)
@@ -128,7 +131,6 @@ if __name__ == '__main__':
 
     X_stack_test = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
 
-    accuracy
     balanced_accuracy = balanced_accuracy_score(y_test, stacking_pipeline.predict(X_stack_test))
 
     print(f"Balanced Accuracy of stacking classifier (Test Set): {balanced_accuracy}")
