@@ -7,7 +7,8 @@
 # Without normal SVC because it can't be used for probability stacking
 feature_data = {
     'FACS': {
-        'ProbaSVC': 0.30082937922322794,
+        #'ProbaSVC': 0.30082937922322794,
+        'SVC': 0.4394365847036077,
         'LinearSVC': 0.4189193363161993,
         'RandomForest': 0.40519503669440293,
         'LogisticRegression':0.307269345058387,

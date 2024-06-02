@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
 
     for name, pipeline in pipelines.items():
-        logger.info(f"Training with {pipeline.steps[-1][0]}")
+        logger.info(f"Training with {name}")
         pipeline.fit(np.load(X_train_path).astype(np.float32), y_train)
         probabilities_val[name] = pipeline.predict_proba(np.load(X_val_path).astype(np.float32))
         probabilities_test[name] = pipeline.predict_proba(np.load(X_test_path).astype(np.float32))
