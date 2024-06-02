@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
 
     for clf_name, clf_class in classifiers.items():
-        if clf_name != 'ProbaSVC':
+        if clf_name != 'NewSVC':
             continue
         logger.info(f'Running experiments for classifier {clf_name}')
         param_grid = list(ParameterGrid(parameters[clf_name]))
@@ -255,7 +255,7 @@ if __name__ == '__main__':
                 grid_search_state[clf_name]['best_params'] = best_params
                 grid_search_state[clf_name]['tried_params'].append(params)
                 save_checkpoint(grid_search_state, checkpoint_file)
-             
+
 
 
         if clf_name == 'NN':
