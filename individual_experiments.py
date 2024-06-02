@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
 
     parameters = {
-        'ProbaSVC': {'C': [0.1, 1, 10], 'kernel': ['rbf','poly'], 'probability': [True], 'class_weight':['balanced']},
+        'NewSVC': {'C': [0.1, 1, 10], 'kernel': ['rbf','poly'], 'probability': [True], 'class_weight':['balanced']},
         'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf','poly'], 'class_weight':['balanced']},
         'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
         'RandomForest': {'n_estimators': [200, 300, 400], 'max_depth': [15, 20, None], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
@@ -162,7 +162,7 @@ if __name__ == '__main__':
 
 
     classifiers = {
-        'ProbaSVC': SVC,
+        'NewSVC': SVC,
         'LinearSVC': LinearSVC,
         'SVC': SVC,
         'LogisticRegression': LogisticRegression,
@@ -194,10 +194,6 @@ if __name__ == '__main__':
         best_params = grid_search_state[clf_name]['best_params']
         tried_params = grid_search_state[clf_name]['tried_params']
 
-        # Remove ProbaSVC from tried params
-        if clf_name == 'ProbaSVC':
-            tried_params = []
-
 
         for params in param_grid:
             if params in tried_params:
@@ -213,6 +209,7 @@ if __name__ == '__main__':
             logger.info(f'Fitting model with parameters {params}')
 
             try:
+                failed = False
                 if clf_name in ['NN', 'MLP','LinearSVC']:
                     clf.fit(X_train.compute().to_numpy(), y_train.compute())
                 elif clf_name in ['RandomForest']:
@@ -235,14 +232,15 @@ if __name__ == '__main__':
 
                 #del X_val
                 #gc.collect()
-
             except MemoryError:
                 logger.error(f'Memory error occurred while training {clf_name} with params {params}')
                 score = 0
+                failed = True
             except Exception as e:
                 logger.error(f'Error occurred while training {clf_name} with params {params}')
                 logger.error(e)
                 score = 0
+                failed = True
             finally:
                 if score > best_score:
                     best_score = score
@@ -252,10 +250,13 @@ if __name__ == '__main__':
                     logger.info(f'Validation score for {clf_name} with params {params}: {score}')
 
             # Update the checkpoint state
-            grid_search_state[clf_name]['best_score'] = best_score
-            grid_search_state[clf_name]['best_params'] = best_params
-            grid_search_state[clf_name]['tried_params'].append(params)
-            save_checkpoint(grid_search_state, checkpoint_file)
+            if not failed:
+                grid_search_state[clf_name]['best_score'] = best_score
+                grid_search_state[clf_name]['best_params'] = best_params
+                grid_search_state[clf_name]['tried_params'].append(params)
+                save_checkpoint(grid_search_state, checkpoint_file)
+             
+
 
         if clf_name == 'NN':
             best_classifiers[clf_name] = NeuralNetwork(input_dim=X_shape, **best_params)
