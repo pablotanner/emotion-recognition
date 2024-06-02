@@ -6,7 +6,6 @@ from cuml.internals.import_utils import has_sklearn
 from cuml.internals.input_utils import input_to_host_array, input_to_cuml_array, input_to_host_array_with_sparse_support
 
 # cuML SVC where probability + class weight combination is fixed
-
 def _fit_proba(self, X, y, sample_weight=None):
     params = self.get_params()
     params["probability"] = False
@@ -35,3 +34,5 @@ def _fit_proba(self, X, y, sample_weight=None):
     self._fit_status_ = 0
     return self
 
+
+SVC._fit_proba = _fit_proba
