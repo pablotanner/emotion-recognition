@@ -95,23 +95,23 @@ if __name__ == '__main__':
     probabilities_val = {}
     probabilities_test = {}
 
-    #facs_pipeline = prepare_facs()
+    facs_pipeline = prepare_facs()
     lnd_pipeline = prepare_lnd()
-    #pdm_pipeline = prepare_pdm()
-    #emb_pipeline = prepare_emb()
-    #hog_pipeline = prepare_hog()
+    pdm_pipeline = prepare_pdm()
+    emb_pipeline = prepare_emb()
+    hog_pipeline = prepare_hog()
 
-    #probabilities_val['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['val']).astype(np.float32))
+    probabilities_val['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['val']).astype(np.float32))
     probabilities_val['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(feature_paths['landmarks_3d']['val']).astype(np.float32))
-    #probabilities_val['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['val']).astype(np.float32))
-    #probabilities_val['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['val']).astype(np.float32))
-    #probabilities_val['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['val']).astype(np.float32))
+    probabilities_val['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['val']).astype(np.float32))
+    probabilities_val['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['val']).astype(np.float32))
+    probabilities_val['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['val']).astype(np.float32))
 
-    #probabilities_test['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['test']).astype(np.float32))
+    probabilities_test['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['test']).astype(np.float32))
     probabilities_test['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(feature_paths['landmarks_3d']['test']).astype(np.float32))
-    #probabilities_test['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['test']).astype(np.float32))
-    #probabilities_test['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['test']).astype(np.float32))
-    #probabilities_test['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['test']).astype(np.float32))
+    probabilities_test['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['test']).astype(np.float32))
+    probabilities_test['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['test']).astype(np.float32))
+    probabilities_test['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['test']).astype(np.float32))
 
     # Stacking
     X_stack_val = np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1)
