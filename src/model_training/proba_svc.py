@@ -1,8 +1,8 @@
 from cuml.svm import SVC
 from sklearn.calibration import CalibratedClassifierCV
 import cuml.internals
-from cuml.common.input_utils import input_to_host_array, input_to_host_array_with_sparse_support
 from cuml.internals.import_utils import has_sklearn
+from cuml.internals.input_utils input_to_host_array, input_to_host_array_with_sparse_support
 
 # cuML SVC where probability + class weight combination is fixed
 
@@ -30,3 +30,4 @@ def _fit_proba(self, X, y, sample_weight):
         self.prob_svc.fit(X, y, sample_weight=sample_weight)
     self._fit_status_ = 0
     return self
+
