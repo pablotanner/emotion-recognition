@@ -3,11 +3,11 @@ import json
 import logging
 import os
 import numpy as np
-from cuml.svm import LinearSVC, SVC
+from cuml.svm import LinearSVC
+from src.model_training import SVC
 from sklearn.preprocessing import StandardScaler
 #from cuml.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import RandomForestClassifier
-from cuml.neighbors import KNeighborsClassifier as KNN
 from cuml.linear_model import LogisticRegression
 from imblearn.over_sampling import RandomOverSampler
 from sklearn.metrics import make_scorer, balanced_accuracy_score
@@ -17,8 +17,7 @@ from src.model_training.torch_mlp import PyTorchMLPClassifier
 from src.model_training.torch_neural_network import NeuralNetwork
 from sklearn.model_selection import ParameterGrid
 import gc
-from src.util.dataframe_converter import convert_to_cudf_df, convert_to_dask_df
-
+from src.util.dataframe_converter import convert_to_cudf_df
 def save_checkpoint(grid_search_state, filename):
     with open(filename, 'w') as f:
         json.dump(grid_search_state, f)
@@ -183,6 +182,8 @@ if __name__ == '__main__':
 
 
     for clf_name, clf_class in classifiers.items():
+        if clf_name != 'ProbaSVC':
+            continue
         logger.info(f'Running experiments for classifier {clf_name}')
         param_grid = list(ParameterGrid(parameters[clf_name]))
 
@@ -192,6 +193,10 @@ if __name__ == '__main__':
         best_score = grid_search_state[clf_name]['best_score']
         best_params = grid_search_state[clf_name]['best_params']
         tried_params = grid_search_state[clf_name]['tried_params']
+
+        # Remove ProbaSVC from tried params
+        if clf_name == 'ProbaSVC':
+            tried_params = []
 
 
         for params in param_grid:
