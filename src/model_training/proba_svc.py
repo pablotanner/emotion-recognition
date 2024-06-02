@@ -31,7 +31,7 @@ def _fit_proba(self, X, y, sample_weight=None):
     sample_weight = apply_class_weight(self.handle, sample_weight, self.class_weight, y, self.verbose, self.output_type, self.dtype)
 
     with cuml.internals.exit_internal_api():
-        self.prob_svc.fit(X, y, sample_weight=sample_weight)
+        self.prob_svc.fit(X.get(), y, sample_weight=sample_weight)
     self._fit_status_ = 0
     return self
 
