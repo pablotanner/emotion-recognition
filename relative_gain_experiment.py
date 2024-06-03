@@ -44,6 +44,8 @@ if __name__ == '__main__':
     increased_accuracy = []
 
     for i in range(1, len(models) + 1):
+        # Print the models being used
+        logger.info(f"Using models: {models[:i]}")
         X_stack = np.concatenate([probabilities_val[model] for model in models[:i]], axis=1)
         stacking_pipeline.fit(X_stack, y_val)
         #stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
