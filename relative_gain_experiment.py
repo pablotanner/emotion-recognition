@@ -14,7 +14,7 @@ if __name__ == '__main__':
         description='Training one classifier with all feature types')
     parser.add_argument('--experiment-dir', type=str, help='Directory to checkpoint file',
                         default='/local/scratch/ptanner/relative_gain_experiments')
-    parser.add_argument('--use-concat', action='store_true', help='Use concatenated probabilities')
+    parser.add_argument('--use-concat', action='store_true', help='Use concatenated probabilities', default=False)
 
     args = parser.parse_args()
 
@@ -79,5 +79,10 @@ if __name__ == '__main__':
         logger.info(f"Accuracy increase: {increased_accuracy}")
 
     do_experiment()
+
+    # After all models are in the stacking, we check the coefficients, to find out importance for each mdoel
+
+
+
 
     logger.info("Experiment Finished")
