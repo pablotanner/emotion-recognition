@@ -14,20 +14,18 @@ test_accuracies = [0.512594131394443, 0.5383017398078421, 0.5466112698000519, 0.
 percent_gains = [round((test_accuracies[i] - test_accuracies[i-1]) * 100 / test_accuracies[i-1], 2) for i in range(1, len(test_accuracies))]
 absolute_gains = [round((test_accuracies[i] - test_accuracies[i-1]) * 100, 2) for i in range(1, len(test_accuracies))]
 
-# Exclude the first model and corresponding accuracy values
-models = models[1:]
-test_accuracies = test_accuracies[1:]
 
 # Create subplots (next to each other)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
-# Plot percent gain in the first subplot
-bars1 = ax1.bar(models, percent_gains, color='lightskyblue')
-for bar, accuracy in zip(bars1, test_accuracies):
+# Plot percent gain in the first subplot (skip the first model)
+bars1 = ax1.bar(models[1:], percent_gains, color='lightskyblue')
+# Annotate the bars with the percent gain
+for bar, accuracy in zip(bars1, test_accuracies[1:]):
     height = bar.get_height()
 
 ax1.set_ylabel('Percent Gain in Balanced Accuracy (%)', fontsize=14)
-ax1.set_xlabel('Classifier Pool', fontsize=14)
+ax1.set_xlabel('Last Added Classifier', fontsize=14)
 #ax1.set_title('Percent Gain in Balanced Accuracy for Stacking Classifier', fontsize=16)
 ax1.set_ylim(0, max(percent_gains) + 2)
 ax1.grid(True, dashes=(5, 5))
@@ -42,15 +40,12 @@ for bar, accuracy in zip(bars2, test_accuracies):
                  textcoords="offset points",
                  ha='center', va='bottom')
 ax2.set_ylabel('Balanced Accuracy (%)', fontsize=14)
-ax2.set_xlabel('Classifier Pool', fontsize=14)
+ax2.set_xlabel('Last Added Classifier', fontsize=14)
 #ax2.set_title('Absolute Balanced Accuracy for Stacking Classifier', fontsize=16)
 ax2.set_ylim(50, max([acc * 100 for acc in test_accuracies]) + 5)
 ax2.grid(True, dashes=(5, 5))
 
 # Adjust layout
 plt.tight_layout()
-
-plt.show()
-
-# Save
 plt.savefig('relative_gain_stacking.png')
+plt.show()

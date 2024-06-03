@@ -274,9 +274,9 @@ if __name__ == '__main__':
 
     models = [
         nn,
-        svm,
-        rf,
-        mlp
+        #svm,
+        #rf,
+        #mlp
     ]
 
     probabilities_val = {}
@@ -341,9 +341,9 @@ if __name__ == '__main__':
         return stacking_pipeline
 
     # Use stacking
-    stacking_pipeline = evaluate_stacking(probabilities_val, y_val)
+    #stacking_pipeline = evaluate_stacking(probabilities_val, y_val)
 
     # Evaluate test set with stacking pipeline
-    X_test_stack = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
-    test_balanced_accuracy = balanced_accuracy_score(y_test, stacking_pipeline.predict(X_test_stack))
-    logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {test_balanced_accuracy}")
+    #X_test_stack = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
+    #test_balanced_accuracy = balanced_accuracy_score(y_test, stacking_pipeline.predict(X_test_stack))
+    #logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {test_balanced_accuracy}")
