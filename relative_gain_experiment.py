@@ -3,6 +3,7 @@ import logging
 import joblib
 from cuml.preprocessing import StandardScaler
 import numpy as np
+from matplotlib import pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
@@ -82,9 +83,15 @@ if __name__ == '__main__':
                 explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
                 shap_values_val = explainer(X_stack)
                 shap_values_test = explainer(X_stack_test)
-                logger.info("SHAP analysis done, saving")
-                np.save(f'shap_values_val.npy', shap_values_val)
-                np.save(f'shap_values_test.npy', shap_values_test)
+                shap.summary_plot(shap_values_val, X_stack, show=False)
+                plt.savefig('shap_summary_plot_val.png')
+                plt.close()
+                shap.summary_plot(shap_values_test, X_stack_test, show=False)
+                plt.savefig('shap_summary_plot_test.png')
+                plt.close()
+                #logger.info("SHAP analysis done, saving")
+                #np.save(f'shap_values_val.npy', shap_values_val)
+                #np.save(f'shap_values_test.npy', shap_values_test)
 
         logger.info(f"Accuracy increase: {increased_accuracy}")
 
