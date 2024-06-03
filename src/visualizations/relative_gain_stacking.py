@@ -1,11 +1,17 @@
 # Visualize the relative gain per added classifier for our score fusion via stacking
 from matplotlib import pyplot as plt
 
+INCLUDE_CONCAT = False
+
 # The models, a subset starting with i=1 (only hog) and ending with i=5 (all models) are used to train a stacking classifier
 models = ['HOG', 'PDM', '3D Landmarks', 'Embeddings', 'FAUs']
 
 # The relative gain in accuracy for each added classifier, starting with only hog and ending with all
 test_accuracies = [0.512594131394443, 0.5383017398078421, 0.5466112698000519, 0.5476499610490781, 0.5528434172942093]
+
+if INCLUDE_CONCAT:
+    models = ['Concatenated', 'HOG', 'PDM', '3D Landmarks', 'Embeddings', 'FAUs']
+    test_accuracies = [0.5323292651259414,0.5429758504284602,0.5551804726045183, 0.5549207997922617, 0.558296546351597, 0.560633601661906]
 # Same as above but uses the validation set bal accs, just for comparison
 #val_bal_acc = [0.5216863128236839,0.5532726368952153,0.5564732083637857, 0.5680217733510686,0.56829543150788]
 
@@ -47,5 +53,8 @@ ax2.grid(True, dashes=(5, 5))
 
 # Adjust layout
 plt.tight_layout()
-plt.savefig('relative_gain_stacking.png')
+if INCLUDE_CONCAT:
+    plt.savefig('relative_gain_stacking_concat.png')
+else:
+    plt.savefig('relative_gain_stacking.png')
 plt.show()
