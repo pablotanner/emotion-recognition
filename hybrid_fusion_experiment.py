@@ -42,7 +42,9 @@ if __name__ == '__main__':
     def prepare_facs():
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('log_reg', CULogisticRegression(C=10, class_weight='balanced'))
+            #('log_reg', LogisticRegression(C=0.1, class_weight='balanced'))
+            ('rf', RandomForestClassifier(n_estimators=400, max_depth=15,
+                                          min_samples_split=2, criterion='gini', class_weight='balanced'))
         ])
 
         pipeline.fit(np.load(feature_paths['facs']['train']).astype(np.float32), y_train)
@@ -118,29 +120,15 @@ if __name__ == '__main__':
     logger.info("Fitting HOG")
     hog_pipeline = prepare_hog()
 
-    # Get individual accuracies
-    balanced_accuracy = balanced_accuracy_score(y_val, facs_pipeline.predict(np.load(feature_paths['facs']['val']).astype(np.float32)))
-    logger.info(f"Balanced Accuracy of FACS classifier (Validation Set): {balanced_accuracy}")
-
-    balanced_accuracy = balanced_accuracy_score(y_val, lnd_pipeline.predict(np.load(feature_paths['landmarks_3d']['val']).astype(np.float32)))
-    logger.info(f"Balanced Accuracy of Landmarks 3D classifier (Validation Set): {balanced_accuracy}")
-
-    balanced_accuracy = balanced_accuracy_score(y_val, pdm_pipeline.predict(np.load(feature_paths['pdm']['val']).astype(np.float32)))
-    logger.info(f"Balanced Accuracy of PDM classifier (Validation Set): {balanced_accuracy}")
-
-    balanced_accuracy = balanced_accuracy_score(y_val, emb_pipeline.predict(np.load(feature_paths['embedded']['val']).astype(np.float32)))
-    logger.info(f"Balanced Accuracy of Embedded classifier (Validation Set): {balanced_accuracy}")
-
-    balanced_accuracy = balanced_accuracy_score(y_val, hog_pipeline.predict(np.load(feature_paths['hog']['val']).astype(np.float32)))
-    logger.info(f"Balanced Accuracy of HOG classifier (Validation Set): {balanced_accuracy}")
-
-
-
     probabilities_val['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['val']).astype(np.float32))
     probabilities_val['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(feature_paths['landmarks_3d']['val']).astype(np.float32))
     probabilities_val['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['val']).astype(np.float32))
     probabilities_val['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['val']).astype(np.float32))
     probabilities_val['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['val']).astype(np.float32))
+
+    for model in probabilities_val:
+        balanced_accuracy = balanced_accuracy_score(y_val, np.argmax(probabilities_val[model], axis=1))
+        logger.info(f"Balanced Accuracy of {model} classifier (Validation Set): {balanced_accuracy}")
 
     probabilities_test['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['test']).astype(np.float32))
     probabilities_test['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(feature_paths['landmarks_3d']['test']).astype(np.float32))
@@ -157,7 +145,7 @@ if __name__ == '__main__':
     X_stack_val = np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1)
 
     stacking_pipeline = Pipeline([
-        ('scaler', StandardScaler()),
+        #('scaler', StandardScaler()),
         ('log_reg', LogisticRegression(C=1, class_weight='balanced'))
     ])
 
