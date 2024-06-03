@@ -81,6 +81,15 @@ data = {
     'SequentialNN': SequentialNN
 }
 
+# Rename the feature names to be more readable
+feature_names = {
+    'facs': 'FAUs',
+    'landmarks_3d': '3D Landmarks',
+    'embedded': 'Embeddings',
+    'hog': 'HOG',
+    'pdm': 'PDM'
+}
+
 df = pd.DataFrame(data)
 
 # Convert to percentage
@@ -89,6 +98,9 @@ df = df * 100
 # Plot
 plt.figure(figsize=(10, 8))
 sns.heatmap(df, annot=True, cmap='coolwarm', fmt=".2f")
+
+# Rename y labels to readable
+plt.yticks([0.5, 1.5, 2.5, 3.5, 4.5], [feature_names[feature] for feature in df.index], rotation=0)
 
 # Make the plot readable
 plt.xticks(rotation=45)

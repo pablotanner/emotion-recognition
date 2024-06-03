@@ -63,7 +63,7 @@ class NeuralNetwork(nn.Module):
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-            print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {loss.item()}')
+            #print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {loss.item()}')
 
     def predict(self, X):
         self.eval()

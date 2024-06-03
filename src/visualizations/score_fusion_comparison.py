@@ -4,6 +4,9 @@
 # This code is to visualize it
 
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 # Without normal SVC because it can't be used for probability stacking
 feature_data = {
     'FACS': {
@@ -101,11 +104,68 @@ classifier_data = {
     },
     'SVC': {
         'HOG': 0.5099321335489762564,
-        'Landmarks': None,
-        'PDM': None,
-        'FACS': None,
-        'Embedded': None,
+        'Landmarks':  0.4732473249614243,
+        'PDM': 0.4764234030931595,
+        'FACS': 0.4394365847036077,
+        'Embedded': 0.4597618607618611,
         'Stacking': 0.5099321335489762564,
 
     },
 }
+
+
+def plot_grouped_bar_chart(data, title, x_label):
+    # Prepare data
+    labels = list(data.keys())
+    sub_labels = [key for key in data[labels[0]].keys() if key != 'Stacking']
+    stacking_values = [data[label]['Stacking'] * 100 for label in labels]
+    other_values = np.array([[data[label][sub_label] * 100 for sub_label in sub_labels] for label in labels])
+
+    x = np.arange(len(labels))  # label locations
+    stacking_width = 0.2  # width of the Stacking bars
+    other_width = 0.1  # width of the other bars
+    gap = 0.05  # gap between the Stacking bar and the other bars
+
+    fig, ax = plt.subplots(figsize=(14, 7))
+
+    # Color palette
+    colors = plt.get_cmap('tab20c')
+
+    # Plot Stacking bars
+    ax.bar(x, stacking_values, stacking_width, label='Stacking', color=colors(0))
+
+    # Plot other bars
+    for i in range(len(sub_labels)):
+        ax.bar(x + stacking_width / 2 + gap + other_width * i, other_values[:, i], other_width, label=sub_labels[i],
+               color=colors(i + 1))
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_xlabel(x_label, fontsize=16)
+    ax.set_ylabel('Balanced Accuracy (%)', fontsize=16)
+    ax.set_title(title, fontsize=18)
+    ax.set_xticks(x + stacking_width / 2 + gap + other_width * ((len(sub_labels) - 1) / 2))
+    ax.set_xticklabels(labels)
+    ax.legend()
+
+    # Rotate x labels
+    plt.xticks(rotation=45)
+
+    # legend outside
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+
+
+    # Adjust space below plots and overall layout
+    plt.subplots_adjust(bottom=0.3, right=0.8)
+    plt.ylim(0, 60)
+
+    # Save the plot
+    plt.savefig(f'{title}_stacking_comparison.png')
+
+    plt.show()
+
+
+# Plot for feature data
+plot_grouped_bar_chart(feature_data, 'Stacking Accuracy per Feature', 'Feature')
+
+# Plot for classifier data
+plot_grouped_bar_chart(classifier_data, 'Stacking Accuracy per Classifier', 'Classifier')
