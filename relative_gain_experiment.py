@@ -14,6 +14,7 @@ if __name__ == '__main__':
         description='Training one classifier with all feature types')
     parser.add_argument('--experiment-dir', type=str, help='Directory to checkpoint file',
                         default='/local/scratch/ptanner/relative_gain_experiments')
+    parser.add_argument('--use-concat', action='store_true', help='Use concatenated probabilities')
 
     args = parser.parse_args()
 
@@ -30,11 +31,12 @@ if __name__ == '__main__':
     probabilities_val = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_val.npy', allow_pickle=True).item()
     probabilities_test = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_test.npy', allow_pickle=True).item()
 
-    proba_val_concat = np.load('concat_proba_nn_val.npy')
-    proba_test_concat = np.load('concat_proba_nn_test.npy')
+    if args.use_concat:
+        proba_val_concat = np.load('concat_proba_nn_val.npy')
+        proba_test_concat = np.load('concat_proba_nn_test.npy')
 
-    probabilities_val['concat'] = proba_val_concat
-    probabilities_test['concat'] = proba_test_concat
+        probabilities_val['concat'] = proba_val_concat
+        probabilities_test['concat'] = proba_test_concat
 
 
     y_val = np.load('y_val.npy')
@@ -47,7 +49,11 @@ if __name__ == '__main__':
     ])
 
     # Start with hog probabilities, then add pdm, then add landmarks_3d, then add embedded and finally facs
-    models = ['concat','hog', 'pdm', 'landmarks_3d', 'embedded', 'facs']
+    models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs']
+
+    if args.use_concat:
+        # Place concat at first position
+        models = ['concat'] + models
 
     def do_experiment():
         increased_accuracy = []
