@@ -29,6 +29,14 @@ if __name__ == '__main__':
     # Load the probabilities from the hybrid fusion experiment
     probabilities_val = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_val.npy', allow_pickle=True).item()
     probabilities_test = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_test.npy', allow_pickle=True).item()
+
+    proba_val_concat = np.load('concat_proba_nn_val.npy')
+    proba_test_concat = np.load('concat_proba_nn_test.npy')
+
+    probabilities_val['concat'] = proba_val_concat
+    probabilities_test['concat'] = proba_test_concat
+
+
     y_val = np.load('y_val.npy')
     y_test = np.load('y_test.npy')
 
@@ -39,7 +47,7 @@ if __name__ == '__main__':
     ])
 
     # Start with hog probabilities, then add pdm, then add landmarks_3d, then add embedded and finally facs
-    models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs']
+    models = ['concat','hog', 'pdm', 'landmarks_3d', 'embedded', 'facs']
 
     def do_experiment():
         increased_accuracy = []
