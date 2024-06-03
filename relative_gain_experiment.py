@@ -39,7 +39,8 @@ if __name__ == '__main__':
     ])
 
     # Start with hog probabilities, then add pdm, then add landmarks_3d, then add embedded and finally facs
-    models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs']
+    #models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs']
+    models = ['hog', 'pdm', 'landmarks_3d', 'facs', 'embedded']
 
     increased_accuracy = []
 
@@ -63,8 +64,6 @@ if __name__ == '__main__':
         joblib.dump(stacking_pipeline, f'{args.experiment_dir}/stacking_pipeline_{i}.joblib')
 
 
-
-
-
+    logger.info(f"Accuracy increase: {increased_accuracy}")
 
     logger.info("Experiment Finished")
