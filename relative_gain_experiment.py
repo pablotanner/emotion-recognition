@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
-
+import shap
 # Look how the relative gain in score fusion (stacking) changes with the number of classifiers/feature types
 
 if __name__ == '__main__':
@@ -76,12 +76,19 @@ if __name__ == '__main__':
             increased_accuracy.append(test_accuracy)
             # Save
             joblib.dump(stacking_pipeline, f'{args.experiment_dir}/stacking_pipeline_{i}.joblib')
+
+            if i == len(models):
+                logger.info("Performing SHAP analysis...")
+                explainer = shap.Explainer(stacking_pipeline)
+                shap_values_val = explainer(X_stack)
+                shap_values_test = explainer(X_stack_test)
+                logger.info("SHAP analysis done, saving")
+                np.save(f'shap_values_val.npy', shap_values_val)
+                np.save(f'shap_values_test.npy', shap_values_test)
+
         logger.info(f"Accuracy increase: {increased_accuracy}")
 
     do_experiment()
-
-    # After all models are in the stacking, we check the coefficients, to find out importance for each mdoel
-
 
 
 
