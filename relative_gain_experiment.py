@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
             if i == len(models):
                 logger.info("Performing SHAP analysis...")
-                explainer = shap.Explainer(stacking_pipeline)
+                explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
                 shap_values_val = explainer(X_stack)
                 shap_values_test = explainer(X_stack_test)
                 logger.info("SHAP analysis done, saving")
