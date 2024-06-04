@@ -6,7 +6,7 @@ from torch import optim
 
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_dim, class_weight=None, num_epochs=10, batch_size=32, learning_rate=0.001):
+    def __init__(self, input_dim, class_weight=None, num_epochs=10, batch_size=32, learning_rate=0.001, verbose=0):
         super(NeuralNetwork, self).__init__()
         """
         self.layer = nn.Sequential(
@@ -44,6 +44,7 @@ class NeuralNetwork(nn.Module):
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+        self.verbose = verbose
 
         if isinstance(class_weight, dict):
             # Make sure class_weight keys are ints
@@ -96,7 +97,8 @@ class NeuralNetwork(nn.Module):
                 loss.backward()
                 self.optimizer.step()
                 epoch_loss += loss.item()
-            #print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {epoch_loss / len(train_loader)}')
+            if self.verbose > 0:
+                print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {epoch_loss / len(train_loader)}')
 
     def predict(self, X):
         self.eval()
