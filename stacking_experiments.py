@@ -42,9 +42,8 @@ if __name__ == '__main__':
     features = ['hog','nonrigid_face_shape','landmarks_3d','facs', 'embedded']
     classifier_names = ['SVC', 'RandomForest', 'LogisticRegression', 'MLP', 'NN', 'LinearSVC']
 
-    predicted_probabilities_val = {}
-    predicted_probabilities_test = {}
-
+    predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
+    predicted_probabilities_test = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
     def single_feature_experiment(feature):
         logger.info(f"Training on feature: {feature}")
         # Load data
