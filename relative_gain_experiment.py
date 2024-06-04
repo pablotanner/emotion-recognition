@@ -78,26 +78,17 @@ if __name__ == '__main__':
             # Save
             joblib.dump(stacking_pipeline, f'{args.experiment_dir}/stacking_pipeline_{i}.joblib')
 
-            if i == len(models):
-                logger.info("Performing SHAP analysis...")
-                explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
-                #shap_values_val = explainer(X_stack)
-                shap_values_test = explainer(X_stack_test)
-                np.save('shap_values_test.npy', shap_values_test)
-                #shap.summary_plot(shap_values_val, X_stack, show=False)
-                #plt.savefig('shap_summary_plot_val.png')
-                #plt.close()
-                #shap.summary_plot(shap_values_test, X_stack_test, show=False)
-                #plt.savefig('shap_summary_plot_test.png')
-                #plt.close()
-                #logger.info("SHAP analysis done, saving")
-                #np.save(f'shap_values_val.npy', shap_values_val)
-                #np.save(f'shap_values_test.npy', shap_values_test)
+
 
         logger.info(f"Accuracy increase: {increased_accuracy}")
 
-    do_experiment()
+    #do_experiment()
 
+    X_stack = np.concatenate([probabilities_val[model] for model in models], axis=1)
+    X_stack_test = np.concatenate([probabilities_test[model] for model in models], axis=1)
+    stacking_pipeline.fit(X_stack, y_val)
+    explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
+    shap_values_test = explainer(X_stack_test)
 
 
     logger.info("Experiment Finished")
