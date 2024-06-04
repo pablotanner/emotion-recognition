@@ -118,9 +118,9 @@ def filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=
 
 def preprocess_and_save_features(X_train, X_val, X_test, feature_name):
     # Check if the feature is already preprocessed
-    if f'train_{feature_name}.npy' in os.listdir(args.experiment_dir):
-        logger.info(f'{feature_name} already preprocessed')
-        return
+    #if f'train_{feature_name}.npy' in os.listdir(args.experiment_dir):
+       #logger.info(f'{feature_name} already preprocessed')
+        #return
 
     X_train = np.array(X_train).astype(np.float32)
     X_val = np.array(X_val).astype(np.float32)
