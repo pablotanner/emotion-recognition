@@ -38,7 +38,7 @@ class NeuralNetwork(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = self.dropout1(x)
-        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc2(x)) # Maybe not optimal for small
         x = self.dropout2(x)
         x = self.fc3(x)
         return x

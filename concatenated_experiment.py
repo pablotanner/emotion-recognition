@@ -37,11 +37,13 @@ args = parser.parse_args()
 
 feature_types = {
     'landmarks_3d': 'linear',
-    'facs_intensity': 'linear',
-    'facs_presence': 'linear',
+    #'facs_intensity': 'linear',
+    #'facs_presence': 'linear',
     'hog': 'nonlinear',
-    'facenet': 'nonlinear',
-    'sface': 'nonlinear',
+    #'facenet': 'nonlinear',
+    #'sface': 'nonlinear',
+    'facs': 'nonlinear',
+    'embedded': 'nonlinear',
     'nonrigid_face_shape': 'nonlinear'
 }
 
@@ -114,7 +116,7 @@ def filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=
 
 
 
-def preprocess_and_save_features(X_train, X_val, X_test, feature_name, use_minmax=False):
+def preprocess_and_save_features(X_train, X_val, X_test, feature_name):
     # Check if the feature is already preprocessed
     if f'train_{feature_name}.npy' in os.listdir(args.experiment_dir):
         logger.info(f'{feature_name} already preprocessed')
@@ -130,11 +132,6 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name, use_minma
     else:
         # Initialize Scaler
         logger.info(f'Scaling {feature_name}...')
-        if use_minmax:
-            scaler = MinMaxScaler(feature_range=(-5, 5))
-            X_train = scaler.fit_transform(X_train)
-            X_val = scaler.transform(X_val)
-            X_test = scaler.transform(X_test)
 
         scaler = StandardScaler()
         X_train = scaler.fit_transform(X_train)
@@ -146,10 +143,10 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name, use_minma
     if X_train.shape[1] > 50:
         logger.info(f'Dimensionality Reduction for {feature_name}...')
         pca_components = {
-            'landmarks_3d': 100,
-            'hog': 200,
-            'sface': 50,
-            'facenet': 50,
+            'landmarks_3d': 50,
+            'hog': 50,
+            'embedded': 50,
+            'facs': 50,
         }
         pca = PCA(n_components=pca_components[feature_name])
         X_train = pca.fit_transform(X_train)
@@ -235,15 +232,30 @@ if __name__ == '__main__':
 
         logger.info(f'Preprocessing Data and Saving...')
         for feature_name, linearity in feature_types.items():
-            use_mm = feature_name in ['landmarks_3d', 'hog', 'sface', 'facenet','facs_intensity']
 
             preprocess_and_save_features(
                 feature_splits_dict['train'][feature_name],
                 feature_splits_dict['val'][feature_name],
                 feature_splits_dict['test'][feature_name],
                 feature_name,
-                use_minmax=use_mm,
             )
+
+    for feature in feature_types.keys():
+        if feature in ['facs', 'embedded']:
+            preprocess_and_save_features(
+                np.load(f'train_{feature}_features.npy').astype(np.float32),
+                np.load(f'val_{feature}_features.npy').astype(np.float32),
+                np.load(f'test_{feature}_features.npy').astype(np.float32),
+                feature,
+            )
+        else:
+            preprocess_and_save_features(
+                np.load(f'{args.experiment_dir}/unprocessed/train_{feature}.npy').astype(np.float32),
+                np.load(f'{args.experiment_dir}/unprocessed/val_{feature}.npy').astype(np.float32),
+                np.load(f'{args.experiment_dir}/unprocessed/test_{feature}.npy').astype(np.float32),
+                feature,
+            )
+
     gc.collect()
     logger.info(f'Preparing concatenated data')
     y_train = np.load(f'{args.experiment_dir}/y_train.npy')
@@ -322,10 +334,7 @@ if __name__ == '__main__':
         # Use probabilities as input to the stacking classifier
         X_stack = np.concatenate([probabilities[model] for model in probabilities], axis=1)
 
-        stacking_pipeline = Pipeline([
-            ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(C=1, solver='liblinear', class_weight='balanced'))
-        ])
+        stacking_pipeline = Pipeline([('scaler', StandardScaler()),('log_reg', LogisticRegression(C=1,  class_weight='balanced'))])
 
         stacking_pipeline.fit(X_stack, y_val)
         #stacking_accuracy = stacking_pipeline.score(X_stack, y_val)
@@ -336,10 +345,7 @@ if __name__ == '__main__':
         logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
 
 
-        #logger.info('Coefficients:')
-        #for model, coef in zip(probabilities, stacking_pipeline.named_steps['log_reg'].coef_):
-           #logger.info(f'{model}: {coef}')
-        # Return the stacking pipeline
+
         return stacking_pipeline
 
     # Use stacking
