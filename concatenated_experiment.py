@@ -145,7 +145,7 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name):
         pca_components = {
             'landmarks_3d': 100,
             'hog': 100,
-            'embedded': 50,
+            'embedded': 100,
             'facs': 50,
         }
         pca = PCA(n_components=pca_components[feature_name])
@@ -241,6 +241,8 @@ if __name__ == '__main__':
             )
 
     for feature in feature_types.keys():
+        if feature not in ['landmarks_3d', 'hog', 'embedded']:
+            continue
         if feature in ['facs', 'embedded']:
             preprocess_and_save_features(
                 np.load(f'train_{feature}_features.npy').astype(np.float32),
