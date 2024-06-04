@@ -266,18 +266,19 @@ if __name__ == '__main__':
     linearSVC = LinearSVC(class_weight='balanced', C=0.1)
     #rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight=class_weights)
     svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=10)
-    mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
+    #mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
     nn.__class__.__name__ = 'NeuralNetwork'
     #rf.__class__.__name__ = 'RandomForestClassifier'
     svm.__class__.__name__ = 'SVC'
-    mlp.__class__.__name__ = 'MLP'
+    linearSVC.__class__.__name__ = 'LinearSVC'
+    #mlp.__class__.__name__ = 'MLP'
 
 
     models = [
         nn,
-        #svm,
+        linearSVC,
         #rf,
-        #mlp
+        svm,
     ]
 
     probabilities_val = {}
