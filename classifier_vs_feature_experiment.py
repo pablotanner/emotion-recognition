@@ -20,7 +20,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
 
     Classifiers were tuned by running grid search for each classifier and each feature (with StandardScaler).
     """
-    if feature == 'pdm':
+    if feature == 'pdm' or feature == 'nonrigid_face_shape':
         return {
             'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
             'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
