@@ -143,8 +143,8 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name):
     if X_train.shape[1] > 50:
         logger.info(f'Dimensionality Reduction for {feature_name}...')
         pca_components = {
-            'landmarks_3d': 50,
-            'hog': 50,
+            'landmarks_3d': 100,
+            'hog': 100,
             'embedded': 50,
             'facs': 50,
         }
@@ -241,7 +241,6 @@ if __name__ == '__main__':
             )
 
     for feature in feature_types.keys():
-        continue
         if feature in ['facs', 'embedded']:
             preprocess_and_save_features(
                 np.load(f'train_{feature}_features.npy').astype(np.float32),
