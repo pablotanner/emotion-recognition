@@ -25,7 +25,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
             'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
             'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=20,
-                                                   min_samples_split=2, criterion='entropy', class_weight='balanced'),
+                                                   min_samples_split=2, criterion='gini', class_weight='balanced'),
             'LogisticRegression': LogisticRegression(C=10, class_weight='balanced'),
             'MLP': MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
                        num_classes=8, input_size=input_dim),
@@ -68,9 +68,9 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
         }
     elif feature == 'hog':
         return {
-            'SVC': SVC(C=0.05, probability=True, kernel='rbf', class_weight='balanced'),
+            'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
             'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
-            'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=15,
+            'RandomForest': RandomForestClassifier(n_estimators=300, max_depth=15,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
             'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
             'MLP': MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=20,
