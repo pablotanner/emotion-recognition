@@ -241,6 +241,7 @@ if __name__ == '__main__':
             )
 
     for feature in feature_types.keys():
+        continue
         if feature in ['facs', 'embedded']:
             preprocess_and_save_features(
                 np.load(f'train_{feature}_features.npy').astype(np.float32),
@@ -258,7 +259,7 @@ if __name__ == '__main__':
 
     gc.collect()
     logger.info(f'Preparing concatenated data')
-    y_train = np.load(f'{args.experiment_dir}/y_train.npy')
+    y_train = np.load(f'y_train.npy')
 
     X_train_path = load_and_concatenate_features('train')
     X_val_path = load_and_concatenate_features('val')
@@ -298,11 +299,11 @@ if __name__ == '__main__':
 
 
 
-    y_val = np.load(f'{args.experiment_dir}/y_val.npy')
+    y_val = np.load(f'y_val.npy')
     X_val = np.load(X_val_path)
 
     X_test = np.load(X_test_path)
-    y_test = np.load(f'{args.experiment_dir}/y_test.npy')
+    y_test = np.load(f'y_test.npy')
 
     for model in models:
         if os.path.exists(f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib'):
