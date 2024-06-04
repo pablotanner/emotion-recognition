@@ -149,7 +149,10 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name):
             'facs': 50,
         }
         pca = PCA(n_components=pca_components[feature_name])
+
         X_train = pca.fit_transform(X_train)
+        # Save the PCA model
+        joblib.dump(pca, f'{args.experiment_dir}/pca_models/{feature_name}_pca.joblib')
         X_val = pca.transform(X_val)
         X_test = pca.transform(X_test)
 
@@ -241,8 +244,6 @@ if __name__ == '__main__':
             )
 
     for feature in feature_types.keys():
-        if feature not in ['landmarks_3d', 'hog', 'embedded']:
-            continue
         if feature in ['facs', 'embedded']:
             preprocess_and_save_features(
                 np.load(f'train_{feature}_features.npy').astype(np.float32),
