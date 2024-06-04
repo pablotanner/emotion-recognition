@@ -90,5 +90,7 @@ if __name__ == '__main__':
     explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
     shap_values_test = explainer(X_stack_test)
 
+    shap.bar_plot(shap_values_test, max_display=10)
+
 
     logger.info("Experiment Finished")
