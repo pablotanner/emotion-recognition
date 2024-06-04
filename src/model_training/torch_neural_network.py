@@ -2,9 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
+from torch import optim
+
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_dim, class_weight=None, num_epochs=10, batch_size=32):
+    def __init__(self, input_dim, class_weight=None, num_epochs=10, batch_size=32, learning_rate=0.001):
         super(NeuralNetwork, self).__init__()
         """
         self.layer = nn.Sequential(
@@ -18,15 +20,30 @@ class NeuralNetwork(nn.Module):
         )
         
         """
-
         self.fc1 = nn.Linear(input_dim, 128)
+        self.bn1 = nn.BatchNorm1d(128)
         self.dropout1 = nn.Dropout(0.5)
+
         self.fc2 = nn.Linear(128, 64)
+        self.bn2 = nn.BatchNorm1d(64)
         self.dropout2 = nn.Dropout(0.5)
-        self.fc3 = nn.Linear(64, 8)
+
+        self.fc3 = nn.Linear(64, 32)
+        self.bn3 = nn.BatchNorm1d(32)
+        self.dropout3 = nn.Dropout(0.5)
+
+        num_classes = 8
+        self.fc4 = nn.Linear(32, num_classes)
+
+        #self.fc1 = nn.Linear(input_dim, 128)
+        #self.dropout1 = nn.Dropout(0.5)
+        #self.fc2 = nn.Linear(128, 64)
+        #self.dropout2 = nn.Dropout(0.5)
+        #self.fc3 = nn.Linear(64, 8)
         self.optimizer = None
         self.num_epochs = num_epochs
         self.batch_size = batch_size
+        self.learning_rate = learning_rate
 
         if isinstance(class_weight, dict):
             # Make sure class_weight keys are ints
@@ -36,11 +53,25 @@ class NeuralNetwork(nn.Module):
         self.criterion = nn.CrossEntropyLoss(weight=class_weight)
 
     def forward(self, x):
+        #x = F.relu(self.fc1(x))
+        #x = self.dropout1(x)
+        #x = F.relu(self.fc2(x))
+        #x = self.dropout2(x)
+        #x = self.fc3(x)
+
         x = F.relu(self.fc1(x))
+        x = self.bn1(x)
         x = self.dropout1(x)
-        x = F.relu(self.fc2(x)) # Maybe not optimal for small
+
+        x = F.relu(self.fc2(x))
+        x = self.bn2(x)
         x = self.dropout2(x)
-        x = self.fc3(x)
+
+        x = F.relu(self.fc3(x))
+        x = self.bn3(x)
+        x = self.dropout3(x)
+
+        x = self.fc4(x)
         return x
 
     def compile(self, optimizer):
@@ -49,7 +80,7 @@ class NeuralNetwork(nn.Module):
     def fit(self, X_train, y_train):
         if self.optimizer is None:
             # Default optimizer
-            self.optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
+            self.optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
 
         self.train()
         dataset = torch.utils.data.TensorDataset(torch.tensor(X_train, dtype=torch.float32),
@@ -57,13 +88,15 @@ class NeuralNetwork(nn.Module):
         train_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         for epoch in range(self.num_epochs):
+            epoch_loss = 0.0
             for inputs, labels in train_loader:
                 self.optimizer.zero_grad()
                 outputs = self.forward(inputs)
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-            #print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {loss.item()}')
+                epoch_loss += loss.item()
+            #print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {epoch_loss / len(train_loader)}')
 
     def predict(self, X):
         self.eval()
