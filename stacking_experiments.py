@@ -8,7 +8,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils import compute_class_weight
 from classifier_vs_feature_experiment import get_tuned_classifiers
 from src.util.data_paths import get_data_path
-import cupy as cp
 
 
 
@@ -49,9 +48,9 @@ if __name__ == '__main__':
     def single_feature_experiment(feature):
         logger.info(f"Training on feature: {feature}")
         # Load data
-        train_data = cp.load(get_data_path('train', feature)).astype(np.float32)
-        val_data = cp.load(get_data_path('val', feature)).astype(np.float32)
-        test_data = cp.load(get_data_path('test', feature)).astype(np.float32)
+        train_data = np.load(get_data_path('train', feature)).astype(np.float32)
+        val_data = np.load(get_data_path('val', feature)).astype(np.float32)
+        test_data = np.load(get_data_path('test', feature)).astype(np.float32)
 
         probabilities_val = {}
         probabilities_test = {}
@@ -118,9 +117,9 @@ if __name__ == '__main__':
                 logger.info(f"Balanced Accuracy {feature}: {balanced_accuracy_score(y_val, np.argmax(probabilities_val[feature], axis=1))} / {balanced_accuracy_score(y_test, np.argmax(probabilities_test[feature], axis=1))}")
                 continue
 
-            train_data = cp.load(get_data_path('train', feature)).astype(np.float32)
-            val_data = cp.load(get_data_path('val', feature)).astype(np.float32)
-            test_data = cp.load(get_data_path('test', feature)).astype(np.float32)
+            train_data = np.load(get_data_path('train', feature)).astype(np.float32)
+            val_data = np.load(get_data_path('val', feature)).astype(np.float32)
+            test_data = np.load(get_data_path('test', feature)).astype(np.float32)
 
             classifier = get_tuned_classifiers(feature, class_weights, test_data.shape[1])[clf_name]
 
