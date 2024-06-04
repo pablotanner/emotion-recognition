@@ -253,7 +253,7 @@ if __name__ == '__main__':
     X_test_path = load_and_concatenate_features('test')
 
 
-    X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=150)
+    X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=225)
 
     logger.info(f'Loading concatenated data...')
     
