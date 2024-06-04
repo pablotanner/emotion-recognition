@@ -6,7 +6,7 @@ from torch import optim
 
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_dim, class_weight=None, num_epochs=10, batch_size=32, learning_rate=0.001, verbose=0, use_new=False):
+    def __init__(self, input_dim, class_weight=None, num_epochs=10, batch_size=32, learning_rate=0.001, verbose=0, use_new=True):
         super(NeuralNetwork, self).__init__()
         """
         self.layer = nn.Sequential(
