@@ -30,9 +30,9 @@ if __name__ == '__main__':
 
     logger.info("Starting Experiment")
 
-    y_train = cp.load('y_train.npy')
-    y_val = cp.load('y_val.npy')
-    y_test = cp.load('y_test.npy')
+    y_train = np.load('y_train.npy')
+    y_val = np.load('y_val.npy')
+    y_test = np.load('y_test.npy')
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
