@@ -5,6 +5,7 @@ import os
 import numpy as np
 #from cuml.decomposition import IncrementalPCA as PCA
 #from cuml.preprocessing import StandardScaler, MinMaxScaler
+from cuml.svm import LinearSVC
 from sklearn.decomposition import IncrementalPCA as PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif
@@ -13,8 +14,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.utils import compute_class_weight
-from cuml.svm import SVC
-from src import evaluate_results
+from src.model_training import SVC
 from src.data_processing.rolf_loader import RolfLoader
 from src.model_training.torch_neural_network import NeuralNetwork
 import joblib
@@ -120,9 +120,9 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name, use_minma
         logger.info(f'{feature_name} already preprocessed')
         return
 
-    X_train = np.array(X_train)
-    X_val = np.array(X_val)
-    X_test = np.array(X_test)
+    X_train = np.array(X_train).astype(np.float32)
+    X_val = np.array(X_val).astype(np.float32)
+    X_test = np.array(X_test).astype(np.float32)
 
 
     if args.no_normalization:
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     X_test_path = load_and_concatenate_features('test')
 
 
-    X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200)
+    X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=150)
 
     logger.info(f'Loading concatenated data...')
     
@@ -263,11 +263,12 @@ if __name__ == '__main__':
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
     nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=20, batch_size=128)
-    rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight=class_weights)
-    svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=1)
+    linearSVC = LinearSVC(class_weight='balanced', C=0.1)
+    #rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight=class_weights)
+    svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=10)
     mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
     nn.__class__.__name__ = 'NeuralNetwork'
-    rf.__class__.__name__ = 'RandomForestClassifier'
+    #rf.__class__.__name__ = 'RandomForestClassifier'
     svm.__class__.__name__ = 'SVC'
     mlp.__class__.__name__ = 'MLP'
 
