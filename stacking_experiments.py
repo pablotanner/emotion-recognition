@@ -39,7 +39,7 @@ if __name__ == '__main__':
     single_feature_results = {feature: {} for feature in ['nonrigid_face_shape','hog','landmarks_3d','facs', 'embedded']}
     single_classifier_results = {clf_name: {} for clf_name in ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']}
 
-    features = ['nonrigid_face_shape','hog','landmarks_3d','facs', 'embedded']
+    features = ['landmarks_3d', 'hog', 'nonrigid_face_shape','facs', 'embedded']
     classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']
 
     predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
