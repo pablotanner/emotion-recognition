@@ -129,6 +129,8 @@ if __name__ == '__main__':
 
                 logger.info(f"Found predictions for {feature}, skipping...")
                 logger.info(f"Balanced Accuracy {feature}: {balanced_accuracy_score(y_val, np.argmax(probabilities_val[feature], axis=1))} / {balanced_accuracy_score(y_test, np.argmax(probabilities_test[feature], axis=1))}")
+
+                single_classifier_results[clf_name][feature] = balanced_accuracy_score(y_test, np.argmax(probabilities_test[feature], axis=1))
                 continue
 
             train_data = np.load(get_data_path('train', feature)).astype(np.float32)
@@ -171,7 +173,6 @@ if __name__ == '__main__':
         single_classifier_experiment(clf_name)
         logger.info(f"Finished Experiment for {clf_name}")
 
-    np.save(f'{args.experiment_dir}/single_classifier_results.npy', single_classifier_results)
 
     np.save(f'{args.experiment_dir}/predicted_probabilities_val.npy', predicted_probabilities_val)
     np.save(f'{args.experiment_dir}/predicted_probabilities_test.npy', predicted_probabilities_test)
