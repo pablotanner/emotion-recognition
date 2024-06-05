@@ -36,14 +36,20 @@ if __name__ == '__main__':
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
-    single_feature_results = {feature: {} for feature in ['nonrigid_face_shape','hog','landmarks_3d','facs', 'embedded']}
-    single_classifier_results = {clf_name: {} for clf_name in ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']}
+    single_feature_results = np.load(f'{args.experiment_dir}/single_feature_results.npy', allow_pickle=True).item()
+    single_classifier_results = np.load(f'{args.experiment_dir}/single_classifier_results.npy', allow_pickle=True).item()
+
+    #single_feature_results = {feature: {} for feature in ['nonrigid_face_shape','hog','landmarks_3d','facs', 'embedded']}
+    #single_classifier_results = {clf_name: {} for clf_name in ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']}
 
     features = ['landmarks_3d', 'hog', 'nonrigid_face_shape','facs', 'embedded']
     classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']
 
-    predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
-    predicted_probabilities_test = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
+    predicted_probabilities_val = np.load(f'{args.experiment_dir}/predicted_probabilities_val.npy', allow_pickle=True).item()
+    predicted_probabilities_test = np.load(f'{args.experiment_dir}/predicted_probabilities_test.npy', allow_pickle=True).item()
+
+    #predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
+    #predicted_probabilities_test = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
     def single_feature_experiment(feature):
         logger.info(f"Training on feature: {feature}")
         # Load data
@@ -56,10 +62,19 @@ if __name__ == '__main__':
 
         classifier_dict = get_tuned_classifiers(feature, class_weights, test_data.shape[1])
 
-
         # Train and evaluate classifiers
         for clf_name, classifier in classifier_dict.items():
             logger.info(f"Training {clf_name} on {feature}")
+
+            # Check if predictions have already been made for this feature-classifier pair
+            if predicted_probabilities_val[clf_name][feature] is not None:
+                probabilities_val[clf_name] = predicted_probabilities_val[clf_name][feature]
+                probabilities_test[clf_name] = predicted_probabilities_test[clf_name][feature]
+
+                logger.info(f"Found predictions for {feature}, skipping...")
+                logger.info(f"Balanced Accuracy {clf_name}: {balanced_accuracy_score(y_val, np.argmax(probabilities_val[clf_name], axis=1))} / {balanced_accuracy_score(y_test, np.argmax(probabilities_test[clf_name], axis=1))}")
+                continue
+
             classifier.fit(train_data, y_train)
             proba_val = classifier.predict_proba(val_data)
             proba_test = classifier.predict_proba(test_data)
