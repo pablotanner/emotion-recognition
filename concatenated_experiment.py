@@ -146,7 +146,6 @@ def preprocess_and_save_features(X_train, X_val, X_test, feature_name):
             'landmarks_3d': 100,
             'hog': 100,
             'embedded': 100,
-            'facs': 50,
         }
         pca = PCA(n_components=pca_components[feature_name])
 

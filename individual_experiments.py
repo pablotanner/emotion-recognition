@@ -209,12 +209,12 @@ if __name__ == '__main__':
             best_classifiers[clf_name] = clf_class(**best_params)
 
         # If classifier is LinearSVC, we need to convert data to numpy
-        if clf_name in ['NN', 'MLP','LinearSVC']:
-            best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute())
-        elif clf_name in ['RandomForest']:
-            best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute().to_numpy())
-        else:
-            best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
+        # if clf_name in ['NN', 'MLP','LinearSVC']:
+            #best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute())
+        #elif clf_name in ['RandomForest']:
+           # best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute().to_numpy())
+        #else:
+            #best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
         #X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
         #del X_train
         #gc.collect()
