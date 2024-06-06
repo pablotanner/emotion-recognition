@@ -20,29 +20,12 @@ class NeuralNetwork(nn.Module):
         )
         
         """
-        if use_new:
-            self.fc1 = nn.Linear(input_dim, 128)
-            self.bn1 = nn.BatchNorm1d(128)
-            self.dropout1 = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(input_dim, 128)
+        self.dropout1 = nn.Dropout(0.5)
+        self.fc2 = nn.Linear(128, 64)
+        self.dropout2 = nn.Dropout(0.5)
+        self.fc3 = nn.Linear(64, 8)
 
-            self.fc2 = nn.Linear(128, 64)
-            self.bn2 = nn.BatchNorm1d(64)
-            self.dropout2 = nn.Dropout(0.5)
-
-            self.fc3 = nn.Linear(64, 32)
-            self.bn3 = nn.BatchNorm1d(32)
-            self.dropout3 = nn.Dropout(0.5)
-
-            num_classes = 8
-            self.fc4 = nn.Linear(32, num_classes)
-        else:
-            self.fc1 = nn.Linear(input_dim, 128)
-            self.dropout1 = nn.Dropout(0.5)
-            self.fc2 = nn.Linear(128, 64)
-            self.dropout2 = nn.Dropout(0.5)
-            self.fc3 = nn.Linear(64, 8)
-
-        self.use_new = use_new
         self.optimizer = None
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -57,26 +40,11 @@ class NeuralNetwork(nn.Module):
         self.criterion = nn.CrossEntropyLoss(weight=class_weight)
 
     def forward(self, x):
-        if self.use_new:
-            x = F.relu(self.fc1(x))
-            x = self.bn1(x)
-            x = self.dropout1(x)
-
-            x = F.relu(self.fc2(x))
-            x = self.bn2(x)
-            x = self.dropout2(x)
-
-            x = F.relu(self.fc3(x))
-            x = self.bn3(x)
-            x = self.dropout3(x)
-
-            x = self.fc4(x)
-        else:
-            x = F.relu(self.fc1(x))
-            x = self.dropout1(x)
-            x = F.relu(self.fc2(x))
-            x = self.dropout2(x)
-            x = self.fc3(x)
+        x = F.relu(self.fc1(x))
+        x = self.dropout1(x)
+        x = F.relu(self.fc2(x))
+        x = self.dropout2(x)
+        x = self.fc3(x)
 
         return x
 

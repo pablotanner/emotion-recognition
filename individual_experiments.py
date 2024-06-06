@@ -17,6 +17,8 @@ from src.model_training.torch_mlp import PyTorchMLPClassifier
 from src.model_training.torch_neural_network import NeuralNetwork
 from sklearn.model_selection import ParameterGrid
 import gc
+
+from src.util.data_paths import get_data_path
 from src.util.dataframe_converter import convert_to_cudf_df
 def save_checkpoint(grid_search_state, filename):
     with open(filename, 'w') as f:
@@ -56,76 +58,21 @@ if __name__ == '__main__':
 
     logger.info(f'Running experiments for feature {args.feature}')
 
+
+    if args.feature == 'pdm':
+        args.feature = 'nonrigid_face_shape'
+
     if not os.path.exists(f'{args.experiment_dir}/{args.feature}'):
         os.makedirs(f'{args.experiment_dir}/{args.feature}')
 
-    feature_files = {
-        'landmarks_3d': ['train_spatial_features.npy', 'val_spatial_features.npy', 'test_spatial_features.npy'],
-        'embedded': ['train_embedded_features.npy', 'val_embedded_features.npy', 'test_embedded_features.npy'],
-        'facs': ['train_facs_features.npy', 'val_facs_features.npy', 'test_facs_features.npy'],
-        'pdm': ['train_pdm_features.npy', 'val_pdm_features.npy', 'test_pdm_features.npy'],
-        'hog': ['pca_train_hog_features.npy', 'pca_val_hog_features.npy', 'pca_test_hog_features.npy'],
-        'facs_intensity': ['train_facs_intensity.npy', 'val_facs_intensity.npy', 'test_facs_intensity.npy'],
-    }
+    X_train = np.load(get_data_path('train', args.feature)).astype(np.float32)
+    X_val = np.load(get_data_path('val', args.feature)).astype(np.float32)
+    X_test = np.load(get_data_path('test', args.feature)).astype(np.float32)
+    y_train = np.load('y_train.npy')
+    y_val = np.load('y_val.npy')
+    y_test = np.load('y_test.npy')
 
-
-    logger.info('Loading and Resampling data')
-
-    X_shape = None
-
-    if args.dummy:
-        ros = RandomOverSampler(random_state=0)
-        X_train, y_train = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
-        X_val, y_val = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
-        X_test, y_test = ros.fit_resample(np.random.rand(100, 10), np.random.randint(0, 2, 100))
-
-        X_shape = X_train.shape[1]
-    elif os.path.exists(f'{args.experiment_dir}/{args.feature}/indi_train.npy'):
-        X_train = np.load(f'{args.experiment_dir}/{args.feature}/indi_train.npy').astype(np.float32)
-        X_val = np.load(f'{args.experiment_dir}/{args.feature}/indi_val.npy').astype(np.float32)
-        X_test = np.load(f'{args.experiment_dir}/{args.feature}/indi_test.npy').astype(np.float32)
-        y_train = np.load('y_train.npy')
-        y_val = np.load('y_val.npy')
-        y_test = np.load('y_test.npy')
-
-        X_shape = X_train.shape[1]
-
-    else:
-
-        """
-        X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy').astype(np.float32)
-        y_train = np.load(f'{args.experiment_dir}/{args.feature}/y_train.npy')
-        X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy').astype(np.float32)
-        y_val = np.load(f'{args.experiment_dir}/{args.feature}/y_val.npy')
-        X_test = np.load(f'{args.experiment_dir}/{args.feature}/X_test.npy').astype(np.float32)
-        y_test = np.load(f'{args.experiment_dir}/{args.feature}/y_test.npy')
-        """
-
-        # Instead of oversampling, we use original date at cost of having to use scikit rf
-        scaler = StandardScaler()
-
-        logger.info('Loading and scaling data')
-
-        X_train = np.load(feature_files[args.feature][0]).astype(np.float32)
-        X_train = scaler.fit_transform(X_train)
-
-        y_train = np.load('y_train.npy')
-        X_val = np.load(feature_files[args.feature][1]).astype(np.float32)
-        X_val = scaler.transform(X_val)
-        y_val = np.load('y_val.npy')
-        X_test = np.load(feature_files[args.feature][2]).astype(np.float32)
-        X_test = scaler.transform(X_test)
-        y_test = np.load('y_test.npy')
-
-        logger.info('Data loaded and scaled')
-
-        np.save(f'{args.experiment_dir}/{args.feature}/indi_train.npy', X_train)
-        np.save(f'{args.experiment_dir}/{args.feature}/indi_val.npy', X_val)
-        np.save(f'{args.experiment_dir}/{args.feature}/indi_test.npy', X_test)
-
-        logger.info('Indi data saved')
-        X_shape = X_train.shape[1]
-
+    X_shape = X_test.shape[1]
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
@@ -150,15 +97,13 @@ if __name__ == '__main__':
 
 
     parameters = {
-        'NewSVC': {'C': [0.1, 1, 10], 'kernel': ['rbf','poly'], 'probability': [True], 'class_weight':['balanced']},
-        'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf','poly'], 'class_weight':['balanced']},
+        'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf'], 'probability': [True], 'class_weight':['balanced']},
         'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
         'RandomForest': {'n_estimators': [200, 300, 400], 'max_depth': [15, 20, None], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
         'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
-        'MLP': {'hidden_size': [128, 256],'class_weight':[class_weights], 'num_epochs': [30], 'batch_size': [32, 64, 128], 'learning_rate': [0.001, 0.01]},
-        'NN':  {'num_epochs': [10, 20, 30], 'batch_size': [32, 64, 128], 'class_weight':[class_weights]}
+        'MLP': {'hidden_size': [128, 256],'class_weight':[class_weights], 'num_epochs': [20, 30], 'batch_size': [64, 128], 'learning_rate': [0.001, 0.01]},
+        'NN':  {'num_epochs': [10, 20, 30], 'batch_size': [64, 128], 'learning_rate':[0.001, 0.01], 'class_weight':[class_weights]}
     }
-
 
 
     classifiers = {
@@ -182,8 +127,6 @@ if __name__ == '__main__':
 
 
     for clf_name, clf_class in classifiers.items():
-        if clf_name != 'NewSVC':
-            continue
         logger.info(f'Running experiments for classifier {clf_name}')
         param_grid = list(ParameterGrid(parameters[clf_name]))
 
