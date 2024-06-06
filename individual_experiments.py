@@ -107,9 +107,8 @@ if __name__ == '__main__':
 
 
     classifiers = {
-        'NewSVC': SVC,
-        'LinearSVC': LinearSVC,
         'SVC': SVC,
+        'LinearSVC': LinearSVC,
         'LogisticRegression': LogisticRegression,
         'MLP': PyTorchMLPClassifier,
         'NN': NeuralNetwork,
