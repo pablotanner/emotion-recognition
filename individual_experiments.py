@@ -199,7 +199,7 @@ if __name__ == '__main__':
                 save_checkpoint(grid_search_state, checkpoint_file)
 
 
-
+        continue
         if clf_name == 'NN':
             best_classifiers[clf_name] = NeuralNetwork(input_dim=X_shape, **best_params)
             best_classifiers[clf_name].compile(optim.Adam(best_classifiers[clf_name].parameters(), lr=0.001))
@@ -209,12 +209,12 @@ if __name__ == '__main__':
             best_classifiers[clf_name] = clf_class(**best_params)
 
         # If classifier is LinearSVC, we need to convert data to numpy
-        # if clf_name in ['NN', 'MLP','LinearSVC']:
-            #best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute())
-        #elif clf_name in ['RandomForest']:
-           # best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute().to_numpy())
-        #else:
-            #best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
+        if clf_name in ['NN', 'MLP','LinearSVC']:
+            best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute())
+        elif clf_name in ['RandomForest']:
+            best_classifiers[clf_name].fit(X_train.compute().to_numpy(), y_train.compute().to_numpy())
+        else:
+            best_classifiers[clf_name].fit(X_train.compute(), y_train.compute())
         #X_train = np.load(f'{args.experiment_dir}/{args.feature}/X_train.npy')
         #del X_train
         #gc.collect()
@@ -233,8 +233,9 @@ if __name__ == '__main__':
             y_pred = best_classifiers[clf_name].predict(X_val.compute())
             logger.info(
                 f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred.to_numpy())}')
-
+    
     for clf_name, best_clf in best_classifiers.items():
+        continue
         if clf_name in ['NN', 'MLP','LinearSVC']:
             best_clf.fit(X_train.compute().to_numpy(), y_train.compute())
         elif clf_name in ['RandomForest']:
