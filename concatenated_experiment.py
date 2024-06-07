@@ -312,13 +312,13 @@ if __name__ == '__main__':
     y_test = np.load(f'y_test.npy')
 
     for model in models:
-        if os.path.exists(f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib'):
-            logger.info(f'Loading {model.__class__.__name__}...')
-            model = joblib.load(f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib')
-        else:
-            logger.info(f'Training {model.__class__.__name__}...')
-            model.fit(X_train, y_train)
-            joblib.dump(model, f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib')
+        #if os.path.exists(f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib'):
+            #logger.info(f'Loading {model.__class__.__name__}...')
+            #model = joblib.load(f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib')
+        #else:
+        logger.info(f'Training {model.__class__.__name__}...')
+        model.fit(X_train, y_train)
+            #joblib.dump(model, f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib')
         proba = model.predict_proba(X_val)
         bal_acc_val = balanced_accuracy_score(y_val, np.argmax(proba, axis=1))
         logger.info(f'Balanced Accuracy of {model.__class__.__name__} (Validation Set): {bal_acc_val}')
