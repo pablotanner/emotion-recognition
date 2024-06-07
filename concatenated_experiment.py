@@ -10,6 +10,7 @@ from sklearn.decomposition import IncrementalPCA as PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LogisticRegression
+from cuml.linear_model import LogisticRegression as CumlLogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
@@ -267,7 +268,7 @@ if __name__ == '__main__':
     X_test_path = load_and_concatenate_features('test')
 
 
-    X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200)
+    #X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200)
 
     logger.info(f'Loading concatenated data...')
     
@@ -277,20 +278,23 @@ if __name__ == '__main__':
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
     nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=20, batch_size=128)
-    linearSVC = LinearSVC(class_weight='balanced', C=0.1, probability=True)
+    #linearSVC = LinearSVC(class_weight='balanced', C=0.1, probability=True)
     #rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight=class_weights)
-    svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=10)
+    lr = CumlLogisticRegression(class_weight='balanced', C=1)
+    svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=1)
     #mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
     nn.__class__.__name__ = 'NeuralNetwork'
     #rf.__class__.__name__ = 'RandomForestClassifier'
     svm.__class__.__name__ = 'SVC'
-    linearSVC.__class__.__name__ = 'LinearSVC'
+    lr.__class__.__name__ = 'LogisticRegression'
+    #linearSVC.__class__.__name__ = 'LinearSVC'
     #mlp.__class__.__name__ = 'MLP'
 
 
     models = [
         nn,
-        linearSVC,
+        lr,
+        #linearSVC,
         #rf,
         svm,
     ]

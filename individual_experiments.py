@@ -233,7 +233,7 @@ if __name__ == '__main__':
             y_pred = best_classifiers[clf_name].predict(X_val.compute())
             logger.info(
                 f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred.to_numpy())}')
-    
+
     for clf_name, best_clf in best_classifiers.items():
         continue
         if clf_name in ['NN', 'MLP','LinearSVC']:

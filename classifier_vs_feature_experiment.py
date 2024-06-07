@@ -75,7 +75,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
             'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
             'MLP': MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=20,
                        num_classes=8, input_size=input_dim),
-            'NN': NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim)
+            'NN': NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim)
         }
     else:
         raise ValueError(f"Feature {feature} not supported.")
