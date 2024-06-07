@@ -133,7 +133,7 @@ def linear_selection(X_train_path, X_val_path, X_test_path, feature_names, y_tra
 
     from sklearn.feature_selection import SelectFromModel
     lsvc = LinearSVC(C=0.01, penalty='l1', class_weight='balanced')
-    lsvc.fit(X_train_path, y_train)
+    lsvc.fit(np.load(X_train_path).astype(np.float32), y_train)
     selector = SelectFromModel(lsvc, prefit=True)
 
     try:
@@ -306,6 +306,7 @@ if __name__ == '__main__':
     X_val_path, _ = load_and_concatenate_features('val')
     X_test_path, _ = load_and_concatenate_features('test')
 
+    feature_names = np.array(feature_names)
     X_train_path, X_val_path, X_test_path = linear_selection(X_train_path, X_val_path, X_test_path, feature_names, y_train)
 
     #X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200)
