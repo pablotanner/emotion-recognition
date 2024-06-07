@@ -47,8 +47,10 @@ if __name__ == '__main__':
     ])
 
     # Start with hog probabilities, then add pdm, then add landmarks_3d, then add embedded and finally facs
-    models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs', 'concat']
+    #models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs', 'concat']
 
+    # Take the important ones
+    models = ['hog', 'pdm', 'embedded', 'facs']
 
 
     def do_experiment():
@@ -98,19 +100,22 @@ if __name__ == '__main__':
 
         return increased_accuracy
 
-    #do_experiment()
 
-    results = do_experiment_subset()
-    
-    import pandas as pd
 
-    results_df = pd.DataFrame(results, columns=['Model Subset', 'Test Accuracy'])
-    results_df.to_csv(f'{args.experiment_dir}/stacking_results.csv', index=False)
-    #X_stack = np.concatenate([probabilities_val[model] for model in models], axis=1)
-    #X_stack_test = np.concatenate([probabilities_test[model] for model in models], axis=1)
-    #stacking_pipeline.fit(X_stack, y_val)
-    #explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
-    #shap_values_test = explainer(X_stack_test)
+    X_stack = np.concatenate([probabilities_val[model] for model in models], axis=1)
+    X_stack_test = np.concatenate([probabilities_test[model] for model in models], axis=1)
+    stacking_pipeline.fit(X_stack, y_val)
+    explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
+
+    # Only look at the correctly classified samples
+    correct_indices = np.where(stacking_pipeline.predict(X_stack_test) == y_test)[0]
+
+    X_stack_test = X_stack_test[correct_indices]
+    y_test = y_test[correct_indices]
+
+    shap_values_test = explainer(X_stack_test)
+
+    joblib.dump(shap_values_test, f'SV_test_correct.joblib')
 
     #shap.bar_plot(shap_values_test, max_display=10)
 
