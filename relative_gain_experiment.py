@@ -34,8 +34,8 @@ if __name__ == '__main__':
     probabilities_test = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_test.npy', allow_pickle=True).item()
 
 
-    probabilities_val['concat'] = np.load('/local/scratch/ptanner/concatenated_experiment/probabilities_val.npy', allow_pickle=True).item()['SVC']
-    probabilities_test['concat'] = np.load('/local/scratch/ptanner/concatenated_experiment/probabilities_val.npy', allow_pickle=True).item()['SVC']
+    probabilities_val['concat'] = np.load('proba_val_concat.npy', allow_pickle=True).item()['SVC']
+    probabilities_test['concat'] = np.load('proba_test_concat.npy', allow_pickle=True).item()['SVC']
 
     y_val = np.load('y_val.npy')
     y_test = np.load('y_test.npy')
