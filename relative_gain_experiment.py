@@ -82,34 +82,30 @@ if __name__ == '__main__':
         # Generate all non-empty subsets of models
         for subset_size in range(1, len(models) + 1):
             for subset in itertools.combinations(models, subset_size):
-                # Generate all permutations of the current subset
-                for permutation in itertools.permutations(subset):
-                    logger.info(f"Using models: {permutation}")
-                    X_stack = np.concatenate([probabilities_val[model] for model in permutation], axis=1)
-                    stacking_pipeline.fit(X_stack, y_val)
+                logger.info(f"Using models: {subset}")
+                X_stack = np.concatenate([probabilities_val[model] for model in subset], axis=1)
+                stacking_pipeline.fit(X_stack, y_val)
 
-                    #balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack))
-                    #logger.info(
-                       # f"Balanced Accuracy of stacking classifier with models {permutation} (Validation Set): {balanced_accuracy}")
+                balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack))
+                logger.info(
+                    f"Balanced Accuracy of stacking classifier with models {subset} (Validation Set): {balanced_accuracy}")
 
-                    X_stack_test = np.concatenate([probabilities_test[model] for model in permutation], axis=1)
-                    test_accuracy = stacking_pipeline.score(X_stack_test, y_test)
-                    logger.info(
-                        f"Accuracy of stacking classifier with models {permutation} (Test Set): {test_accuracy}")
+                X_stack_test = np.concatenate([probabilities_test[model] for model in subset], axis=1)
+                test_accuracy = stacking_pipeline.score(X_stack_test, y_test)
+                logger.info(f"Accuracy of stacking classifier with models {subset} (Test Set): {test_accuracy}")
 
-                    increased_accuracy.append((permutation, test_accuracy))
+                increased_accuracy.append((subset, test_accuracy))
 
-                    # Save the model
-                    # joblib.dump(stacking_pipeline,
-                               # f'{args.experiment_dir}/stacking_pipeline_{"_".join(permutation)}.joblib')
-
-        # Optionally, you could return or save the increased_accuracy list to analyze later
         return increased_accuracy
 
     #do_experiment()
 
-    increased_accuracy = do_experiment_subset()
+    results = do_experiment_subset()
+    
+    import pandas as pd
 
+    results_df = pd.DataFrame(results, columns=['Model Subset', 'Test Accuracy'])
+    results_df.to_csv(f'{args.experiment_dir}/stacking_results.csv', index=False)
     #X_stack = np.concatenate([probabilities_val[model] for model in models], axis=1)
     #X_stack_test = np.concatenate([probabilities_test[model] for model in models], axis=1)
     #stacking_pipeline.fit(X_stack, y_val)
