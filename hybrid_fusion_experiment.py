@@ -10,10 +10,9 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from src.model_training import SVC
 from sklearn.utils import compute_class_weight
-from classifier_vs_feature_experiment import feature_paths
 from src.model_training.torch_neural_network import NeuralNetwork
 from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
-
+from src.util.data_paths import get_data_path
 
 # Experiment where I use hybrid of different features and classifiers to basically optimize score fusion results
 
@@ -40,14 +39,16 @@ if __name__ == '__main__':
 
 
     def prepare_facs():
+        input_dim = np.load(get_data_path('test', 'facs')).shape[1]
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('log_reg', LogisticRegression(C=0.1, class_weight='balanced'))
-            ('rf', RandomForestClassifier(n_estimators=400, max_depth=15,
-                                          min_samples_split=2, criterion='gini', class_weight='balanced'))
+            #('rf', RandomForestClassifier(n_estimators=400, max_depth=15, # min_samples_split=2, criterion='gini', class_weight='balanced'))
+            ('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                        num_classes=8, input_size=input_dim))
         ])
 
-        pipeline.fit(np.load(feature_paths['facs']['train']).astype(np.float32), y_train)
+        pipeline.fit(np.load(get_data_path('train', 'facs')).astype(np.float32), y_train)
 
         return pipeline
 
@@ -60,7 +61,7 @@ if __name__ == '__main__':
             ('svc', SVC(C=10, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
-        pipeline.fit(np.load(feature_paths['landmarks_3d']['train']).astype(np.float32), y_train)
+        pipeline.fit(np.load(get_data_path('train', 'landmarks_3d')).astype(np.float32), y_train)
 
         return pipeline
 
@@ -73,33 +74,33 @@ if __name__ == '__main__':
             ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
-        pipeline.fit(np.load(feature_paths['pdm']['train']).astype(np.float32), y_train)
+        pipeline.fit(np.load(get_data_path('train', 'nonrigid_face_shape')).astype(np.float32), y_train)
 
         return pipeline
 
     def prepare_emb():
-        input_dim = np.load(feature_paths['embedded']['test']).shape[1]
+        #input_dim = np.load(get_data_path('test', 'embedded')).shape[1]
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
-            ('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
-                       num_classes=8, input_size=input_dim))
+            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
-        pipeline.fit(np.load(feature_paths['embedded']['train']).astype(np.float32), y_train)
+        pipeline.fit(np.load(get_data_path('train', 'embedded')).astype(np.float32), y_train)
 
         return pipeline
 
     def prepare_hog():
-        input_dim = np.load(feature_paths['hog']['test']).shape[1]
+        input_dim = np.load(get_data_path('test', 'hog')).shape[1]
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('nn', NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim))
+            ('nn', NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim))
         ])
 
-        pipeline.fit(np.load(feature_paths['hog']['train']).astype(np.float32), y_train)
+
+        pipeline.fit(np.load(get_data_path('train', 'hog')).astype(np.float32), y_train)
 
         return pipeline
 
@@ -120,21 +121,23 @@ if __name__ == '__main__':
     logger.info("Fitting HOG")
     hog_pipeline = prepare_hog()
 
-    probabilities_val['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['val']).astype(np.float32))
-    probabilities_val['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(feature_paths['landmarks_3d']['val']).astype(np.float32))
-    probabilities_val['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['val']).astype(np.float32))
-    probabilities_val['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['val']).astype(np.float32))
-    probabilities_val['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['val']).astype(np.float32))
+    probabilities_val['facs'] = facs_pipeline.predict_proba(np.load(get_data_path('val', 'facs')).astype(np.float32))
+    probabilities_val['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(get_data_path('val', 'landmarks_3d')).astype(np.float32))
+    probabilities_val['pdm'] = pdm_pipeline.predict_proba(np.load(get_data_path('val', 'nonrigid_face_shape')).astype(np.float32))
+    probabilities_val['embedded'] = emb_pipeline.predict_proba(np.load(get_data_path('val', 'embedded')).astype(np.float32))
+    probabilities_val['hog'] = hog_pipeline.predict_proba(np.load(get_data_path('val', 'hog')).astype(np.float32))
 
     for model in probabilities_val:
         balanced_accuracy = balanced_accuracy_score(y_val, np.argmax(probabilities_val[model], axis=1))
         logger.info(f"Balanced Accuracy of {model} classifier (Validation Set): {balanced_accuracy}")
 
-    probabilities_test['facs'] = facs_pipeline.predict_proba(np.load(feature_paths['facs']['test']).astype(np.float32))
-    probabilities_test['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(feature_paths['landmarks_3d']['test']).astype(np.float32))
-    probabilities_test['pdm'] = pdm_pipeline.predict_proba(np.load(feature_paths['pdm']['test']).astype(np.float32))
-    probabilities_test['embedded'] = emb_pipeline.predict_proba(np.load(feature_paths['embedded']['test']).astype(np.float32))
-    probabilities_test['hog'] = hog_pipeline.predict_proba(np.load(feature_paths['hog']['test']).astype(np.float32))
+    X_train_path = get_data_path('train', 'concat')
+
+    probabilities_test['facs'] = facs_pipeline.predict_proba(np.load(get_data_path('test', 'facs')).astype(np.float32))
+    probabilities_test['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(get_data_path('test', 'landmarks_3d')).astype(np.float32))
+    probabilities_test['pdm'] = pdm_pipeline.predict_proba(np.load(get_data_path('test', 'nonrigid_face_shape')).astype(np.float32))
+    probabilities_test['embedded'] = emb_pipeline.predict_proba(np.load(get_data_path('test', 'embedded')).astype(np.float32))
+    probabilities_test['hog'] = hog_pipeline.predict_proba(np.load(get_data_path('test', 'hog')).astype(np.float32))
 
     np.save(f'{args.experiment_dir}/probabilities_val.npy', probabilities_val)
     np.save(f'{args.experiment_dir}/probabilities_test.npy', probabilities_test)
