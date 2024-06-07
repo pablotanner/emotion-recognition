@@ -53,10 +53,13 @@ def load_and_concatenate_features(dataset_type):
 
     path = f'{args.experiment_dir}/{dataset_type}_concatenated_features.npy'
 
-    if os.path.exists(path):
-        return path
+    names_path = f'{args.experiment_dir}/feature_names.npy'
+
+    if os.path.exists(path) and os.path.exists(names_path):
+        return path, np.load(names_path)
 
     X_list = []
+    feature_names = []
 
     for feature in feature_types.keys():
         logger.info(f'Loading {feature}...')
@@ -69,6 +72,8 @@ def load_and_concatenate_features(dataset_type):
         else:
             data = np.load(file_path, mmap_mode='r').astype(np.float32)
         X_list.append(data)
+        f_names = [f'{feature}_{i}' for i in range(data.shape[1])]
+        feature_names.extend(f_names)
 
         # Explicitly free memory
         del data
@@ -84,10 +89,11 @@ def load_and_concatenate_features(dataset_type):
     logger.info('Data loaded and concatenated')
 
     np.save(path, X)
+    np.save(names_path, feature_names)
 
     logger.info('Data saved')
 
-    return path
+    return path, feature_names
 
 
 def filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200):
@@ -114,6 +120,38 @@ def filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=
 
     return X_selected_train_path, X_selected_val_path, X_selected_test_path
 
+
+def linear_selection(X_train_path, X_val_path, X_test_path, feature_names, y_train):
+    X_selected_train_path = f'{args.experiment_dir}/train_selectedFM.npy'
+    X_selected_val_path = f'{args.experiment_dir}/val_selectedFM.npy'
+    X_selected_test_path = f'{args.experiment_dir}/test_selectedFM.npy'
+
+    if os.path.exists(X_selected_train_path):
+        logger.info('Selected features FM already exist')
+        return X_selected_train_path, X_selected_val_path, X_selected_test_path
+    logger.info('Selecting features from Model...')
+
+    from sklearn.feature_selection import SelectFromModel
+    lsvc = LinearSVC(C=0.01, penalty='l1', class_weight='balanced')
+    lsvc.fit(X_train_path, y_train)
+    selector = SelectFromModel(lsvc, prefit=True)
+
+    try:
+        feature_names = [feature_names[i] for i in selector.get_support(indices=True)]
+        np.save(f'{args.experiment_dir}/feature_names_SFM.npy', feature_names)
+        logger.info('SFM Feature names saved')
+    except:
+        logger.info('SFM Feature names not saved')
+
+    X_train = selector.transform(np.load(X_train_path).astype(np.float32))
+    X_val = selector.transform(np.load(X_val_path).astype(np.float32))
+    X_test = selector.transform(np.load(X_test_path).astype(np.float32))
+
+    np.save(X_selected_train_path, X_train)
+    np.save(X_selected_val_path, X_val)
+    np.save(X_selected_test_path, X_test)
+
+    return X_selected_train_path, X_selected_val_path, X_selected_test_path
 
 
 
@@ -264,10 +302,11 @@ if __name__ == '__main__':
     logger.info(f'Preparing concatenated data')
     y_train = np.load(f'y_train.npy')
 
-    X_train_path = load_and_concatenate_features('train')
-    X_val_path = load_and_concatenate_features('val')
-    X_test_path = load_and_concatenate_features('test')
+    X_train_path, feature_names = load_and_concatenate_features('train')
+    X_val_path, _ = load_and_concatenate_features('val')
+    X_test_path, _ = load_and_concatenate_features('test')
 
+    X_train_path, X_val_path, X_test_path = linear_selection(X_train_path, X_val_path, X_test_path, feature_names, y_train)
 
     #X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200)
 
@@ -281,20 +320,20 @@ if __name__ == '__main__':
     nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=20, batch_size=128)
     #linearSVC = LinearSVC(class_weight='balanced', C=0.1, probability=True)
     #rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight=class_weights)
-    lr = CumlLogisticRegression(class_weight='balanced', C=1)
+    #lr = CumlLogisticRegression(class_weight='balanced', C=1)
     svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=1)
     #mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
     nn.__class__.__name__ = 'NeuralNetwork'
     #rf.__class__.__name__ = 'RandomForestClassifier'
     svm.__class__.__name__ = 'SVC'
-    lr.__class__.__name__ = 'LogisticRegression'
+    #lr.__class__.__name__ = 'LogisticRegression'
     #linearSVC.__class__.__name__ = 'LinearSVC'
     #mlp.__class__.__name__ = 'MLP'
 
 
     models = [
         nn,
-        lr,
+        #lr,
         #linearSVC,
         #rf,
         svm,

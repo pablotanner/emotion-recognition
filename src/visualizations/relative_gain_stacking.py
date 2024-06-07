@@ -4,14 +4,14 @@ from matplotlib import pyplot as plt
 INCLUDE_CONCAT = False
 
 # The models, a subset starting with i=1 (only hog) and ending with i=5 (all models) are used to train a stacking classifier
-models = ['HOG', 'PDM', '3D Landmarks', 'Embeddings', 'FAUs']
+models = ['HOG', 'PDM', 'Embedded', 'FAUs'] # HOG, PDM, Embedded Facs
 
 # The relative gain in accuracy for each added classifier, starting with only hog and ending with all
-test_accuracies = [0.512594131394443, 0.5383017398078421, 0.5466112698000519, 0.5476499610490781, 0.5528434172942093]
+test_accuracies = [0.5105167488963905, 0.5318099195014282,  0.5492079979226175, 0.5538821085432355]
 
 if INCLUDE_CONCAT:
-    models = ['Concatenated', 'HOG', 'PDM', '3D Landmarks', 'Embeddings', 'FAUs']
-    test_accuracies = [0.5323292651259414,0.5429758504284602,0.5551804726045183, 0.5549207997922617, 0.558296546351597, 0.560633601661906]
+    models = ['HOG', 'Concatenated', 'Embeddings', '3D Landmarks', 'FAUs']
+    test_accuracies = [0.5105167488963905, 0.5476499610490781, 0.555959491041288, 0.5564788366658011, 0.5616722929109322]
 # Same as above but uses the validation set bal accs, just for comparison
 #val_bal_acc = [0.5216863128236839,0.5532726368952153,0.5564732083637857, 0.5680217733510686,0.56829543150788]
 
