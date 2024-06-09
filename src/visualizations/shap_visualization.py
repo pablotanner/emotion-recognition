@@ -3,17 +3,20 @@
 # Feature 8 is pdm angry, feature 9 pdm happy,....
 import numpy as np
 import pandas as pd
-import shap
 import joblib
 from matplotlib import pyplot as plt
 
+VARIANT = 0
 emotions = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']
 
-#shap_values = joblib.load('shap_test.joblib')[:, :, 1]
-shap_values = joblib.load('SV_test_correct.joblib')[:, :, 1]
-
-#models = ['HOG', 'PDM', '3D LND', 'Embeddings', 'FAUs']
-models = ['HOG', 'PDM', 'Embeddings', 'FAUs']
+if VARIANT == 0:
+    # Only correct predictions, only with the optimal models for stacking
+    shap_values = joblib.load('SV_test_correct.joblib')[:, :, 1]
+    models = ['HOG', 'PDM', 'Embeddings', 'FAUs']
+else:
+    # All models, all predictions
+    shap_values = joblib.load('shap_test.joblib')[:, :, 1]
+    models = ['HOG', 'PDM', '3D LND', 'Embeddings', 'FAUs']
 
 
 real_feature_names = []
@@ -93,7 +96,9 @@ def violin_plot():
 
     plt.figure(figsize=(14, 9))
 
-    fig, axis = plt.subplots(1, 4, figsize=(14, 7))
+    num_models = len(models)
+
+    fig, axis = plt.subplots(1, num_models, figsize=(14, 7))
 
     for i, model in enumerate(models):
         for j in range(8):
@@ -111,7 +116,7 @@ def violin_plot():
 
     plt.suptitle('SHAP Value Distribution by Feature Type', fontsize=20, y=0.95)
 
-    plt.savefig('shap_values_violin.png')
+    #plt.savefig('shap_values_violin.png')
 
     plt.show()
 
