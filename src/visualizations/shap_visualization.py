@@ -13,12 +13,10 @@ if VARIANT == 0:
     # Only correct predictions, only with the optimal models for stacking
     shap_values = joblib.load('SV_test_correct.joblib')
     # Aggregate for all classes
-    try:
-        # Try with cupy
-        import cupy as cp
-        shap_values = cp.mean(np.abs(shap_values), axis=2).get()
-    except:
-        shap_values = np.mean(np.abs(shap_values), axis=2)
+
+    # find betteR WAY, ABSOLUTE REMOVES DIRECTIONALITY
+
+    shap_values = np.mean(np.abs(shap_values.values), axis=2)
 
     models = ['HOG', 'PDM', 'Embeddings', 'FAUs']
 else:
@@ -32,7 +30,7 @@ for model in models:
     for i in range(8):
         real_feature_names.append(model + ' ' + emotions[i])
 
-shap_values.feature_names = real_feature_names
+#shap_values.feature_names = real_feature_names
 
 
 def bar_plot():
@@ -40,7 +38,7 @@ def bar_plot():
         return np.mean(np.abs(shap_values))
 
     # {feature: mean_abs_shap_value}
-    features = {f: get_mean_abs_shap_values(shap_values[:, i].values) for i, f in enumerate(real_feature_names)}
+    features = {f: get_mean_abs_shap_values(shap_values[:, i]) for i, f in enumerate(real_feature_names)}
 
     # Dictionary of features and as value array of their shap values (one value per emotion)
     feature_shap_values = {m: [] for m in models}
@@ -97,10 +95,10 @@ def bar_plot():
     plt.gca().set_facecolor('lightgray')
 
     plt.savefig('shap_values.png')
-    #plt.show()
+    plt.show()
 
 def violin_plot():
-    features = {f: shap_values[:, i].values for i, f in enumerate(real_feature_names)}
+    features = {f: shap_values[:, i] for i, f in enumerate(real_feature_names)}
 
     plt.figure(figsize=(14, 9))
 
@@ -117,7 +115,7 @@ def violin_plot():
             axis[i].set_title(model, fontsize=16)
             axis[i].grid(True)
             # Make all have same x-axis
-            axis[i].set_xlim(-0.5, 0.5)
+            axis[i].set_xlim(-0.25, 0.25)
             axis[i].set_xlabel('SHAP Value')
 
     plt.subplots_adjust(wspace=0.55, top=0.85)
@@ -126,7 +124,7 @@ def violin_plot():
 
     plt.savefig('shap_values_violin.png')
 
-    #plt.show()
+    plt.show()
 
-bar_plot()
-violin_plot()
+#bar_plot()
+#violin_plot()
