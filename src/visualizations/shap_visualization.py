@@ -11,7 +11,9 @@ emotions = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', '
 
 if VARIANT == 0:
     # Only correct predictions, only with the optimal models for stacking
-    shap_values = joblib.load('SV_test_correct.joblib')[:, :, 1]
+    shap_values = joblib.load('SV_test_correct.joblib')
+    # Aggregate for all classes
+    shap_values = np.mean(np.abs(shap_values), axis=2)
     models = ['HOG', 'PDM', 'Embeddings', 'FAUs']
 else:
     # All models, all predictions
@@ -88,8 +90,8 @@ def bar_plot():
     # add gray background
     plt.gca().set_facecolor('lightgray')
 
-    # plt.savefig('shap_values.png')
-    plt.show()
+    plt.savefig('shap_values.png')
+    #plt.show()
 
 def violin_plot():
     features = {f: shap_values[:, i].values for i, f in enumerate(real_feature_names)}
@@ -116,8 +118,9 @@ def violin_plot():
 
     plt.suptitle('SHAP Value Distribution by Feature Type', fontsize=20, y=0.95)
 
-    #plt.savefig('shap_values_violin.png')
+    plt.savefig('shap_values_violin.png')
 
-    plt.show()
+    #plt.show()
 
+bar_plot()
 violin_plot()
