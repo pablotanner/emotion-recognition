@@ -54,6 +54,9 @@ if __name__ == '__main__':
         hog_pca = joblib.load(f'{pca_dir}/hog_pca.joblib')
         # Not implemented for now
 
+    # Dump SHAP Values
+    joblib.dump(shap_values, f'{experiment_dir}/{args.feature}_shap_values.joblib')
+
 
 
 
