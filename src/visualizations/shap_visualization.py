@@ -13,7 +13,13 @@ if VARIANT == 0:
     # Only correct predictions, only with the optimal models for stacking
     shap_values = joblib.load('SV_test_correct.joblib')
     # Aggregate for all classes
-    shap_values = np.mean(np.abs(shap_values), axis=2)
+    try:
+        # Try with cupy
+        import cupy as cp
+        shap_values = cp.mean(np.abs(shap_values), axis=2).get()
+    except:
+        shap_values = np.mean(np.abs(shap_values), axis=2)
+
     models = ['HOG', 'PDM', 'Embeddings', 'FAUs']
 else:
     # All models, all predictions
