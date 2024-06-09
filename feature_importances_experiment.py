@@ -3,8 +3,7 @@ import logging
 
 import joblib
 import numpy as np
-from cuml.explainer import KernelExplainer
-
+from cuml.explainer import PermutationExplainer
 from src.model_training import SVC
 from src.util.data_paths import get_data_path
 
@@ -40,7 +39,8 @@ if __name__ == '__main__':
     svc.fit(X_train, y_train)
 
     # Generate Explainer
-    explainer = KernelExplainer(model=svc.predict, data=X_train, is_gpu_model=True, random_state=42)
+    explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42)
+
 
     # Get SHAP Values
     shap_values = explainer(X_test)
