@@ -22,6 +22,7 @@ if __name__ == '__main__':
 
     # If output directory files don't exist, save them
     if not os.path.exists(f'{args.data_output_dir}/train_landmarks_3d.npy') and not os.path.exists(f'{args.data_output_dir}/val_landmarks_3d.npy') and not os.path.exists(f'{args.data_output_dir}/test_landmarks_3d.npy') :
+        print('Data not found, loading')
         data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
                                  args.test_features_dir, args.main_id_dir, excluded_features=['landmarks', 'hog'])
         feature_splits_dict, emotions_splits_dict = data_loader.get_data()
@@ -33,6 +34,7 @@ if __name__ == '__main__':
                     feature_splits_dict[split]['landmarks_3d_unstandardized'])
         del feature_splits_dict
     else:
+        print('Found data, loading')
         y_train, y_val, y_test = np.load(f'y_train'), np.load(
             f'y_val'), np.load(f'y_test')
 
@@ -43,6 +45,7 @@ if __name__ == '__main__':
     def train_and_evaluate(X_train, y_train, X_val, y_val, X_test, y_test):
         svc = SVC(C=1, probability=True, class_weight='balanced', kernel='rbf')
 
+        print("Training set")
         # Remove z axis (last third)
         X_train = X_train[:136]
         X_val = X_val[:136]
@@ -65,7 +68,7 @@ if __name__ == '__main__':
 
         X_test = np.concatenate((X_test_x, X_test_y), axis=0)
 
-
+        print('Fitting')
         svc.fit(X_train, y_train)
 
         print("Validation set")
