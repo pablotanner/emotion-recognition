@@ -18,21 +18,26 @@ args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
-                             args.test_features_dir, args.main_id_dir, excluded_features=['landmarks', 'hog'])
-    feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+
 
     # If output directory files don't exist, save them
     if not os.path.exists(f'{args.data_output_dir}/train_landmarks_3d.npy') and not os.path.exists(f'{args.data_output_dir}/val_landmarks_3d.npy') and not os.path.exists(f'{args.data_output_dir}/test_landmarks_3d.npy') :
+        data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
+                                 args.test_features_dir, args.main_id_dir, excluded_features=['landmarks', 'hog'])
+        feature_splits_dict, emotions_splits_dict = data_loader.get_data()
+        y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict[
+            'test']
         for split in ['train', 'val', 'test']:
             np.save(f'{args.data_output_dir}/{split}_landmarks_3d.npy', feature_splits_dict[split]['landmarks_3d'])
             np.save(f'{args.data_output_dir}/{split}_landmarks_3d_unstandardized.npy',
                     feature_splits_dict[split]['landmarks_3d_unstandardized'])
+        del feature_splits_dict
+    else:
+        y_train, y_val, y_test = np.load(f'y_train'), np.load(
+            f'y_val'), np.load(f'y_test')
 
-    del feature_splits_dict
 
-    y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict[
-        'test']
+
 
 
     def train_and_evaluate(X_train, y_train, X_val, y_val, X_test, y_test):
