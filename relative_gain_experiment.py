@@ -43,13 +43,14 @@ if __name__ == '__main__':
     y_test = np.load('y_test.npy')
 
     cm_matrices = {}
-
+    not_normalized = {}
     # Evaluate individual models with confusion matrices
     for model in probabilities_test.keys():
         y_pred = np.argmax(probabilities_test[model], axis=1)
         cm = confusion_matrix(y_test, y_pred)
         cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         cm_matrices[model] = cm_normalized
+        not_normalized[model] = cm
         print(f"Confusion Matrix for {model}")
         print(cm)
 
@@ -58,6 +59,7 @@ if __name__ == '__main__':
         print(np.around(cm_normalized, 2))
 
     np.save('cm_matrices.npy', cm_matrices)
+    np.save('cm_matrices_not_normalized.npy', not_normalized)
     exit(0)
 
     stacking_pipeline = Pipeline([
