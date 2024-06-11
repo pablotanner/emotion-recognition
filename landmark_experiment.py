@@ -47,26 +47,24 @@ if __name__ == '__main__':
 
         print("Training set")
         # Remove z axis (last third)
-        X_train = X_train[:136]
-        X_val = X_val[:136]
-        X_test = X_test[:136]
+        X_train = np.array([x[:136] for x in X_train])
+        X_val = np.array([x[:136] for x in X_val])
+        X_test = np.array([x[:136] for x in X_test])
 
-        X_train_x = X_train[:68][17:]
-        X_train_y = X_train[68:][17:]
+        X_train_x = np.array([x[:68][17:] for x in X_train])
+        X_train_y = np.array([x[68:][17:] for x in X_train])
 
-        X_train = np.concatenate((X_train_x, X_train_y), axis=0)
+        X_train = np.concatenate((X_train_x, X_train_y), axis=1)
 
+        X_val_x = np.array([x[:68][17:] for x in X_val])
+        X_val_y = np.array([x[68:][17:] for x in X_val])
 
-        X_val_x = X_val[:68][17:]
-        X_val_y = X_val[68:][17:]
+        X_val = np.concatenate((X_val_x, X_val_y), axis=1)
 
-        X_val = np.concatenate((X_val_x, X_val_y), axis=0)
+        X_test_x = np.array([x[:68][17:] for x in X_test])
+        X_test_y = np.array([x[68:][17:] for x in X_test])
 
-
-        X_test_x = X_test[:68][17:]
-        X_test_y = X_test[68:][17:]
-
-        X_test = np.concatenate((X_test_x, X_test_y), axis=0)
+        X_test = np.concatenate((X_test_x, X_test_y), axis=1)
 
         print('Fitting')
         svc.fit(X_train, y_train)
