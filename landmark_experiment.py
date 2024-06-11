@@ -35,8 +35,8 @@ if __name__ == '__main__':
         del feature_splits_dict
     else:
         print('Found data, loading')
-        y_train, y_val, y_test = np.load(f'y_train'), np.load(
-            f'y_val'), np.load(f'y_test')
+        y_train, y_val, y_test = np.load('y_train.npy'), np.load(
+            'y_val.npy'), np.load('y_test.npy')
 
 
 
@@ -80,15 +80,15 @@ if __name__ == '__main__':
 
 
     print("Training and evaluating on 3D landmarks")
-    train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d.npy'), y_train,
-                       np.load(f'{args.data_output_dir}/val_landmarks_3d.npy'), y_val,
-                       np.load(f'{args.data_output_dir}/test_landmarks_3d.npy'), y_test,
+    train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d.npy').astype(np.float32), y_train,
+                       np.load(f'{args.data_output_dir}/val_landmarks_3d.npy').astype(np.float32), y_val,
+                       np.load(f'{args.data_output_dir}/test_landmarks_3d.npy').astype(np.float32), y_test,
                        )
 
     print("Training and evaluating on 3D landmarks unstandardized")
-    train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d_unstandardized.npy'), y_train,
-                       np.load(f'{args.data_output_dir}/val_landmarks_3d_unstandardized.npy'), y_val,
-                       np.load(f'{args.data_output_dir}/test_landmarks_3d_unstandardized.npy'), y_test,
+    train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d_unstandardized.npy').astype(np.float32), y_train,
+                       np.load(f'{args.data_output_dir}/val_landmarks_3d_unstandardized.npy').astype(np.float32), y_val,
+                       np.load(f'{args.data_output_dir}/test_landmarks_3d_unstandardized.npy').astype(np.float32), y_test,
                        )
 
 
