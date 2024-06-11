@@ -3,6 +3,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
+key_map = {
+    'facs': 'FAUs',
+    'landmarks_3d': '3D Landmarks',
+    'pdm': 'PDM',
+    'embedded': 'Embeddings',
+    'hog': 'HOG',
+    'concat': 'Concatenated',
+    'aggregated': 'Aggregated'
+}
 
 # Load normalized confusion matrices for each model/feature
 #confusion_matrices = np.load('cm_matrices.npy', allow_pickle=True).item()
@@ -12,25 +21,10 @@ emotions = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', '
 # Get averages for all models except for FACS
 average_confusion_matrices = {}
 for model, matrix in confusion_matrices.items():
-    if model != 'facs':
-        average_confusion_matrices[model] = matrix
+    average_confusion_matrices[model] = matrix
 
 # Get the average confusion matrix
 average_confusion_matrix = np.round(np.mean([matrix for matrix in average_confusion_matrices.values()], axis=0))
-
-# Facs confusion matrix
-facs_confusion_matrix = confusion_matrices['facs']
-
-
-facs_alt_confusion_matrix = np.array([
-[217,  14,  56,  39,  23,  16,  51,  62],
-[10, 329,  14,  20,   4,  12,   9,  83],
-[106,  20, 188,  23,  27,  37,  59,  26],
-[62,  45,  30, 206,  85,  20,  22,  13],
-[43,  15,  37,  96, 207,  31,  36,   8],
-[44,  27,  54,  38,  23, 179,  93,  23],
-[86,   9,  49,  26,  33,  70, 188,  18],
-[102,  92,  27,  21,   5,  20,  45, 178]])
 
 def plot_cm(confusion_matrix):
     # Pad and print
@@ -74,8 +68,7 @@ def plot_cm(confusion_matrix):
     plt.xticks(np.arange(8), emotions)
     plt.ylabel('Number of Samples', fontsize=14)
     plt.xlabel('Emotion', fontsize=14)
-    plt.suptitle('Alternative Confusion Matrix Visualization', fontsize=18, y=0.96)
-    plt.title('Averaged confusion matrix for all models except FAUs', fontsize=14, y=1.02)
+    plt.suptitle('Average Confusion Matrix Visualization', fontsize=18, y=0.96)
 
     plt.legend()
 
@@ -83,10 +76,91 @@ def plot_cm(confusion_matrix):
 
     return plt
 
-
 #plot_cm(average_confusion_matrix)
-plot_cm(facs_confusion_matrix)
+
+def conf_matrices():
+    norm_cn = np.load('cm_matrices.npy', allow_pickle=True).item()
+
+    del norm_cn['concat']
+
+    # Add an aggregated confusion matrix for last plot
+    aggregated_cm = np.mean([cm for cm in norm_cn.values()], axis=0)
+    norm_cn['aggregated'] = aggregated_cm
+
+    # Make values into percent
+    for model, cm in norm_cn.items():
+        cm = cm * 100
+        # 2 decimals
+        cm = np.round(cm, 2)
+        norm_cn[model] = cm
 
 
 
 
+    # Make heatmap for each model in norm_cn, plot as subplot
+    fig, ax = plt.subplots(2, 3, figsize=(18, 14))
+
+    plt.tight_layout()
+
+    # add a bit space on sides, so plot fits
+    plt.subplots_adjust(left=0.1, right=0.975, top=0.95, bottom=0.1)
+
+
+    # Add gap between subplots
+    plt.subplots_adjust(hspace=0.35, wspace=0.30)
+
+
+    vmin = np.min([np.min(cm) for cm in norm_cn.values()])
+    vmax = np.max([np.max(cm) for cm in norm_cn.values()])
+
+    for i, (model, cm) in enumerate(norm_cn.items()):
+        if model == 'aggregated':
+            sns.heatmap(cm, annot=True, ax=ax[i // 3, i % 3], cmap='Greens', xticklabels=emotions, yticklabels=emotions
+                        , vmin=vmin, vmax=vmax)
+        else:
+            sns.heatmap(cm, annot=True, ax=ax[i // 3, i % 3], cmap='Blues', xticklabels=emotions, yticklabels=emotions
+                            , vmin=vmin, vmax=vmax)
+        ax[i // 3, i % 3].set_title(key_map[model], fontsize=16)
+        ax[i // 3, i % 3].set_xlabel('Predicted Emotion', fontsize=14)
+        ax[i // 3, i % 3].set_ylabel('True Emotion', fontsize=14)
+
+        # Rotate x labels
+        ax[i // 3, i % 3].set_xticklabels(ax[i // 3, i % 3].get_xticklabels(), rotation=45, horizontalalignment='right')
+        # Make y labels horizontal
+        ax[i // 3, i % 3].set_yticklabels(ax[i // 3, i % 3].get_yticklabels(), rotation=0, horizontalalignment='right')
+
+
+    plt.savefig('cm_heatmaps.png')
+    #plt.suptitle('Normalized Confusion Matrices', fontsize=24, y=0.95)
+    plt.show()
+
+def find_common_confusions():
+    norm_cn = np.load('cm_matrices.npy', allow_pickle=True).item()
+
+    del norm_cn['concat']
+
+    # Get average / aggregated confusion matrix
+    aggregated_cm = np.mean([cm for cm in norm_cn.values()], axis=0)
+
+    # Get the most common confusions
+    common_confusions = []
+    for i in range(8):
+        for j in range(8):
+            if i != j:
+                common_confusions.append((i, j, aggregated_cm[i, j]))
+
+    # Sort by most common
+    common_confusions.sort(key=lambda x: x[2], reverse=True)
+
+
+    # Print the most common confusions
+    for i, j, count in common_confusions:
+        print(f'{emotions[i]} -> {emotions[j]}: {count:.2f}%')
+
+    return common_confusions
+
+
+
+#conf_matrices()
+
+find_common_confusions()

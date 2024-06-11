@@ -40,8 +40,8 @@ if __name__ == '__main__':
     svc.fit(X_train, y_train)
 
     # Generate Explainer
-    #explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42)
-    explainer = shap.Explainer(svc.predict, X_train)
+    explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42)
+    #explainer = shap.Explainer(svc.predict, X_train)
 
     # Get SHAP Values
     shap_values = explainer(X_test)
