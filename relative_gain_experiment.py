@@ -9,6 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 import shap
+from sklearn.metrics import confusion_matrix
 # Look how the relative gain in score fusion (stacking) changes with the number of classifiers/feature types
 
 if __name__ == '__main__':
@@ -37,9 +38,27 @@ if __name__ == '__main__':
     probabilities_val['concat'] = np.load('proba_val_concat.npy', allow_pickle=True).item()['SVC']
     probabilities_test['concat'] = np.load('proba_test_concat.npy', allow_pickle=True).item()['SVC']
 
+
     y_val = np.load('y_val.npy')
     y_test = np.load('y_test.npy')
 
+    cm_matrices = {}
+
+    # Evaluate individual models with confusion matrices
+    for model in probabilities_test.keys():
+        y_pred = np.argmax(probabilities_test[model], axis=1)
+        cm = confusion_matrix(y_test, y_pred)
+        cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm_matrices[model] = cm_normalized
+        print(f"Confusion Matrix for {model}")
+        print(cm)
+
+        print(f"Normalized Confusion Matrix for {model}")
+        # Format the output
+        print(np.around(cm_normalized, 2))
+
+    np.save('cm_matrices.npy', cm_matrices)
+    exit(0)
 
     stacking_pipeline = Pipeline([
         ('scaler', StandardScaler()),
