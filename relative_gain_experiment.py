@@ -31,8 +31,8 @@ if __name__ == '__main__':
     logger.info("Starting Experiment")
 
     # Load the probabilities from the hybrid fusion experiment
-    probabilities_val = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_val.npy', allow_pickle=True).item()
-    probabilities_test = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_test.npy', allow_pickle=True).item()
+    probabilities_val = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_val2.npy', allow_pickle=True).item()
+    probabilities_test = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_test2.npy', allow_pickle=True).item()
 
 
     probabilities_val['concat'] = np.load('proba_val_concat.npy', allow_pickle=True).item()['SVC']
@@ -42,25 +42,25 @@ if __name__ == '__main__':
     y_val = np.load('y_val.npy')
     y_test = np.load('y_test.npy')
 
-    cm_matrices = {}
-    not_normalized = {}
+    #cm_matrices = {}
+    #not_normalized = {}
     # Evaluate individual models with confusion matrices
-    for model in probabilities_test.keys():
-        y_pred = np.argmax(probabilities_test[model], axis=1)
-        cm = confusion_matrix(y_test, y_pred)
-        cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        cm_matrices[model] = cm_normalized
-        not_normalized[model] = cm
-        print(f"Confusion Matrix for {model}")
-        print(cm)
+    #for model in probabilities_test.keys():
+    #    y_pred = np.argmax(probabilities_test[model], axis=1)
+    #    cm = confusion_matrix(y_test, y_pred)
+    #    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    #   cm_matrices[model] = cm_normalized
+    #    not_normalized[model] = cm
+    #    print(f"Confusion Matrix for {model}")
+    #    print(cm)
 
-        print(f"Normalized Confusion Matrix for {model}")
-        # Format the output
-        print(np.around(cm_normalized, 2))
+    #    print(f"Normalized Confusion Matrix for {model}")
+    #    # Format the output
+    #    print(np.around(cm_normalized, 2))
 
-    np.save('cm_matrices.npy', cm_matrices)
-    np.save('cm_matrices_not_normalized.npy', not_normalized)
-    exit(0)
+    # np.save('cm_matrices.npy', cm_matrices)
+    # np.save('cm_matrices_not_normalized.npy', not_normalized)
+    #exit(0)
 
     stacking_pipeline = Pipeline([
         ('scaler', StandardScaler()),
@@ -121,22 +121,24 @@ if __name__ == '__main__':
 
         return increased_accuracy
 
+    do_experiment_subset()
 
 
-    X_stack = np.concatenate([probabilities_val[model] for model in models], axis=1)
-    X_stack_test = np.concatenate([probabilities_test[model] for model in models], axis=1)
-    stacking_pipeline.fit(X_stack, y_val)
-    explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
+
+    #X_stack = np.concatenate([probabilities_val[model] for model in models], axis=1)
+    #X_stack_test = np.concatenate([probabilities_test[model] for model in models], axis=1)
+    #stacking_pipeline.fit(X_stack, y_val)
+    #explainer = shap.Explainer(stacking_pipeline.named_steps['log_reg'], X_stack)
 
     # Only look at the correctly classified samples
-    correct_indices = np.where(stacking_pipeline.predict(X_stack_test) == y_test)[0]
+    #correct_indices = np.where(stacking_pipeline.predict(X_stack_test) == y_test)[0]
 
-    X_stack_test = X_stack_test[correct_indices]
-    y_test = y_test[correct_indices]
+    #X_stack_test = X_stack_test[correct_indices]
+    #y_test = y_test[correct_indices]
 
-    shap_values_test = explainer(X_stack_test)
+    #shap_values_test = explainer(X_stack_test)
 
-    joblib.dump(shap_values_test, f'SV_test_correct.joblib')
+    #joblib.dump(shap_values_test, f'SV_test_correct.joblib')
 
     #shap.bar_plot(shap_values_test, max_display=10)
 
