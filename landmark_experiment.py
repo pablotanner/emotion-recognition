@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 from sklearn.utils import compute_class_weight
-from cuml.svm import LinearSVC
+from src.model_training import SVC
 from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
 
@@ -35,11 +35,31 @@ if __name__ == '__main__':
         'test']
 
 
-    class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
-    class_weights = {i: class_weights[i] for i in range(len(class_weights))}
+    def train_and_evaluate(X_train, y_train, X_val, y_val, X_test, y_test):
+        svc = SVC(C=1, probability=True, class_weight='balanced', kernel='rbf')
 
-    def train_and_evaluate(X_train, y_train, X_val, y_val, X_test, y_test, class_weights):
-        svc = LinearSVC(C=1, probability=True, class_weight=class_weights)
+        # Remove z axis (last third)
+        X_train = X_train[:136]
+        X_val = X_val[:136]
+        X_test = X_test[:136]
+
+        X_train_x = X_train[:68][17:]
+        X_train_y = X_train[68:][17:]
+
+        X_train = np.concatenate((X_train_x, X_train_y), axis=0)
+
+
+        X_val_x = X_val[:68][17:]
+        X_val_y = X_val[68:][17:]
+
+        X_val = np.concatenate((X_val_x, X_val_y), axis=0)
+
+
+        X_test_x = X_test[:68][17:]
+        X_test_y = X_test[68:][17:]
+
+        X_test = np.concatenate((X_test_x, X_test_y), axis=0)
+
 
         svc.fit(X_train, y_train)
 
@@ -55,13 +75,13 @@ if __name__ == '__main__':
     train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d.npy'), y_train,
                        np.load(f'{args.data_output_dir}/val_landmarks_3d.npy'), y_val,
                        np.load(f'{args.data_output_dir}/test_landmarks_3d.npy'), y_test,
-                       class_weights)
+                       )
 
     print("Training and evaluating on 3D landmarks unstandardized")
     train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d_unstandardized.npy'), y_train,
                        np.load(f'{args.data_output_dir}/val_landmarks_3d_unstandardized.npy'), y_val,
                        np.load(f'{args.data_output_dir}/test_landmarks_3d_unstandardized.npy'), y_test,
-                       class_weights)
+                       )
 
 
 
