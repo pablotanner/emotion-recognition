@@ -6,6 +6,7 @@ import numpy as np
 import shap
 from cuml.explainer import PermutationExplainer
 from src.model_training import SVC
+from cuml.svm import LinearSVC
 from src.util.data_paths import get_data_path
 
 if __name__ == '__main__':
