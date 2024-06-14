@@ -4,7 +4,7 @@ import logging
 import os
 import numpy as np
 #from cuml.decomposition import IncrementalPCA as PCA
-#from cuml.preprocessing import StandardScaler, MinMaxScaler
+from cuml.preprocessing import MinMaxScaler
 from cuml.svm import LinearSVC
 from sklearn.decomposition import IncrementalPCA as PCA
 from sklearn.ensemble import RandomForestClassifier
@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from cuml.linear_model import LogisticRegression as CumlLogisticRegression
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils import compute_class_weight
 from src.model_training import SVC
 from src.data_processing.rolf_loader import RolfLoader
@@ -63,7 +63,6 @@ def load_and_concatenate_features(dataset_type):
 
     for feature in feature_types.keys():
         logger.info(f'Loading {feature}...')
-
         # Use memory mapping to load data
         file_path = f'{args.experiment_dir}/{dataset_type}_{feature}.npy'
 
@@ -158,25 +157,22 @@ def linear_selection(X_train_path, X_val_path, X_test_path, feature_names, y_tra
 def preprocess_and_save_features(X_train, X_val, X_test, feature_name):
     # Check if the feature is already preprocessed
     #if f'train_{feature_name}.npy' in os.listdir(args.experiment_dir):
-       #logger.info(f'{feature_name} already preprocessed')
-        #return
+    #    logger.info(f'{feature_name} already preprocessed')
+    #    return
 
     X_train = np.array(X_train).astype(np.float32)
     X_val = np.array(X_val).astype(np.float32)
     X_test = np.array(X_test).astype(np.float32)
 
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_val = scaler.transform(X_val)
+    X_test = scaler.transform(X_test)
 
-    if args.no_normalization:
-        logger.info('Skipping normalization')
-    else:
-        # Initialize Scaler
-        logger.info(f'Scaling {feature_name}...')
-
-        scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_val = scaler.transform(X_val)
-        X_test = scaler.transform(X_test)
-
+    min_max_scaler = MinMaxScaler(feature_range=(-5, 5))
+    X_train = min_max_scaler.fit_transform(X_train)
+    X_val = min_max_scaler.transform(X_val)
+    X_test = min_max_scaler.transform(X_test)
 
     # Step 2: Dimensionality Reduction
     if X_train.shape[1] > 50:
@@ -218,85 +214,21 @@ if __name__ == '__main__':
     logger.info(f'Starting experiment')
 
     if not args.skip_loading:
-        if args.dummy:
-            logger.info('USING DUMMY DATA')
-            num_samples = 1000
-
-            feature_splits_dict = {
-                'train': {
-                    'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-                    'facs_intensity': np.random.rand(num_samples, 20),
-                    'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-                    'nonrigid_face_shape': np.random.rand(num_samples, 13),
-                    'hog': np.random.rand(num_samples, 3000),
-                    'sface': np.random.rand(num_samples, 512),
-                    'facenet': np.random.rand(num_samples, 512)
-                },
-                'val': {
-                    'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-                    'facs_intensity': np.random.rand(num_samples, 20),
-                    'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-                    'nonrigid_face_shape': np.random.rand(num_samples, 13),
-                    'hog': np.random.rand(num_samples, 3000),
-                    'sface': np.random.rand(num_samples, 512),
-                    'facenet': np.random.rand(num_samples, 512)
-                },
-                'test': {
-                    'landmarks_3d': np.random.rand(num_samples, 68 * 3),
-                    'facs_intensity': np.random.rand(num_samples, 20),
-                    'facs_presence': np.random.randint(0, 2, (num_samples, 20)),
-                    'nonrigid_face_shape': np.random.rand(num_samples, 13),
-                    'hog': np.random.rand(num_samples, 3000),
-                    'sface': np.random.rand(num_samples, 512),
-                    'facenet': np.random.rand(num_samples, 512)
-                },
-            }
-            # 8 Classes
-            emotions_splits_dict = {
-                'train': np.random.randint(0, 8, num_samples),
-                'val': np.random.randint(0, 8, num_samples),
-                'test': np.random.randint(0, 8, num_samples)
-            }
-        else:
-            logger.info(f'Loading Data with RolfLoader')
-
-            data_loader = RolfLoader(args.main_annotations_dir, args.test_annotations_dir, args.main_features_dir,
-                                     args.test_features_dir, args.main_id_dir)
-            feature_splits_dict, emotions_splits_dict = data_loader.get_data()
-
-
-        # Save the emotion labels
-        y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict['test']
-        np.save(f'{args.experiment_dir}/y_train.npy', y_train)
-        np.save(f'{args.experiment_dir}/y_val.npy', y_val)
-        np.save(f'{args.experiment_dir}/y_test.npy', y_test)
-
-        logger.info(f'Preprocessing Data and Saving...')
-        for feature_name, linearity in feature_types.items():
-
-            preprocess_and_save_features(
-                feature_splits_dict['train'][feature_name],
-                feature_splits_dict['val'][feature_name],
-                feature_splits_dict['test'][feature_name],
-                feature_name,
-            )
-
-    for feature in feature_types.keys():
-        continue
-        if feature in ['facs', 'embedded']:
-            preprocess_and_save_features(
-                np.load(f'train_{feature}_features.npy').astype(np.float32),
-                np.load(f'val_{feature}_features.npy').astype(np.float32),
-                np.load(f'test_{feature}_features.npy').astype(np.float32),
-                feature,
-            )
-        else:
-            preprocess_and_save_features(
-                np.load(f'{args.experiment_dir}/unprocessed/train_{feature}.npy').astype(np.float32),
-                np.load(f'{args.experiment_dir}/unprocessed/val_{feature}.npy').astype(np.float32),
-                np.load(f'{args.experiment_dir}/unprocessed/test_{feature}.npy').astype(np.float32),
-                feature,
-            )
+        for feature in feature_types.keys():
+            if feature in ['facs', 'embedded']:
+                preprocess_and_save_features(
+                    np.load(f'train_{feature}_features.npy').astype(np.float32),
+                    np.load(f'val_{feature}_features.npy').astype(np.float32),
+                    np.load(f'test_{feature}_features.npy').astype(np.float32),
+                    feature,
+                )
+            else:
+                preprocess_and_save_features(
+                    np.load(f'{args.experiment_dir}/unprocessed/train_{feature}.npy').astype(np.float32),
+                    np.load(f'{args.experiment_dir}/unprocessed/val_{feature}.npy').astype(np.float32),
+                    np.load(f'{args.experiment_dir}/unprocessed/test_{feature}.npy').astype(np.float32),
+                    feature,
+                )
 
     gc.collect()
     logger.info(f'Preparing concatenated data')
@@ -307,8 +239,7 @@ if __name__ == '__main__':
     X_test_path, _ = load_and_concatenate_features('test')
 
     feature_names = np.array(feature_names)
-    X_train_path, X_val_path, X_test_path = linear_selection(X_train_path, X_val_path, X_test_path, feature_names, y_train)
-
+    #X_train_path, X_val_path, X_test_path = linear_selection(X_train_path, X_val_path, X_test_path, feature_names, y_train)
     #X_train_path, X_val_path, X_test_path = filter_selection(X_train_path, X_val_path, X_test_path, y_train, k_features=200)
 
     logger.info(f'Loading concatenated data...')
@@ -321,20 +252,21 @@ if __name__ == '__main__':
     nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=20, batch_size=128)
     #linearSVC = LinearSVC(class_weight='balanced', C=0.1, probability=True)
     #rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight=class_weights)
-    #lr = CumlLogisticRegression(class_weight='balanced', C=1)
+    lr = CumlLogisticRegression(class_weight='balanced', C=1)
     svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=1)
     #mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
     nn.__class__.__name__ = 'NeuralNetwork'
     #rf.__class__.__name__ = 'RandomForestClassifier'
     svm.__class__.__name__ = 'SVC'
-    #lr.__class__.__name__ = 'LogisticRegression'
+    lr.__class__.__name__ = 'LogisticRegression'
     #linearSVC.__class__.__name__ = 'LinearSVC'
     #mlp.__class__.__name__ = 'MLP'
 
 
+
     models = [
         nn,
-        #lr,
+        lr,
         #linearSVC,
         #rf,
         svm,
@@ -342,7 +274,6 @@ if __name__ == '__main__':
 
     probabilities_val = {}
     probabilities_test = {}
-
 
 
     y_val = np.load(f'y_val.npy')
@@ -368,7 +299,9 @@ if __name__ == '__main__':
         bal_acc_test = balanced_accuracy_score(y_test, np.argmax(proba_test, axis=1))
         logger.info(f'Balanced Accuracy of {model.__class__.__name__} (Test Set): {bal_acc_test}')
         probabilities_test[model.__class__.__name__] = proba_test
-    
+
+    np.save(f'{args.experiment_dir}/probabilities_val.npy', probabilities_val)
+    np.save(f'{args.experiment_dir}/probabilities_test.npy', probabilities_test)
     del X_train, y_train
     del X_val
 
