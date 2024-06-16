@@ -162,6 +162,10 @@ if __name__ == '__main__':
 
     balanced_accuracy = balanced_accuracy_score(y_test, stacking_pipeline.predict(X_stack_test))
 
+    np.save(f'{args.experiment_dir}/probabilities_val.npy', X_stack_val)
+    np.save(f'{args.experiment_dir}/probabilities_test.npy', X_stack_test)
+
+
     logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {balanced_accuracy}")
 
     logger.info("Experiment Finished")
