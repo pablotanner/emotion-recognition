@@ -41,7 +41,9 @@ if __name__ == '__main__':
         logger.info(f"Undersampled data for {feature} already exists. Loading")
         X_train = np.load(f'{experiment_dir}/{feature}/X_train.npy')
         y_train = np.load(f'{experiment_dir}/{feature}/y_train.npy')
+        X_test = np.load(f'{experiment_dir}/{feature}/X_test.npy')
         y_test = np.load(f'{experiment_dir}/{feature}/y_test.npy')
+
     else:
         logger.info(f"Undersampled data for {feature} does not exist. Generating")
         # Concatenate train, val, test for undersampling
@@ -65,10 +67,13 @@ if __name__ == '__main__':
         svc = joblib.load(f'{experiment_dir}/{feature}/classifier.joblib')
     else:
         logger.info(f"Training classifier on {args.feature} features")
-        svc = SVC(C=1, kernel='rbf', class_weight='balanced')
+        #svc = SVC(C=1, kernel='rbf', class_weight='balanced')
         # Fit SVC
-        svc.fit(X_train, y_train)
-        joblib.dump(svc, f'{experiment_dir}/{feature}/classifier.joblib')
+        #clf.fit(X_train, y_train)
+
+        clf = RandomForestClassifier(n_estimators=400, max_depth=20)
+        clf.fit(X_train, y_train)
+        joblib.dump(clf, f'{experiment_dir}/{feature}/classifier.joblib')
 
 
     if os.path.exists(f'{experiment_dir}/{feature}/explainer.joblib'):
@@ -79,7 +84,7 @@ if __name__ == '__main__':
         # Generate Explainer
         #explainer = KernelExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
         #explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
-        explainer = shap.Explainer(svc.predict, X_train)
+        explainer = shap.Explainer(clf.predict, X_train)
         #explainer = KernelExplainer(model=svc.predict,data=X_train,is_gpu_model=True,random_state=42,dtype=np.float32)
         joblib.dump(explainer, f'{experiment_dir}/{feature}/explainer.joblib')
 
