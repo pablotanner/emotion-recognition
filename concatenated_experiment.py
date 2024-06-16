@@ -308,6 +308,14 @@ if __name__ == '__main__':
     del X_train, y_train
     del X_val
 
+    # Confusion Matrix of SVC predictions
+    from sklearn.metrics import confusion_matrix
+    cm = confusion_matrix(y_test, np.argmax(probabilities_test['SVC'], axis=1))
+    # Standardize the confusion matrix
+    cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    np.save(f'{args.experiment_dir}/cm_concat.npy', cm)
+    np.save(f'{args.experiment_dir}/cm_concat_norm.npy', cm_norm)
+
     gc.collect()
 
     def evaluate_stacking(probabilities, y_val):

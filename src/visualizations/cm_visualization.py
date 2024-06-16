@@ -145,20 +145,27 @@ def conf_matrices():
     #plt.suptitle('Normalized Confusion Matrices', fontsize=24, y=0.95)
     plt.show()
 
-def find_common_confusions():
-    norm_cn = np.load('cm_matrices.npy', allow_pickle=True).item()
+def single_cm_heatmap(cm):
 
-    del norm_cn['concat']
+    cm = cm * 100
+    cm = np.round(cm, 2)
 
-    # Get average / aggregated confusion matrix
-    aggregated_cm = np.mean([cm for cm in norm_cn.values()], axis=0)
+    plt.figure(figsize=(10, 10))
+    sns.heatmap(cm, annot=True, cmap='Blues', xticklabels=emotions, yticklabels=emotions)
+    plt.xlabel('Predicted Emotion', fontsize=14)
+    plt.ylabel('True Emotion', fontsize=14)
 
-    # Get the most common confusions
+    plt.xticks(rotation=45)
+
+    #plt.savefig('facs_cm.png')
+    plt.show()
+
+def find_common_confusions(matrix):
     common_confusions = []
     for i in range(8):
         for j in range(8):
             if i != j:
-                common_confusions.append((i, j, aggregated_cm[i, j]))
+                common_confusions.append((i, j, matrix[i, j]))
 
     # Sort by most common
     common_confusions.sort(key=lambda x: x[2], reverse=True)
@@ -170,8 +177,67 @@ def find_common_confusions():
 
     return common_confusions
 
+def two_matrices_heatmap(matrix1, matrix2):
+    fig, ax = plt.subplots(1, 2, figsize=(18, 8))
 
+    # Add gap between subplots
+    plt.subplots_adjust(hspace=0.35, wspace=0.30)
+
+    # Use same vmin and vmax for both plots
+    vmin = np.min([np.min(matrix1), np.min(matrix2)])
+    vmax = np.max([np.max(matrix1), np.max(matrix2)])
+
+    sns.heatmap(matrix1, annot=True, ax=ax[0], cmap='Purples', xticklabels=emotions, yticklabels=emotions,
+                vmin=vmin, vmax=vmax
+                )
+    ax[0].set_title('Concatenated', fontsize=16)
+    ax[0].set_xlabel('Predicted Emotion', fontsize=14)
+    ax[0].set_ylabel('True Emotion', fontsize=14)
+
+    sns.heatmap(matrix2, annot=True, ax=ax[1], cmap='Purples', xticklabels=emotions, yticklabels=emotions,
+                vmin=vmin, vmax=vmax)
+    ax[1].set_title('Stacking Classifier', fontsize=16)
+    ax[1].set_xlabel('Predicted Emotion', fontsize=14)
+    ax[1].set_ylabel('True Emotion', fontsize=14)
+
+    plt.savefig('cm_stacking_concat.png')
+    plt.show()
 
 #conf_matrices()
 
-find_common_confusions()
+#find_common_confusions()
+
+def get_matrices():
+    # Get Aggregated Confusion Matrix
+    norm_cn = np.load('cm_matrices.npy', allow_pickle=True).item()
+    del norm_cn['concat']
+    # Get average / aggregated confusion matrix
+    aggregated_cm = np.mean([cm for cm in norm_cn.values()], axis=0) * 100
+
+    # Get Concatenated Confusion Matrix
+    concat_matrix = np.load('cm_concat.npy')
+    # Normalize
+    concat_matrix = concat_matrix / np.sum(concat_matrix, axis=1)[:, np.newaxis] * 100
+    # rounded
+    concat_matrix = np.round(concat_matrix, 2)
+
+    stacked_matrix = np.load('cm_stacking.npy')
+    stacked_matrix = stacked_matrix / np.sum(stacked_matrix, axis=1)[:, np.newaxis] * 100
+    stacked_matrix = np.round(stacked_matrix, 2)
+
+
+    return aggregated_cm, concat_matrix, stacked_matrix
+
+aggregated_cm, concat_matrix, stacked_matrix = get_matrices()
+
+
+
+#single_cm_heatmap(stacked_matrix)
+
+#two_matrices_heatmap(concat_matrix, stacked_matrix)
+
+print('Aggregated')
+find_common_confusions(stacked_matrix)
+
+print('Concatenated')
+find_common_confusions(concat_matrix)
