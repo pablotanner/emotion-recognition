@@ -44,18 +44,22 @@ if __name__ == '__main__':
         joblib.dump(svc, f'{experiment_dir}/{args.feature}_classifier.joblib')
 
 
-
-    logger.info(f"Generating Explainer")
-    # Generate Explainer
-    #explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42)
-    #explainer = shap.Explainer(svc.predict, X_train)
-    explainer = KernelExplainer(
-        model=svc.predict,
-        data=X_train,
-        is_gpu_model=True,
-        random_state=42,
-        dtype=np.float32
-    )
+    if os.path.exists(f'{experiment_dir}/{args.feature}_explainer.joblib'):
+        logger.info(f"Explainer for {args.feature} already exists. Loading")
+        explainer = joblib.load(f'{experiment_dir}/{args.feature}_explainer.joblib')
+    else:
+        logger.info(f"Generating Explainer")
+        # Generate Explainer
+        #explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42)
+        #explainer = shap.Explainer(svc.predict, X_train)
+        explainer = KernelExplainer(
+            model=svc.predict,
+            data=X_train,
+            is_gpu_model=True,
+            random_state=42,
+            dtype=np.float32
+        )
+        joblib.dump(explainer, f'{experiment_dir}/{args.feature}_explainer.joblib')
 
     # Delete Unnecessary Variables
     del X_train, y_train, svc
