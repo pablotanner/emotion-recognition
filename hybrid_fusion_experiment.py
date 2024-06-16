@@ -162,8 +162,15 @@ if __name__ == '__main__':
 
     balanced_accuracy = balanced_accuracy_score(y_test, stacking_pipeline.predict(X_stack_test))
 
-    np.save(f'{args.experiment_dir}/probabilities_val.npy', X_stack_val)
-    np.save(f'{args.experiment_dir}/probabilities_test.npy', X_stack_test)
+    # Confusion Matrix
+    from sklearn.metrics import confusion_matrix
+
+    cm = confusion_matrix(y_test, stacking_pipeline.predict(X_stack_test))
+    # Standardize the confusion matrix
+    cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    logger.info(f"Normalized Confusion Matrix: {cm_norm}")
+    np.save(f'{args.experiment_dir}/cm_stacking.npy', cm)
+    np.save(f'{args.experiment_dir}/cm_stacking_norm.npy', cm_norm)
 
 
     logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {balanced_accuracy}")
