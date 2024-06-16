@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # Coincidentally, all 3 (4 with concat) feature types have same SVC RBF params
     if os.path.exists(f'{experiment_dir}/{feature}/classifier.joblib'):
         logger.info(f"Classifier for {args.feature} already exists. Loading")
-        svc = joblib.load(f'{experiment_dir}/{feature}/classifier.joblib')
+        clf = joblib.load(f'{experiment_dir}/{feature}/classifier.joblib')
     else:
         logger.info(f"Training classifier on {args.feature} features")
         #svc = SVC(C=1, kernel='rbf', class_weight='balanced')
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         joblib.dump(explainer, f'{experiment_dir}/{feature}/explainer.joblib')
 
     # Delete Unnecessary Variables
-    del X_train, y_train, svc
+    del X_train, y_train, clf
 
     logger.info(f"Generating SHAP Values")
 
