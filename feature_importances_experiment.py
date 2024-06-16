@@ -27,7 +27,7 @@ if __name__ == '__main__':
     feature = args.feature
     clf = args.clf
     exp = args.exp
-    
+
 
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.INFO,
@@ -70,7 +70,10 @@ if __name__ == '__main__':
     else:
         logger.info(f"Generating Explainer")
         # Generate Explainer
-        explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
+        if exp == 'kernel':
+            explainer = KernelExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
+        else:
+            explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
         #explainer = shap.Explainer(svc.predict, X_train)
         #explainer = KernelExplainer(model=svc.predict,data=X_train,is_gpu_model=True,random_state=42,dtype=np.float32)
         joblib.dump(explainer, f'{experiment_dir}/{args.feature}_{exp}.joblib')
