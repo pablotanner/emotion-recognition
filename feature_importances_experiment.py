@@ -7,6 +7,7 @@ import numpy as np
 #import shap
 from cuml.explainer import PermutationExplainer, KernelExplainer
 from src.model_training import SVC
+from cuml.svm import LinearSVC
 from src.util.data_paths import get_data_path
 
 if __name__ == '__main__':
@@ -38,7 +39,7 @@ if __name__ == '__main__':
         svc = joblib.load(f'{experiment_dir}/{args.feature}_classifier.joblib')
     else:
         logger.info(f"Training SVC on {args.feature} features")
-        svc = SVC(C=1, probability=True, kernel='rbf', class_weight='balanced')
+        svc = LinearSVC(C=1, kernel='rbf', class_weight='balanced')
         # Fit SVC
         svc.fit(X_train, y_train)
         joblib.dump(svc, f'{experiment_dir}/{args.feature}_classifier.joblib')
