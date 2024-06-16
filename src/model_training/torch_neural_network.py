@@ -8,18 +8,7 @@ from torch import optim
 class NeuralNetwork(nn.Module):
     def __init__(self, input_dim, class_weight=None, num_epochs=10, batch_size=32, learning_rate=0.001, verbose=0, use_new=True):
         super(NeuralNetwork, self).__init__()
-        """
-        self.layer = nn.Sequential(
-            nn.Linear(input_dim, 128),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(64, 8)
-        )
-        
-        """
+
         self.fc1 = nn.Linear(input_dim, 128)
         self.dropout1 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(128, 64)

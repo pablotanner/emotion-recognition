@@ -64,7 +64,10 @@ def load_and_concatenate_features(dataset_type):
     for feature in feature_types.keys():
         logger.info(f'Loading {feature}...')
         # Use memory mapping to load data
-        file_path = f'{args.experiment_dir}/{dataset_type}_{feature}.npy'
+        if feature == 'hog':
+            file_path = f'{args.experiment_dir}/{dataset_type}_{feature}2.npy'
+        else:
+            file_path = f'{args.experiment_dir}/{dataset_type}_{feature}.npy'
 
         if args.load_gpu:
             data = cp.load(file_path, mmap_mode='r').astype(np.float32)

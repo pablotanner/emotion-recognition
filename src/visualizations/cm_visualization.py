@@ -15,7 +15,18 @@ key_map = {
 
 # Load normalized confusion matrices for each model/feature
 #confusion_matrices = np.load('cm_matrices.npy', allow_pickle=True).item()
-confusion_matrices = np.load('cm_matrices_not_normalized.npy', allow_pickle=True).item()
+
+# Contains all except facs and pdm
+confusion_matrices = np.load('cm.npy', allow_pickle=True).item()
+
+cm_rest = np.load('cm_matrices_not_normalized.npy', allow_pickle=True).item()
+
+confusion_matrices['facs'] = cm_rest['facs']
+confusion_matrices['pdm'] = cm_rest['pdm']
+
+del cm_rest
+del confusion_matrices['concatenated']
+
 emotions = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']
 
 # Get averages for all models except for FACS

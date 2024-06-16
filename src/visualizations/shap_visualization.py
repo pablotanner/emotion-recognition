@@ -12,11 +12,13 @@ emotions = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', '
 if VARIANT == 0:
     # Only correct predictions, only with the optimal models for stacking
     shap_values = joblib.load('SV_test_correct.joblib')
-    # Aggregate for all classes
+    # Aggregate for all classes, get from (n_samples, n_features, n_classes) to (n_samples, n_features)
+    shap_values = np.mean(np.abs(shap_values.values), axis=2) # find betteR WAY, ABSOLUTE REMOVES DIRECTIONALITY
+    # Not mean, it will be 0, sum
 
-    # find betteR WAY, ABSOLUTE REMOVES DIRECTIONALITY
+    #shap_values = shap_values[:, :, 0]
 
-    shap_values = np.mean(np.abs(shap_values.values), axis=2)
+
 
     models = ['HOG', 'PDM', 'Embeddings', 'FAUs']
 else:
@@ -126,5 +128,5 @@ def violin_plot():
 
     plt.show()
 
-#bar_plot()
+bar_plot()
 #violin_plot()
