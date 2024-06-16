@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from src.model_training import SVC
 from src.util.data_paths import get_data_path
 from imblearn.under_sampling import RandomUnderSampler
+from cuml.ensemble import RandomForestClassifier
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Feature Importance Experiment')
@@ -42,15 +43,16 @@ if __name__ == '__main__':
         y_train = np.load(f'{experiment_dir}/{feature}/y_train.npy')
         y_test = np.load(f'{experiment_dir}/{feature}/y_test.npy')
     else:
+        logger.info(f"Undersampled data for {feature} does not exist. Generating")
         # Concatenate train, val, test for undersampling
-        X = np.concatenate(np.load(get_data_path('train', args.feature)), np.load(get_data_path('val', args.feature)), np.load(get_data_path('test', args.feature))).astype(np.float32)
+        X = np.concatenate([np.load(get_data_path('train', args.feature)), np.load(get_data_path('val', args.feature)), np.load(get_data_path('test', args.feature))]).astype(np.float32)
 
-        y = np.concatenate(np.load(get_data_path('train', 'labels')), np.load(get_data_path('val', 'labels')), np.load(get_data_path('test', 'labels'))).astype(np.float32)
-
+        y = np.concatenate([np.load('y_train.npy'), np.load('y_val.npy'), np.load('y_test.npy')])
         # Undersample
         rus = RandomUnderSampler(random_state=42)
         X_train, y_train = rus.fit_resample(X, y)
         X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+        logger.info(f"X_train shape: {X_train.shape}. Saving")
         np.save(f'{experiment_dir}/{feature}/X_train.npy', X_train)
         np.save(f'{experiment_dir}/{feature}/y_train.npy', y_train)
         np.save(f'{experiment_dir}/{feature}/X_test.npy', X_test)
