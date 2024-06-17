@@ -10,6 +10,8 @@ from src.util.data_paths import get_data_path
 from imblearn.under_sampling import RandomUnderSampler
 #from cuml.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+#from cuml.explainer import KernelExplainer, PermutationExplainer
 
 
 if __name__ == '__main__':
@@ -72,8 +74,8 @@ if __name__ == '__main__':
         #svc = SVC(C=1, kernel='rbf', class_weight='balanced')
         # Fit SVC
         #clf.fit(X_train, y_train)
-
-        clf = RandomForestClassifier(n_estimators=400, max_depth=20)
+        clf = LogisticRegression(C=1)
+        #clf = RandomForestClassifier(n_estimators=400, max_depth=20)
         clf.fit(X_train, y_train)
         joblib.dump(clf, f'{experiment_dir}/{feature}/classifier.joblib')
 
