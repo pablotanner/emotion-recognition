@@ -13,8 +13,11 @@ for coord in ['x', 'y', 'z']:
 class_names = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']
 
 # Load the SHAP values (n_samples, n_features, n_classes)
-#shap_values = joblib.load('post_pca_shap_values.joblib')
-shap_values = joblib.load('shap_values_NEW.joblib').values
+shap_values = joblib.load('post_pca_shap_values.joblib')
+#shap_values = joblib.load('shap_values_NEW.joblib').values
+
+# Only positive
+#shap_values = np.where(shap_values > 0, shap_values, 0)
 
 shap_values = np.mean(np.abs(shap_values), axis=0)
 
@@ -33,10 +36,13 @@ top_features = {emotion: {i: coordinate_scores[emotion][i] for i in sorted(coord
 
 # Plot face image
 
-def plot_face_image(top_dict):
+def plot_face_image(emo):
+    top_dict = top_features[emo]
     # Import image and draw points
     image_np = np.array(Image.open('face.png'))
     cords = np.load('../../data/features/0_landmarks.npy')
+
+    # To convert from 3d lnd, load like this
     #cords = np.load('test_lnd.npy')
     # Get rid of last third of coordinates (z)
     #cords = cords[:136]
@@ -61,12 +67,12 @@ def plot_face_image(top_dict):
         y = y * 1.2
         points[point] = (x, y)
 
-    # Move points 0-6 to right
+        # Move points 0-6 to right
     for i in range(7):
         x, y = points[i]
         points[i] = (x + 5, y)
 
-    # Move points 36-41 and 42-47 down
+        # Move points 36-41 and 42-47 down
     for i in range(36, 42):
         x, y = points[i]
         points[i] = (x, y + 5)
@@ -82,26 +88,32 @@ def plot_face_image(top_dict):
             plt.scatter(x, y, s=10, c='red')
     else:
         # Get colormap
-        cmap = plt.cm.Reds
+        #cmap = plt.cm.Reds
         values = np.array(list(top_dict.values()))
+        #normalized_values = (values - values.min()) / (values.max() - values.min())
+        #colors = cmap(normalized_values)
+        #color_list = {key: colors[i] for i, key in enumerate(top_dict.keys())}
         normalized_values = (values - values.min()) / (values.max() - values.min())
-        colors = cmap(normalized_values)
-        color_list = {key: colors[i] for i, key in enumerate(top_dict.keys())}
-        # Size based on value
-        sizes = np.array(list(top_dict.values()))
-        sizes = (sizes - sizes.min()) / (sizes.max() - sizes.min())
-        sizes = sizes * 50
-
+        #Mark top 10 as red
+        top_10 = sorted(top_dict, key=top_dict.get, reverse=True)[:10]
         for point in top_dict.keys():
+            # Use normalized value to set size, use
+            size = normalized_values[list(top_dict.keys()).index(point)] * 30
             x, y = points[point]
-            # Set color according to value usign colormap
-            size = sizes[point]
-            plt.scatter(x, y, s=size, color='blue') #color=color_list[point])
+
+            if point in top_10:
+                plt.scatter(x, y, s=size, color='blue')
+            else:
+                # Set color according to value usign colormap
+                plt.scatter(x, y, s=size, color='blue')
 
     # Hide Axis
+    plt.title(emo, fontsize=26)
     plt.axis('off')
     plt.imshow(image_np)
     plt.show()
+    plt.savefig(f'{emo}_shap.png')
+    plt.close()
 
-
-plot_face_image(top_features['Happy'])
+for emo in class_names:
+    plot_face_image(emo)
