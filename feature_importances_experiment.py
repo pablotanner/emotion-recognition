@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 #from src.model_training import SVC
 from src.util.data_paths import get_data_path
 from imblearn.under_sampling import RandomUnderSampler
-#from cuml.ensemble import RandomForestClassifier
+#from cuml.ensemble import RandomForestClassifier as cuRF
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 #from cuml.explainer import KernelExplainer, PermutationExplainer
@@ -90,27 +90,33 @@ if __name__ == '__main__':
         #explainer = KernelExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
         #explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
         explainer = shap.Explainer(clf, X_train)
-        #explainer = shap.TreeExplainer(clf)
+        explainer = shap.TreeExplainer(clf)
         #explainer = KernelExplainer(model=svc.predict,data=X_train,is_gpu_model=True,random_state=42,dtype=np.float32)
         joblib.dump(explainer, f'{experiment_dir}/{feature}/explainer.joblib')
 
+    X_test_new = X_test[y_test == clf.predict(X_test)]
     # Delete Unnecessary Variables
     del X_train, y_train, clf
 
     logger.info(f"Generating SHAP Values")
+
 
     # Get SHAP Values
     shap_values = explainer(X_test)
 
     # Dump SHAP Values
     joblib.dump(shap_values, f'{experiment_dir}/{feature}/shap_values.joblib')
+    joblib.dump(original_feature_shap_values, f'{experiment_dir}/{feature}/post_pca_shap_values.joblib')
 
     if args.feature == 'landmarks_3d':
         pca = joblib.load(f'{pca_dir}/landmarks_3d_pca.joblib')
         # Shap values are in shape (n_samples, n_features, n_classes) for multi-class classification, need to do pca inverse for each class
         for i in range(8):
             shap_values_class = shap_values[:, :, i]
+            # Manually revert PCA (without inverse_transform)
             shap_values_class_pca = pca.inverse_transform(shap_values_class)
+
+
             joblib.dump(shap_values_class_pca, f'{experiment_dir}/{feature}/shap_values_class_{i}_pca.joblib')
     elif args.feature == 'concatenated':
         emb_pca = joblib.load(f'{pca_dir}/embedded_pca.joblib')

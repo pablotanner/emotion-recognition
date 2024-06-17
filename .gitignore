@@ -167,3 +167,7 @@ data/embeddings/*
 
 # Stores models joblib (trained models)
 models/store
+src/importance/post_pca_shap_values.joblib
+src/importance/shap_facs.joblib
+src/importance/shap_values_NEW.joblib
+src/importance/test_lnd.npy

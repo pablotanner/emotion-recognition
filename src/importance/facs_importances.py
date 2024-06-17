@@ -16,15 +16,27 @@ shap_values = joblib.load('shap_facs.joblib')
 
 shap_values.feature_names = feature_names
 
-# Load the feature values
-def violin_plot():
-    # Show violin plot of SHAP values
-    plt.figure(figsize=(20, 10))
-    shap.summary_plot(shap_values, show=False)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.tight_layout()
-    #plt.savefig('facs_violin_plot.png')
-    plt.show()
+positive_shap_values_array = np.where(shap_values.values > 0, shap_values.values, 0)
+mean_positive_shap_values = np.mean(positive_shap_values_array, axis=0)
 
-violin_plot()
+#mean_abs_shap_values = np.mean(np.abs(shap_values.values), axis=0)
+
+class_names = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']
+
+#shap_df = pd.DataFrame(mean_abs_shap_values, columns=class_names, index=feature_names)
+
+shap_df = pd.DataFrame(mean_positive_shap_values, columns=class_names, index=feature_names)
+
+#shap_df = shap_df.sort_values(by='Happy', ascending=False)
+
+# For each emotion, get the top 5 features
+top_features = {emotion: shap_df[emotion].sort_values(ascending=False).head(3) for emotion in class_names}
+
+def get_unique_faus(features_dict):
+    unique = set()
+    for k in features_dict.keys():
+        for facs in list(top_features[k].keys()):
+            unique.add(facs)
+
+    return unique
+
