@@ -5,10 +5,12 @@ import joblib
 import numpy as np
 import shap
 from sklearn.model_selection import train_test_split
-from src.model_training import SVC
+#from src.model_training import SVC
 from src.util.data_paths import get_data_path
 from imblearn.under_sampling import RandomUnderSampler
-from cuml.ensemble import RandomForestClassifier
+#from cuml.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Feature Importance Experiment')
@@ -84,7 +86,8 @@ if __name__ == '__main__':
         # Generate Explainer
         #explainer = KernelExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
         #explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
-        explainer = shap.Explainer(clf.predict, X_train)
+        #explainer = shap.Explainer(clf.predict, X_train)
+        explainer = shap.TreeExplainer(clf)
         #explainer = KernelExplainer(model=svc.predict,data=X_train,is_gpu_model=True,random_state=42,dtype=np.float32)
         joblib.dump(explainer, f'{experiment_dir}/{feature}/explainer.joblib')
 
@@ -96,17 +99,22 @@ if __name__ == '__main__':
     # Get SHAP Values
     shap_values = explainer(X_test)
 
+    # Dump SHAP Values
+    joblib.dump(shap_values, f'{experiment_dir}/{feature}/shap_values.joblib')
+
     if args.feature == 'landmarks_3d':
         pca = joblib.load(f'{pca_dir}/landmarks_3d_pca.joblib')
         shap_values = pca.inverse_transform(shap_values)
+        joblib.dump(shap_values, f'{experiment_dir}/{feature}/shap_values_pca.joblib')
     elif args.feature == 'concatenated':
         emb_pca = joblib.load(f'{pca_dir}/embedded_pca.joblib')
         lnd_pca = joblib.load(f'{pca_dir}/concatenated_pca.joblib')
         hog_pca = joblib.load(f'{pca_dir}/hog_pca.joblib')
         # Not implemented for now
 
-    # Dump SHAP Values
-    joblib.dump(shap_values, f'{experiment_dir}/{feature}/shap_values.joblib')
+
+
+
 
 
 
