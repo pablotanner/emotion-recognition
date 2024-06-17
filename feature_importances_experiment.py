@@ -77,6 +77,7 @@ if __name__ == '__main__':
         clf = LogisticRegression(C=1)
         #clf = RandomForestClassifier(n_estimators=400, max_depth=20)
         clf.fit(X_train, y_train)
+        print(f'Accuracy: {clf.score(X_test, y_test)}')
         joblib.dump(clf, f'{experiment_dir}/{feature}/classifier.joblib')
 
 
@@ -88,8 +89,8 @@ if __name__ == '__main__':
         # Generate Explainer
         #explainer = KernelExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
         #explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
-        #explainer = shap.Explainer(clf.predict, X_train)
-        explainer = shap.TreeExplainer(clf)
+        explainer = shap.Explainer(clf, X_train)
+        #explainer = shap.TreeExplainer(clf)
         #explainer = KernelExplainer(model=svc.predict,data=X_train,is_gpu_model=True,random_state=42,dtype=np.float32)
         joblib.dump(explainer, f'{experiment_dir}/{feature}/explainer.joblib')
 
@@ -106,8 +107,11 @@ if __name__ == '__main__':
 
     if args.feature == 'landmarks_3d':
         pca = joblib.load(f'{pca_dir}/landmarks_3d_pca.joblib')
-        shap_values = pca.inverse_transform(shap_values)
-        joblib.dump(shap_values, f'{experiment_dir}/{feature}/shap_values_pca.joblib')
+        # Shap values are in shape (n_samples, n_features, n_classes) for multi-class classification, need to do pca inverse for each class
+        for i in range(8):
+            shap_values_class = shap_values[:, :, i]
+            shap_values_class_pca = pca.inverse_transform(shap_values_class)
+            joblib.dump(shap_values_class_pca, f'{experiment_dir}/{feature}/shap_values_class_{i}_pca.joblib')
     elif args.feature == 'concatenated':
         emb_pca = joblib.load(f'{pca_dir}/embedded_pca.joblib')
         lnd_pca = joblib.load(f'{pca_dir}/concatenated_pca.joblib')
