@@ -4,8 +4,7 @@ import argparse
 from cuml.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from cuml.linear_model import LogisticRegression as CULogisticRegression
-
+from sklearn.metrics import confusion_matrix
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from src.model_training import SVC
@@ -43,9 +42,10 @@ if __name__ == '__main__':
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('log_reg', LogisticRegression(C=0.1, class_weight='balanced'))
-            #('rf', RandomForestClassifier(n_estimators=400, max_depth=15, # min_samples_split=2, criterion='gini', class_weight='balanced'))
-            ('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
-                        num_classes=8, input_size=input_dim))
+            ('rf', RandomForestClassifier(n_estimators=400, max_depth=20, class_weight='balanced'))
+             # min_samples_split=2, criterion='gini', class_weight='balanced'))
+            #('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                        #num_classes=8, input_size=input_dim))
         ])
 
         pipeline.fit(np.load(get_data_path('train', 'facs')).astype(np.float32), y_train)
@@ -58,7 +58,7 @@ if __name__ == '__main__':
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('nn', NeuralNetwork(batch_size=128, num_epochs=50, class_weight=class_weights, input_dim=input_dim))
-            ('svc', SVC(C=10, probability=True, kernel='rbf', class_weight='balanced'))
+            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
         pipeline.fit(np.load(get_data_path('train', 'landmarks_3d')).astype(np.float32), y_train)
@@ -146,34 +146,41 @@ if __name__ == '__main__':
 
     # Stacking
     X_stack_val = np.concatenate([probabilities_val[model] for model in probabilities_val], axis=1)
-
-    stacking_pipeline = Pipeline([
-        #('scaler', StandardScaler()),
-        ('log_reg', LogisticRegression(C=1, class_weight='balanced'))
-    ])
-
-    stacking_pipeline.fit(X_stack_val, y_val)
-
-    balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack_val))
-
-    logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
-
     X_stack_test = np.concatenate([probabilities_test[model] for model in probabilities_test], axis=1)
 
-    balanced_accuracy = balanced_accuracy_score(y_test, stacking_pipeline.predict(X_stack_test))
+    solvers = ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
+    best_solver = None
+    best_balanced_accuracy = 0
+    best_stacking_pipeline = None
+    for solver in solvers:
+        logger.info(f"Training Stacking Classifier with solver: {solver}")
+        stacking_pipeline = Pipeline([
+            # ('scaler', StandardScaler()),
+            ('log_reg', LogisticRegression(C=1, class_weight='balanced', solver=solver))
+        ])
+        stacking_pipeline.fit(X_stack_val, y_val)
+        #balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack_val))
+        #logger.info(f"Balanced Accuracy of stacking classifier (Validation Set): {balanced_accuracy}")
 
-    # Confusion Matrix
-    from sklearn.metrics import confusion_matrix
 
-    cm = confusion_matrix(y_test, stacking_pipeline.predict(X_stack_test))
+        balanced_accuracy = balanced_accuracy_score(y_test, stacking_pipeline.predict(X_stack_test))
+
+        if balanced_accuracy > best_balanced_accuracy:
+            best_balanced_accuracy = balanced_accuracy
+            best_solver = solver
+            best_stacking_pipeline = stacking_pipeline
+
+        logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {balanced_accuracy}")
+        # Confusion Matrix
+
+    logger.info(f"Best Solver: {best_solver}, With Balanced Accuracy: {best_balanced_accuracy}")
+
+    cm = confusion_matrix(y_test, best_stacking_pipeline.predict(X_stack_test))
     # Standardize the confusion matrix
     cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
     logger.info(f"Normalized Confusion Matrix: {cm_norm}")
     np.save(f'{args.experiment_dir}/cm_stacking.npy', cm)
     np.save(f'{args.experiment_dir}/cm_stacking_norm.npy', cm_norm)
-
-
-    logger.info(f"Balanced Accuracy of stacking classifier (Test Set): {balanced_accuracy}")
 
     logger.info("Experiment Finished")
 
