@@ -28,8 +28,22 @@ shap_df = pd.DataFrame(shap_values, columns=class_names, index=feature_names)
 #values = {coord: np.array([shap_df[emotion][f'{coord}_{i}'] for i in range(68)]) for coord in ['x', 'y', 'z'] for emotion in class_names}
 
 coordinate_scores = {emotion: {
-    i: shap_df[emotion][f'x_{i}'] + shap_df[emotion][f'x_{i}'] + shap_df[emotion][f'z_{i}'] for i in range(68)
+    i: shap_df[emotion][f'x_{i}'] + shap_df[emotion][f'y_{i}'] + shap_df[emotion][f'z_{i}'] for i in range(68)
 } for emotion in class_names}
+
+"""
+shap_dataframe is a pandas dataframe with the following structure:
+    - Columns: class_names (e.g. Neutral, Happy, ...)
+    - Index: feature_names (e.g. x_0, x_1, ..., y_0, y_1, ..., z_0, z_1, ...)
+    - Values: SHAP values
+
+For each emotion, we get the sum of the SHAP values for each coordinate (x, y, z) for each feature (0-67)
+"""
+coordinate_scores = {
+    emotion: {
+        i: shap_dataframe[emotion][f'x_{i}'] + shap_dataframe[emotion][f'y_{i}'] for i in range(68)
+    } for emotion in class_names
+}
 
 # Fo each emotion, get 30 highest indexes
 top_features = {emotion: {i: coordinate_scores[emotion][i] for i in sorted(coordinate_scores[emotion], key=coordinate_scores[emotion].get, reverse=True)[:68]} for emotion in class_names}
@@ -81,39 +95,49 @@ def plot_face_image(emo):
         x, y = points[i]
         points[i] = (x, y + 5)
 
+    # Plot the image first
+    plt.imshow(image_np)
+    plt.axis('off')
+
     # For point in top_dict.keys(), plot point, color based on value
     if top_dict is None:
         for point in points:
             x, y = points[point]
             plt.scatter(x, y, s=10, c='red')
     else:
-        # Get colormap
-        #cmap = plt.cm.Reds
-        values = np.array(list(top_dict.values()))
-        #normalized_values = (values - values.min()) / (values.max() - values.min())
-        #colors = cmap(normalized_values)
-        #color_list = {key: colors[i] for i, key in enumerate(top_dict.keys())}
-        normalized_values = (values - values.min()) / (values.max() - values.min())
-        #Mark top 10 as red
-        top_10 = sorted(top_dict, key=top_dict.get, reverse=True)[:10]
+        # Get values from all points in the top_features dict, normalize them
+        # GLOBAL NORMALIZATION
+        #values = []
+        #for emot in top_features.keys():
+            #for point in top_features[emot].keys():
+               # values.append(top_features[emot][point])
+        #max_val = max(values)
+        #min_val = min(values)
+        #normalized_values = [(val - min_val) / (max_val - min_val) for val in values]
+
+
+        # LOCAL NORMALIZATION
+        normalized_values = []
+        for point in top_dict.keys():
+            normalized_values.append(top_dict[point])
+        max_val = max(normalized_values)
+        min_val = min(normalized_values)
+        normalized_values = [(val - min_val) / (max_val - min_val) for val in normalized_values]
+
+
         for point in top_dict.keys():
             # Use normalized value to set size, use
-            size = normalized_values[list(top_dict.keys()).index(point)] * 30
+            # get 'position' of point in all values
+            size = normalized_values[list(top_dict.keys()).index(point)] * 20
             x, y = points[point]
-
-            if point in top_10:
-                plt.scatter(x, y, s=size, color='blue')
-            else:
-                # Set color according to value usign colormap
-                plt.scatter(x, y, s=size, color='blue')
+            plt.scatter(x, y, s=size, color='red')
 
     # Hide Axis
     plt.title(emo, fontsize=26)
-    plt.axis('off')
-    plt.imshow(image_np)
+    plt.savefig(f'{emo}_shap.png', bbox_inches='tight',transparent=True, pad_inches=0)
     plt.show()
-    plt.savefig(f'{emo}_shap.png')
     plt.close()
 
 for emo in class_names:
+    print(emo)
     plot_face_image(emo)
