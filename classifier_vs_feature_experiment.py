@@ -23,7 +23,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
     if feature == 'pdm' or feature == 'nonrigid_face_shape':
         return {
             'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
-            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            #'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=20,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
             'LogisticRegression': LogisticRegression(C=10, class_weight='balanced'),
@@ -34,7 +34,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
     elif feature == 'facs':
         return {
             'SVC':  SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
-            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            #'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=400, max_depth=15,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
             'LogisticRegression': LogisticRegression(C=0.1, class_weight='balanced'),
@@ -46,7 +46,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
         return {
             #'SVC': SVC(C=10, probability=True, kernel='rbf', class_weight='balanced'),
             'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
-            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            #'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=200, max_depth=15,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
             'LogisticRegression': LogisticRegression(C=10, class_weight='balanced'),
@@ -58,7 +58,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
     elif feature == 'embedded':
         return {
             'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
-            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            #'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=300, max_depth=15,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
             'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
@@ -69,7 +69,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
     elif feature == 'hog':
         return {
             'SVC': SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'),
-            'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
+            #'LinearSVC': LinearSVC(C=0.1, probability=True, class_weight='balanced'),
             'RandomForest': RandomForestClassifier(n_estimators=300, max_depth=15,
                                                    min_samples_split=2, criterion='gini', class_weight='balanced'),
             'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
