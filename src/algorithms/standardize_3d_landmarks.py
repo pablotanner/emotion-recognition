@@ -58,7 +58,8 @@ def apply_transformation(landmarks, rx, ry, rz, tx, ty, tz):
 
 def reshape_3d_landmarks(landmarks):
     """
-    Transforms the extracted landmark data from [x0,x1,...y0,y1,...z0,z1,..] to [[x0,y0,z0],[x1,y1,z1],...]
+    Transforms the extracted landmark data from [x0,x1,...,y0,y1,...z0,z1,..] to [[x0,y0,z0],[x1,y1,z1],...]
+    to make it easier to work with.
     """
     X = landmarks[0:68]
     Y = landmarks[68:136]
@@ -173,14 +174,14 @@ def compare_landmarks(index1, index2, use_standardization=False):
 def standardize_3d_landmarks(landmarks, pose):
     """
     Standardize the landmarks by applying the pose transformation. First reshapes, then standardizes, then reshapes back.
+
+
+    :param landmarks: The 3D landmarks to standardize, np.array of shape (68, 3) where the first 68 are x, second 68 are y, last 68 are z
+    :param pose: The pose transformation to apply, [pose_Tx, pose_Ty, pose_Tz, pose_Rx, pose_Ry, pose_Rz]
     """
     reshaped_landmarks = reshape_3d_landmarks(landmarks)
     standardized_landmarks = apply_transformation(reshaped_landmarks, pose[3], pose[4], pose[5], pose[0], pose[1], pose[2])
-    x, y, z = [], [], []
-    for [x_coordinate, y_coordinate, z_coordinate] in standardized_landmarks:
-        x.append(x_coordinate)
-        y.append(y_coordinate)
-        z.append(z_coordinate)
+    x, y, z = zip(*standardized_landmarks)
     return np.asarray(x + y + z)
 
 

@@ -31,19 +31,6 @@ coordinate_scores = {emotion: {
     i: shap_df[emotion][f'x_{i}'] + shap_df[emotion][f'y_{i}'] + shap_df[emotion][f'z_{i}'] for i in range(68)
 } for emotion in class_names}
 
-"""
-shap_dataframe is a pandas dataframe with the following structure:
-    - Columns: class_names (e.g. Neutral, Happy, ...)
-    - Index: feature_names (e.g. x_0, x_1, ..., y_0, y_1, ..., z_0, z_1, ...)
-    - Values: SHAP values
-
-For each emotion, we get the sum of the SHAP values for each coordinate (x, y, z) for each feature (0-67)
-"""
-coordinate_scores = {
-    emotion: {
-        i: shap_dataframe[emotion][f'x_{i}'] + shap_dataframe[emotion][f'y_{i}'] for i in range(68)
-    } for emotion in class_names
-}
 
 # Fo each emotion, get 30 highest indexes
 top_features = {emotion: {i: coordinate_scores[emotion][i] for i in sorted(coordinate_scores[emotion], key=coordinate_scores[emotion].get, reverse=True)[:68]} for emotion in class_names}
@@ -141,3 +128,6 @@ def plot_face_image(emo):
 for emo in class_names:
     print(emo)
     plot_face_image(emo)
+#import math
+#for i in range(68):
+    #print(f'{round(coordinate_scores["Neutral"][i], 4)}  {round(coordinate_scores["Happy"][i], 4)}  {round(coordinate_scores["Sad"][i], 4)}  {round(coordinate_scores["Surprise"][i], 4)}  {round(coordinate_scores["Fear"][i], 4)}  {round(coordinate_scores["Disgust"][i], 4)}  {round(coordinate_scores["Angry"][i], 4)}  {round(coordinate_scores["Contempt"][i], 4)}')

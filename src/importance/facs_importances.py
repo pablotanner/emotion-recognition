@@ -19,18 +19,19 @@ shap_values.feature_names = feature_names
 positive_shap_values_array = np.where(shap_values.values > 0, shap_values.values, 0)
 mean_positive_shap_values = np.mean(positive_shap_values_array, axis=0)
 
-#mean_abs_shap_values = np.mean(np.abs(shap_values.values), axis=0)
+# mean_abs_shap_values = np.mean(np.abs(shap_values.values), axis=0)
 
 class_names = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']
 
-#shap_df = pd.DataFrame(mean_abs_shap_values, columns=class_names, index=feature_names)
+# shap_df = pd.DataFrame(mean_abs_shap_values, columns=class_names, index=feature_names)
 
 shap_df = pd.DataFrame(mean_positive_shap_values, columns=class_names, index=feature_names)
 
-#shap_df = shap_df.sort_values(by='Happy', ascending=False)
+# shap_df = shap_df.sort_values(by='Happy', ascending=False)
 
 # For each emotion, get the top 5 features
 top_features = {emotion: shap_df[emotion].sort_values(ascending=False).head(3) for emotion in class_names}
+
 
 def get_unique_faus(features_dict):
     unique = set()
@@ -39,4 +40,29 @@ def get_unique_faus(features_dict):
             unique.add(facs)
 
     return unique
+
+
+# For each AU, find whether the Presence or Intensity (_c or _r) is more important
+def get_presence_intensity(df):
+    action_units = {emotion: {
+        au[:-2]: [0, None] for au in df[emotion].index
+    } for emotion in class_names}
+
+    for emotion in class_names:
+        for au in df[emotion].index:
+            only_au = au[:-2]
+            if action_units[emotion][only_au][1] is None:
+                if au[-2:] == '_c':
+                    action_units[emotion][only_au] = [df[emotion][au], 'Presence']
+                else:
+                    action_units[emotion][only_au] = [df[emotion][au], 'Intensity']
+            else:
+                if au[-2:] == '_c':
+                    if action_units[emotion][only_au][0] < df[emotion][au]:
+                        action_units[emotion][only_au] = [df[emotion][au], 'Presence']
+                else:
+                    if action_units[emotion][only_au][0] < df[emotion][au]:
+                        action_units[emotion][only_au] = [df[emotion][au], 'Intensity']
+
+    return action_units
 

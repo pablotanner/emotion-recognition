@@ -74,7 +74,7 @@ data = {
     #'SVC': SVC,
     #'ProbaSVC': ProbaSVC,
     'SVC': NewSVC,
-    'LinearSVC': LinearSVC,
+    #'LinearSVC': LinearSVC,
     'RandomForest': RandomForest,
     'LogisticRegression': LogisticRegression,
     'MLP': MLP,
@@ -103,15 +103,18 @@ sns.heatmap(df, annot=True, cmap='coolwarm', fmt=".2f")
 plt.yticks([0.5, 1.5, 2.5, 3.5, 4.5], [feature_names[feature] for feature in df.index], rotation=0)
 
 # Make the plot readable
-plt.xticks(rotation=45)
-plt.yticks(rotation=0)
+plt.xticks(rotation=35, fontsize=12)
+plt.yticks(rotation=0, fontsize=14)
+plt.title('Classifier Balanced Accuracy per Feature (in %)', fontsize=16, y=1)
 
 # Remove margin on top
-plt.subplots_adjust(top=0.93, bottom=0.15,right=1)
+#plt.subplots_adjust(top=0.93, bottom=0.2,right=1, left=0.20)
+
+plt.axis('equal')
+plt.tight_layout()
 
 # Increase resolution
-plt.title('Classifier Balanced Accuracy per Feature (in %)')
-plt.savefig('classifier_performance_per_feature.png', dpi=300)
+plt.savefig('classifier_performance_per_feature.pdf')
 
 
 

@@ -42,10 +42,10 @@ if __name__ == '__main__':
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('log_reg', LogisticRegression(C=0.1, class_weight='balanced'))
-            ('rf', RandomForestClassifier(n_estimators=400, max_depth=20, class_weight='balanced'))
+            #('rf', RandomForestClassifier(n_estimators=400, max_depth=20, class_weight='balanced'))
              # min_samples_split=2, criterion='gini', class_weight='balanced'))
-            #('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
-                        #num_classes=8, input_size=input_dim))
+            ('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                        num_classes=8, input_size=input_dim))
         ])
 
         pipeline.fit(np.load(get_data_path('train', 'facs')).astype(np.float32), y_train)
@@ -156,7 +156,7 @@ if __name__ == '__main__':
         logger.info(f"Training Stacking Classifier with solver: {solver}")
         stacking_pipeline = Pipeline([
             # ('scaler', StandardScaler()),
-            ('log_reg', LogisticRegression(C=1, class_weight='balanced', solver=solver))
+            ('log_reg', LogisticRegression(C=1, class_weight='balanced', solver=solver, max_iter=1000))
         ])
         stacking_pipeline.fit(X_stack_val, y_val)
         #balanced_accuracy = balanced_accuracy_score(y_val, stacking_pipeline.predict(X_stack_val))

@@ -43,7 +43,8 @@ if __name__ == '__main__':
     #single_classifier_results = {clf_name: {} for clf_name in ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']}
 
     features = ['landmarks_3d', 'hog', 'nonrigid_face_shape','facs', 'embedded']
-    classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']
+    #classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']
+    classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'RandomForest']
 
     predicted_probabilities_val = np.load(f'{args.experiment_dir}/predicted_probabilities_val.npy', allow_pickle=True).item()
     predicted_probabilities_test = np.load(f'{args.experiment_dir}/predicted_probabilities_test.npy', allow_pickle=True).item()

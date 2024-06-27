@@ -171,9 +171,13 @@ def find_common_confusions(matrix):
     common_confusions.sort(key=lambda x: x[2], reverse=True)
 
 
-    # Print the most common confusions
+    # Print the most common confusions (top 10)
+    c = 0
     for i, j, count in common_confusions:
-        print(f'{emotions[i]} -> {emotions[j]}: {count:.2f}%')
+        c += 1
+        print(f'{emotions[i]} - {emotions[j]}: {count:.2f}%')
+        if c == 5:
+            break
 
     return common_confusions
 
@@ -235,9 +239,24 @@ aggregated_cm, concat_matrix, stacked_matrix = get_matrices()
 #single_cm_heatmap(stacked_matrix)
 
 #two_matrices_heatmap(concat_matrix, stacked_matrix)
+norm_cn = np.load('cm_matrices.npy', allow_pickle=True).item()
+del norm_cn['concat']
+
+for model, cm in norm_cn.items():
+    # Normalize
+    cm = cm / np.sum(cm, axis=1)[:, np.newaxis] * 100
+    print(model)
+    find_common_confusions(cm)
+    print(20 * '-')
 
 print('Aggregated')
+find_common_confusions(aggregated_cm)
+print(20 * '-')
+
+print('Stacked')
 find_common_confusions(stacked_matrix)
+print(20 * '-')
 
 print('Concatenated')
 find_common_confusions(concat_matrix)
+print(20 * '-')
