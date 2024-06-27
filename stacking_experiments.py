@@ -1,5 +1,7 @@
 import argparse
 import logging
+import os
+
 from cuml.preprocessing import StandardScaler
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -36,18 +38,30 @@ if __name__ == '__main__':
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
-    single_feature_results = np.load(f'{args.experiment_dir}/single_feature_results.npy', allow_pickle=True).item()
-    single_classifier_results = np.load(f'{args.experiment_dir}/single_classifier_results.npy', allow_pickle=True).item()
-
-    #single_feature_results = {feature: {} for feature in ['nonrigid_face_shape','hog','landmarks_3d','facs', 'embedded']}
-    #single_classifier_results = {clf_name: {} for clf_name in ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']}
-
     features = ['landmarks_3d', 'hog', 'nonrigid_face_shape','facs', 'embedded']
     #classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']
     classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'RandomForest']
 
-    predicted_probabilities_val = np.load(f'{args.experiment_dir}/predicted_probabilities_val.npy', allow_pickle=True).item()
-    predicted_probabilities_test = np.load(f'{args.experiment_dir}/predicted_probabilities_test.npy', allow_pickle=True).item()
+    if 'single_feature_results.npy' not in os.listdir(args.experiment_dir):
+        single_feature_results = {feature: {} for feature in features}
+    else:
+        single_feature_results = np.load(f'{args.experiment_dir}/single_feature_results.npy', allow_pickle=True).item()
+
+    if 'single_classifier_results.npy' not in os.listdir(args.experiment_dir):
+        single_classifier_results = {clf_name: {} for clf_name in classifier_names}
+    else:
+        single_classifier_results = np.load(f'{args.experiment_dir}/single_classifier_results.npy', allow_pickle=True).item()
+
+    #single_feature_results = {feature: {} for feature in ['nonrigid_face_shape','hog','landmarks_3d','facs', 'embedded']}
+    #single_classifier_results = {clf_name: {} for clf_name in ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']}
+
+
+    if 'predicted_probabilities_val.npy' not in os.listdir(args.experiment_dir):
+        predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
+        predicted_probabilities_test = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
+    else:
+        predicted_probabilities_val = np.load(f'{args.experiment_dir}/predicted_probabilities_val.npy', allow_pickle=True).item()
+        predicted_probabilities_test = np.load(f'{args.experiment_dir}/predicted_probabilities_test.npy', allow_pickle=True).item()
 
     #predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
     #predicted_probabilities_test = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
@@ -173,6 +187,8 @@ if __name__ == '__main__':
     for clf_name in classifier_names:
         single_classifier_experiment(clf_name)
         logger.info(f"Finished Experiment for {clf_name}")
+
+    np.save(f'{args.experiment_dir}/single_classifier_results.npy', single_classifier_results)
 
 
     np.save(f'{args.experiment_dir}/predicted_probabilities_val.npy', predicted_probabilities_val)
