@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-
 from cuml.preprocessing import StandardScaler
 import numpy as np
 from sklearn.linear_model import LogisticRegression
