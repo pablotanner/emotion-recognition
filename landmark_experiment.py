@@ -3,11 +3,12 @@ import os
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils import compute_class_weight
 from src.model_training import SVC
 from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
-from src.model_training.torch_mlp import PyTorchMLPClassifier
+from src.model_training.torch_neural_network import NeuralNetwork
 
 parser = argparse.ArgumentParser(description='Landmark Alignment Experiment')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')
@@ -50,11 +51,15 @@ if __name__ == '__main__':
     def train_and_evaluate(X_train, y_train, X_test, y_test, is_standardized=True):
         print(20*'-')
         print("Standardized" if is_standardized else "Unstandardized")
-        lr = LogisticRegression(C=10, class_weight='balanced')
-        mlp = PyTorchMLPClassifier(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30, num_classes=8, input_size=X_train.shape[1])
-        svc = SVC(C=10, class_weight='balanced', kernel='rbf')
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
 
-        models = {'Logistic Regression': lr, 'MLP': mlp, 'SVC': svc}
+        lr = LogisticRegression(C=10, class_weight='balanced')
+        svc = SVC(C=10, class_weight='balanced', kernel='rbf')
+        nn = NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=X_train.shape[1])
+
+        models = {'SVC': svc, 'Logistic Regression': lr, 'NN': nn}
 
         for name, model in models.items():
             print(f"Training {name}")

@@ -105,7 +105,7 @@ plt.yticks([0.5, 1.5, 2.5, 3.5, 4.5], [feature_names[feature] for feature in df.
 # Make the plot readable
 plt.xticks(rotation=35, fontsize=12)
 plt.yticks(rotation=0, fontsize=14)
-plt.title('Classifier Balanced Accuracy per Feature (in %)', fontsize=16, y=1)
+plt.title('Classifier Balanced Accuracy per Feature Type (in %)', fontsize=16, y=1)
 
 # Remove margin on top
 #plt.subplots_adjust(top=0.93, bottom=0.2,right=1, left=0.20)
