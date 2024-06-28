@@ -52,7 +52,7 @@ if __name__ == '__main__':
         print("Standardized" if is_standardized else "Unstandardized")
         lr = LogisticRegression(C=10, class_weight='balanced')
         mlp = PyTorchMLPClassifier(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30, num_classes=8, input_size=X_train.shape[1])
-        svc = SVC(C=10, probability=True, class_weight='balanced', kernel='rbf')
+        svc = SVC(C=10, class_weight='balanced', kernel='rbf')
 
         models = {'Logistic Regression': lr, 'MLP': mlp, 'SVC': svc}
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                 unstandardized_results[name] = model.score(X_test, y_test)
 
 
-        
+
 
     print("Training and evaluating on 3D landmarks")
     train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d.npy').astype(np.float32), y_train,
