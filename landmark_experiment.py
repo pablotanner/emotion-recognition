@@ -17,6 +17,7 @@ parser.add_argument('--main_features_dir', type=str, help='Path to /features fol
 parser.add_argument('--test_features_dir', type=str, help='Path to /features folder (test)', default='/local/scratch/ptanner/test_features')
 parser.add_argument('--main_id_dir', type=str, help='Path to the id files (e.g. train_ids.txt) (only for train and val)', default='/local/scratch/ptanner/')
 parser.add_argument('--data_output_dir', type=str, help='Path to the output directory', default='/local/scratch/ptanner/landmark_experiment')
+parser.add_argument('--use_ss', type=bool, help='Whether to use standard scaler', default=False)
 args = parser.parse_args()
 
 
@@ -51,9 +52,10 @@ if __name__ == '__main__':
     def train_and_evaluate(X_train, y_train, X_test, y_test, is_standardized=True):
         print(20*'-')
         print("Standardized" if is_standardized else "Unstandardized")
-        scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_test = scaler.transform(X_test)
+        if args.use_ss:
+            scaler = StandardScaler()
+            X_train = scaler.fit_transform(X_train)
+            X_test = scaler.transform(X_test)
 
         lr = LogisticRegression(C=10, class_weight='balanced')
         svc = SVC(C=10, class_weight='balanced', kernel='rbf')
