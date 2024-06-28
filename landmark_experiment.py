@@ -2,10 +2,12 @@ import argparse
 import os
 
 import numpy as np
+from sklearn.linear_model import LogisticRegression
 from sklearn.utils import compute_class_weight
 from src.model_training import SVC
 from src import evaluate_results
 from src.data_processing.rolf_loader import RolfLoader
+from src.model_training.torch_mlp import PyTorchMLPClassifier
 
 parser = argparse.ArgumentParser(description='Landmark Alignment Experiment')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')
@@ -38,55 +40,47 @@ if __name__ == '__main__':
         y_train, y_val, y_test = np.load('y_train.npy'), np.load(
             'y_val.npy'), np.load('y_test.npy')
 
+    class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+    class_weights = {i: class_weights[i] for i in range(len(class_weights))}
+
+    standardized_results = {}
+    unstandardized_results = {}
 
 
+    def train_and_evaluate(X_train, y_train, X_test, y_test, is_standardized=True):
+        print(20*'-')
+        print("Standardized" if is_standardized else "Unstandardized")
+        lr = LogisticRegression(C=10, class_weight='balanced')
+        mlp = PyTorchMLPClassifier(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30, num_classes=8, input_size=X_train.shape[1])
+        svc = SVC(C=10, probability=True, class_weight='balanced', kernel='rbf')
+
+        models = {'Logistic Regression': lr, 'MLP': mlp, 'SVC': svc}
+
+        for name, model in models.items():
+            print(f"Training {name}")
+            model.fit(X_train, y_train)
+
+            pred = model.predict(X_test)
+            print("Test set")
+            evaluate_results(y_test, pred)
+            if is_standardized:
+                standardized_results[name] = model.score(X_test, y_test)
+            else:
+                unstandardized_results[name] = model.score(X_test, y_test)
 
 
-    def train_and_evaluate(X_train, y_train, X_val, y_val, X_test, y_test):
-        svc = SVC(C=1, probability=True, class_weight='balanced', kernel='rbf')
-
-        print("Training set")
-        # Remove z axis (last third)
-        X_train = np.array([x[:136] for x in X_train])
-        X_val = np.array([x[:136] for x in X_val])
-        X_test = np.array([x[:136] for x in X_test])
-
-        X_train_x = np.array([x[:68][17:] for x in X_train])
-        X_train_y = np.array([x[68:][17:] for x in X_train])
-
-        X_train = np.concatenate((X_train_x, X_train_y), axis=1)
-
-        X_val_x = np.array([x[:68][17:] for x in X_val])
-        X_val_y = np.array([x[68:][17:] for x in X_val])
-
-        X_val = np.concatenate((X_val_x, X_val_y), axis=1)
-
-        X_test_x = np.array([x[:68][17:] for x in X_test])
-        X_test_y = np.array([x[68:][17:] for x in X_test])
-
-        X_test = np.concatenate((X_test_x, X_test_y), axis=1)
-
-        print('Fitting')
-        svc.fit(X_train, y_train)
-
-        print("Validation set")
-        evaluate_results(y_val, svc.predict(X_val))
-
-        print("Test set")
-        evaluate_results(y_test, svc.predict(X_test))
-
-
+        
 
     print("Training and evaluating on 3D landmarks")
     train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d.npy').astype(np.float32), y_train,
-                       np.load(f'{args.data_output_dir}/val_landmarks_3d.npy').astype(np.float32), y_val,
                        np.load(f'{args.data_output_dir}/test_landmarks_3d.npy').astype(np.float32), y_test,
+                       is_standardized=True
                        )
 
     print("Training and evaluating on 3D landmarks unstandardized")
     train_and_evaluate(np.load(f'{args.data_output_dir}/train_landmarks_3d_unstandardized.npy').astype(np.float32), y_train,
-                       np.load(f'{args.data_output_dir}/val_landmarks_3d_unstandardized.npy').astype(np.float32), y_val,
                        np.load(f'{args.data_output_dir}/test_landmarks_3d_unstandardized.npy').astype(np.float32), y_test,
+                       is_standardized=False
                        )
 
 
