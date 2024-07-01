@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
         lr = LogisticRegression(C=10, class_weight='balanced')
         svc = SVC(C=10, class_weight='balanced', kernel='rbf')
-        nn = NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=X_train.shape[1])
+        nn = NeuralNetwork(batch_size=128, num_epochs=10, class_weight=class_weights, input_dim=X_train.shape[1])
 
         models = {'SVC': svc, 'Logistic Regression': lr, 'NN': nn}
 
