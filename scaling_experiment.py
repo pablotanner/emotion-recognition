@@ -26,13 +26,13 @@ if __name__ == '__main__':
     y_train, y_val, y_test = emotions_splits_dict['train'], emotions_splits_dict['val'], emotions_splits_dict[
         'test']
 
-    lnd_train = feature_splits_dict['train']['landmarks_3d']
+    lnd_train = np.array(feature_splits_dict['train']['landmarks_3d'])
     #lnd_val = feature_splits_dict['val']['landmarks_3d']
-    lnd_test = feature_splits_dict['test']['landmarks_3d']
+    lnd_test = np.array(feature_splits_dict['test']['landmarks_3d'])
 
-    pdm_train = feature_splits_dict['train']['nonrigid_face_shape']
+    pdm_train = np.array(feature_splits_dict['train']['nonrigid_face_shape'])
     #pdm_val = feature_splits_dict['val']['nonrigid_face_shape']
-    pdm_test = feature_splits_dict['test']['nonrigid_face_shape']
+    pdm_test = np.array(feature_splits_dict['test']['nonrigid_face_shape'])
 
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
