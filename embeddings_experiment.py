@@ -32,7 +32,7 @@ best_accuracy = 0
 
 
 results = []
-
+# for the entire possible
 for i in range(1, len(embeddings) + 1):
     for subset in itertools.combinations(embeddings, i):
         X = np.concatenate([X_dict[embedding] for embedding in subset], axis=1)

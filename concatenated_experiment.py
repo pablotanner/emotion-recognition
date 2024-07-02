@@ -253,23 +253,23 @@ if __name__ == '__main__':
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
-    nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=20, batch_size=128)
+    #nn = NeuralNetwork(input_dim=X_train.shape[1],  class_weight=class_weights, num_epochs=20, batch_size=128)
     #linearSVC = LinearSVC(class_weight='balanced', C=0.1, probability=True)
     #rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight=class_weights)
     lr = CumlLogisticRegression(class_weight='balanced', C=1)
     svm = SVC(class_weight='balanced', probability=True, kernel='rbf', C=1)
-    #mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
-    nn.__class__.__name__ = 'NeuralNetwork'
+    mlp = MLP(batch_size=128, num_epochs=30, hidden_size=256, input_size=X_train.shape[1], class_weight=class_weights, learning_rate=0.01, num_classes=8)
+    #nn.__class__.__name__ = 'NeuralNetwork'
     #rf.__class__.__name__ = 'RandomForestClassifier'
     svm.__class__.__name__ = 'SVC'
     lr.__class__.__name__ = 'LogisticRegression'
     #linearSVC.__class__.__name__ = 'LinearSVC'
-    #mlp.__class__.__name__ = 'MLP'
+    mlp.__class__.__name__ = 'MLP'
 
 
 
     models = [
-        nn,
+        mlp,
         lr,
         #linearSVC,
         #rf,
