@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     # Start with hog probabilities, then add pdm, then add landmarks_3d, then add embedded and finally facs
     #models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs', 'concat']
-    models = ['hog', 'pdm', 'landmarks_3d', 'embeddings', 'facs']
+    models = ['hog', 'pdm', 'landmarks_3d', 'embeddings', 'facs','concat']
     # Take the important ones
     #models = ['hog', 'pdm', 'embedded', 'facs']
 
