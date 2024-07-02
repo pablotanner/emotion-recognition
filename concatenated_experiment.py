@@ -52,9 +52,9 @@ feature_types = {
 def load_and_concatenate_features(dataset_type):
     logger.info('Loading Data')
 
-    path = f'{dir}/{dataset_type}_concatenated_features.npy'
+    path = f'{args.experiment_dir}/{dataset_type}_concatenated_features.npy'
 
-    names_path = f'{dir}/feature_names.npy'
+    names_path = f'{args.experiment_dir}/feature_names.npy'
 
     if os.path.exists(path) and os.path.exists(names_path):
         return path, np.load(names_path)
