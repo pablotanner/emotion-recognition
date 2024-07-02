@@ -31,8 +31,8 @@ if __name__ == '__main__':
     logger.info("Starting Experiment")
 
     # Load the probabilities from the hybrid fusion experiment
-    probabilities_val = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_val2.npy', allow_pickle=True).item()
-    probabilities_test = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_test2.npy', allow_pickle=True).item()
+    probabilities_val = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_val.npy', allow_pickle=True).item()
+    probabilities_test = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_test.npy', allow_pickle=True).item()
 
     conc_path = '/local/scratch/ptanner/concatenated_experiment'
 
