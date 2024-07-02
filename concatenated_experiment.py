@@ -219,6 +219,7 @@ if __name__ == '__main__':
 
     if not args.skip_loading:
         for feature in feature_types.keys():
+            continue
             if feature in ['facs', 'embedded']:
                 preprocess_and_save_features(
                     np.load(f'train_{feature}_features.npy').astype(np.float32),
