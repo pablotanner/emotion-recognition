@@ -74,7 +74,7 @@ if __name__ == '__main__':
     X_train = scaler.fit_transform(X_train)
     X_val = scaler.transform(X_val)
     X_test = scaler.transform(X_test)
-    
+
 
     #X_train = np.load(get_data_path('train', args.feature)).astype(np.float32)
     #X_val = np.load(get_data_path('val', args.feature)).astype(np.float32)
