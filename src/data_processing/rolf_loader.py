@@ -100,11 +100,11 @@ class RolfLoader:
             "landmarks_3d_unstandardized",
             #"deepface",
             "facenet",
-            #"vggface",
+            "vggface",
             #"openface",
             "sface",
             #"facenet512",
-            #"arcface",
+            "arcface",
         ]
 
 
@@ -233,6 +233,12 @@ class RolfLoader:
 
         if 'sface' not in self._excluded_features:
             self.features[dataset_type]['sface'].append(np.load(f"{features_path}_SFace.npy"))
+
+        if 'vggface' not in self._excluded_features:
+            self.features[dataset_type]['vggface'].append(np.load(f"{features_path}_VGG-Face.npy"))
+
+        if 'arcface' not in self._excluded_features:
+            self.features[dataset_type]['arcface'].append(np.load(f"{features_path}_ArcFace.npy"))
 
         self.features[dataset_type]['facs_intensity'].append(np.load(f"{features_path}_facs_intensity.npy"))
         self.features[dataset_type]['facs_presence'].append(np.load(f"{features_path}_facs_presence.npy"))

@@ -5,11 +5,9 @@ import os
 import numpy as np
 from cuml.svm import LinearSVC
 from src.model_training import SVC
-from sklearn.preprocessing import StandardScaler
 #from cuml.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
-from imblearn.over_sampling import RandomOverSampler
 from sklearn.metrics import make_scorer, balanced_accuracy_score
 from sklearn.utils import compute_class_weight
 from torch import optim
@@ -65,9 +63,13 @@ if __name__ == '__main__':
     if not os.path.exists(f'{args.experiment_dir}/{args.feature}'):
         os.makedirs(f'{args.experiment_dir}/{args.feature}')
 
-    X_train = np.load(get_data_path('train', args.feature)).astype(np.float32)
-    X_val = np.load(get_data_path('val', args.feature)).astype(np.float32)
-    X_test = np.load(get_data_path('test', args.feature)).astype(np.float32)
+    X_train = np.load(f'train_{args.feature}.npy').astype(np.float32)
+    X_val = np.load(f'val_{args.feature}.npy').astype(np.float32)
+    X_test = np.load(f'test_{args.feature}.npy').astype(np.float32)
+
+    #X_train = np.load(get_data_path('train', args.feature)).astype(np.float32)
+    #X_val = np.load(get_data_path('val', args.feature)).astype(np.float32)
+    #X_test = np.load(get_data_path('test', args.feature)).astype(np.float32)
     y_train = np.load('y_train.npy')
     y_val = np.load('y_val.npy')
     y_test = np.load('y_test.npy')
@@ -98,7 +100,7 @@ if __name__ == '__main__':
 
     parameters = {
         'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf'], 'probability': [True], 'class_weight':['balanced']},
-        'LinearSVC': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
+        'LinearSVC': {'C': [0.1, 1, 10], 'class_weight':['balanced']},
         'RandomForest': {'n_estimators': [200, 300, 400], 'max_depth': [15, 20, None], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
         'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
         'MLP': {'hidden_size': [128, 256],'class_weight':[class_weights], 'num_epochs': [20, 30], 'batch_size': [64, 128], 'learning_rate': [0.001, 0.01]},
@@ -199,7 +201,6 @@ if __name__ == '__main__':
                 save_checkpoint(grid_search_state, checkpoint_file)
 
 
-        continue
         if clf_name == 'NN':
             best_classifiers[clf_name] = NeuralNetwork(input_dim=X_shape, **best_params)
             best_classifiers[clf_name].compile(optim.Adam(best_classifiers[clf_name].parameters(), lr=0.001))
@@ -235,7 +236,6 @@ if __name__ == '__main__':
                 f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred.to_numpy())}')
 
     for clf_name, best_clf in best_classifiers.items():
-        continue
         if clf_name in ['NN', 'MLP','LinearSVC']:
             best_clf.fit(X_train.compute().to_numpy(), y_train.compute())
         elif clf_name in ['RandomForest']:
