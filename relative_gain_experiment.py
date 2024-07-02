@@ -71,7 +71,7 @@ if __name__ == '__main__':
     #models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs', 'concat']
     #models = ['hog', 'pdm', 'landmarks_3d', 'embeddings', 'facs','concat']
     # Take the important ones
-    models = ['hog', 'pdm', 'embedded', 'facs']
+    models = ['hog', 'pdm', 'embeddings', 'facs']
 
 
     def do_experiment():
