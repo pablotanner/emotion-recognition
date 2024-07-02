@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 
 from color_mapping import color_mappings
 
-INCLUDE_CONCAT = False
+INCLUDE_CONCAT = True
 
 classifiers = {
     'HOG': 'SequentialNN',
@@ -47,7 +47,7 @@ for bar, accuracy in zip(bars1, test_accuracies[1:]):
     height = bar.get_height()
 
 ax1.set_ylabel('Percent Gain in Balanced Accuracy (%)', fontsize=18)
-ax1.set_xlabel('Last Added Classifier', fontsize=18)
+ax1.set_xlabel('Last Added Feature Type', fontsize=18)
 
 # Increase bar label fontsize
 ax1.tick_params(axis='both', which='major', labelsize=14)
@@ -81,7 +81,7 @@ ax2.tick_params(axis='both', which='major', labelsize=14)
 
 
 ax2.set_ylabel('Balanced Accuracy (%)', fontsize=18)
-ax2.set_xlabel('Last Added Classifier', fontsize=18)
+ax2.set_xlabel('Last Added Feature Type', fontsize=18)
 #ax2.set_title('Absolute Balanced Accuracy for Stacking Classifier', fontsize=16)
 ax2.set_ylim(50, 60)
 ax2.grid(True, dashes=(5, 5))

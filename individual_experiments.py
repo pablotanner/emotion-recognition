@@ -204,11 +204,10 @@ if __name__ == '__main__':
                     logger.info(f'Validation score for {clf_name} with params {params}: {score}')
 
             # Update the checkpoint state
-            #if not failed:
-            #    grid_search_state[clf_name]['best_score'] = best_score
-            #   grid_search_state[clf_name]['best_params'] = best_params
-            #   grid_search_state[clf_name]['tried_params'].append(params)
-            #   save_checkpoint(grid_search_state, checkpoint_file)
+            grid_search_state[clf_name]['best_score'] = best_score
+            grid_search_state[clf_name]['best_params'] = best_params
+            grid_search_state[clf_name]['tried_params'].append(params)
+            save_checkpoint(grid_search_state, checkpoint_file)
 
 
         if clf_name == 'NN':
@@ -250,7 +249,7 @@ if __name__ == '__main__':
         except Exception as e:
             logger.error(f'Error occurred while evaluating {clf_name} on validation set')
             logger.error(e)
-        
+
 
     for clf_name, best_clf in best_classifiers.items():
         if clf_name in ['NN', 'MLP','LinearSVC']:
