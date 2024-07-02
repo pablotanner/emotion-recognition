@@ -108,7 +108,8 @@ if __name__ == '__main__':
 
 
     parameters = {
-        'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf'], 'probability': [True], 'class_weight':['balanced']},
+        #'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf'], 'probability': [True], 'class_weight':['balanced']},
+        'SVC': {'C': [0.1, 1], 'kernel': ['rbf'], 'probability': [True], 'class_weight': ['balanced']},
         'LinearSVC': {'C': [0.1, 1, 10], 'class_weight':['balanced']},
         'RandomForest': {'n_estimators': [200, 300, 400], 'max_depth': [15, 20, None], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
         'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
