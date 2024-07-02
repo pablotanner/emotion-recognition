@@ -4,6 +4,8 @@ import logging
 import os
 import numpy as np
 from cuml.svm import LinearSVC
+from sklearn.preprocessing import StandardScaler
+
 from src.model_training import SVC
 #from cuml.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import RandomForestClassifier
@@ -63,9 +65,16 @@ if __name__ == '__main__':
     if not os.path.exists(f'{args.experiment_dir}/{args.feature}'):
         os.makedirs(f'{args.experiment_dir}/{args.feature}')
 
+    scaler = StandardScaler()
+
     X_train = np.load(f'train_{args.feature}.npy').astype(np.float32)
     X_val = np.load(f'val_{args.feature}.npy').astype(np.float32)
     X_test = np.load(f'test_{args.feature}.npy').astype(np.float32)
+
+    X_train = scaler.fit_transform(X_train)
+    X_val = scaler.transform(X_val)
+    X_test = scaler.transform(X_test)
+    
 
     #X_train = np.load(get_data_path('train', args.feature)).astype(np.float32)
     #X_val = np.load(get_data_path('val', args.feature)).astype(np.float32)
