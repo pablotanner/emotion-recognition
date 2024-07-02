@@ -211,7 +211,7 @@ if __name__ == '__main__':
             grid_search_state[clf_name]['tried_params'].append(params)
             save_checkpoint(grid_search_state, checkpoint_file)
 
-
+        """
         if clf_name == 'NN':
             best_classifiers[clf_name] = NeuralNetwork(input_dim=X_shape, **best_params)
             best_classifiers[clf_name].compile(optim.Adam(best_classifiers[clf_name].parameters(), lr=0.001))
@@ -219,6 +219,8 @@ if __name__ == '__main__':
             best_classifiers[clf_name] = PyTorchMLPClassifier(input_size=X_shape, num_classes=8, **best_params)
         else:
             best_classifiers[clf_name] = clf_class(**best_params)
+
+
 
         try:
             # If classifier is LinearSVC, we need to convert data to numpy
@@ -276,7 +278,7 @@ if __name__ == '__main__':
         else:
             y_pred = best_clf.predict(X_test.compute())
             logger.info(f'Test score for {clf_name}: {balanced_accuracy_score(y_test.compute().to_numpy(), y_pred.to_numpy())}')
-
+        """
 
 
 
