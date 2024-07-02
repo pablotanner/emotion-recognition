@@ -43,13 +43,13 @@ feature_data = {
     },
     'Embeddings': {
         #'ProbaSVC': 0.40424141346273734,
-        'SVC': 0.46174160753420457,
+        'SVC': 0.4847070877137102,
         #'LinearSVC': 0.32592574767527055,
-        'RandomForest':  0.30824735908230694,
-        'LogisticRegression': 0.2790114929438385,
-        'MLP': 0.419024893121139,
-        'SequentialNN':  0.40973351271559977,
-        'Stacking':  0.46912279398091095
+        'RandomForest':  0.35963455485814677,
+        'LogisticRegression':  0.3408180291789805,
+        'MLP': 0.4716420461037578,
+        'SequentialNN': 0.467113413245109,
+        'Stacking':  0.5004143201159311
     },
     'HOG': {
         #'ProbaSVC': None,
@@ -68,44 +68,56 @@ classifier_data = {
         'FAUs': 0.42584585952077897,
         '3D Landmarks': 0.4632207187473768,
         'PDM': 0.4764234030931595,
-        'Embeddings': 0.46174160753420457,
-        'Stacking': 0.5439498286671497,
+        'Embeddings':  0.4847070877137102,
+        'Stacking': 0.5446545817502958,
         'HOG': 0.5127367708797566,
     },
     'RandomForest': {
         'FAUs': 0.4128616860267358,
         '3D Landmarks': 0.38666443599315187,
         'PDM': 0.36123012095717233,
-        'Embeddings': 0.30824735908230694,
-        'Stacking': 0.5118573822161361,
+        'Embeddings':  0.35963455485814677,
+        'Stacking': 0.5178434399062805,
         'HOG': 0.40278790256496066,
     },
     'LogisticRegression': {
         'FAUs': 0.30096522920432967,
         '3D Landmarks': 0.31095149603652256,
         'PDM': 0.3075308513345376,
-        'Embeddings':  0.2790114929438385,
-        'Stacking': 0.4898974375928514,
+        'Embeddings':  0.3408180291789805,
+        'Stacking': 0.4892494286231743,
         'HOG': 0.35165090557418766,
     },
     'MLP': {
         'FAUs': 0.36715621840072116,
         '3D Landmarks': 0.43869856945135643,
         'PDM': 0.4568980638844722,
-        'Embeddings': 0.419024893121139,
-        'Stacking':  0.5103148367889574,
+        'Embeddings': 0.4716420461037578,
+        'Stacking': 0.5206920420230381,
         'HOG': 0.47336814939202226,
     },
     'SequentialNN': {
         'FAUs': 0.39739461005445553,
         '3D Landmarks':  0.47283163729029276,
         'PDM': 0.4541749754958806,
-        'Embeddings': 0.40973351271559977,
-        'Stacking':  0.5419097759610227,
+        'Embeddings':  0.467113413245109,
+        'Stacking':  0.5507349927721724,
         'HOG': 0.49967367635182824,
     },
 
 }
+
+# Find the average relative increase the highest of the classifiers (except Stacking) to 'Stacking'
+
+def average_relative_increase(data):
+    # Get the average relative increase
+    relative_increases = []
+    for key in data:
+        # Highest
+        highest = max([data[key][classifier] for classifier in data[key] if classifier != 'Stacking'])
+        relative_increases.append((data[key]['Stacking'] - highest) / highest)
+
+    return np.mean(relative_increases)
 
 
 
@@ -209,7 +221,9 @@ def stacking_per_classifier(data):
 
     plt.show()
 
-#stacking_per_feature(feature_data)
+
+stacking_per_feature(feature_data)
+plt.close()
 stacking_per_classifier(classifier_data)
 
 

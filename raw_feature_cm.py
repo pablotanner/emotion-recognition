@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
         pipeline.fit(X_train, y_train)
 
-        y_pred = pipeline.predict(np.load('test_embedded_features.npy').astype(np.float32))
+        y_pred = pipeline.predict(np.load('test_embeddings.npy').astype(np.float32))
 
     elif args.feature == 'hog':
         X_train = np.load('pca_train_hog_features.npy').astype(np.float32)

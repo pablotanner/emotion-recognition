@@ -245,10 +245,16 @@ aggregated_cm, concat_matrix, stacked_matrix = get_matrices()
 
 #two_matrices_heatmap(concat_matrix, stacked_matrix)
 norm_cn = np.load('cm_matrices.npy', allow_pickle=True).item()
+
+norm_cn['embedded'] = np.load('embeddings_cm_normalized.npy')
 del norm_cn['concat']
 
-#for model, cm in norm_cn.items():
-    #single_cm_heatmap(cm, model)
+mean_matrix = np.mean([cm for cm in norm_cn.values()], axis=0)
+std_matrix = np.std([cm for cm in norm_cn.values()], axis=0)
+
+"""
+for model, cm in norm_cn.items():
+    single_cm_heatmap(cm, model)
 
 mean_matrix = np.mean([cm for cm in norm_cn.values()], axis=0)
 std_matrix = np.std([cm for cm in norm_cn.values()], axis=0)
@@ -256,22 +262,25 @@ std_matrix = np.std([cm for cm in norm_cn.values()], axis=0)
 single_cm_heatmap(mean_matrix, 'mean', color='Greens')
 single_cm_heatmap(std_matrix, 'std', color='Reds')
 
+"""
 
-#for model, cm in norm_cn.items():
-    ## Normalize
-    #cm = cm / np.sum(cm, axis=1)[:, np.newaxis] * 100
-    #print(model)
-    #find_common_confusions(cm)
-   # print(20 * '-')
 
-#print('Aggregated')
-#find_common_confusions(aggregated_cm)
-#print(20 * '-')
+
+print('Aggregated')
+find_common_confusions(mean_matrix * 100)
+print(20 * '-')
+
+for model, cm in norm_cn.items():
+    # Values in percent
+    cm = cm * 100
+    print(key_map[model])
+    find_common_confusions(cm)
+    print(20 * '-')
 
 #print('Stacked')
 #find_common_confusions(stacked_matrix)
 #print(20 * '-')
 
-#print('Concatenated')
-#find_common_confusions(concat_matrix)
-#print(20 * '-')
+print('Concatenated')
+find_common_confusions(concat_matrix)
+print(20 * '-')
