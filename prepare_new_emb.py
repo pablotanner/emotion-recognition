@@ -88,9 +88,9 @@ if __name__ == '__main__':
             X_test = minMaxScaler.transform(X_test)
             np.save(f'embdata/train_{model}_mm.npy', X_train)
             np.save(f'embdata/val_{model}_mm.npy', X_val)
+            np.save(f'embdata/test_{model}_mm.npy', X_test)
 
         print(f'{model} done')
-
 
     # Concatenate all embeddings and save them
     X_train = np.concatenate([np.load(f'embdata/train_{model}_mm.npy') for model in models], axis=1)
