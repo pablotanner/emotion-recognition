@@ -34,10 +34,10 @@ if __name__ == '__main__':
     probabilities_val = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_val2.npy', allow_pickle=True).item()
     probabilities_test = np.load('/local/scratch/ptanner/hybrid_fusion_experiments/probabilities_test2.npy', allow_pickle=True).item()
 
+    conc_path = '/local/scratch/ptanner/concatenated_experiment'
 
-    probabilities_val['concat'] = np.load('proba_val_concat.npy', allow_pickle=True).item()['SVC']
-    probabilities_test['concat'] = np.load('proba_test_concat.npy', allow_pickle=True).item()['SVC']
-
+    probabilities_val['concat'] = np.load(f'{conc_path}/probabilities_val.npy')
+    probabilities_test['concat'] = np.load(f'{conc_path}/probabilities_test.npy')
 
     y_val = np.load('y_val.npy')
     y_test = np.load('y_test.npy')
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
         return increased_accuracy
 
-    #do_experiment_subset()
+    do_experiment_subset()
 
 
 
