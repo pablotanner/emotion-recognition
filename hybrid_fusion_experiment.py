@@ -157,7 +157,7 @@ if __name__ == '__main__':
     for solver in solvers:
         logger.info(f"Training Stacking Classifier with solver: {solver}")
         stacking_pipeline = Pipeline([
-            # ('scaler', StandardScaler()),
+            ('scaler', StandardScaler()),
             ('log_reg', LogisticRegression(C=1, class_weight='balanced', solver=solver, max_iter=1000))
         ])
         stacking_pipeline.fit(X_stack_val, y_val)

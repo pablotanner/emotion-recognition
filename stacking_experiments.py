@@ -37,7 +37,7 @@ if __name__ == '__main__':
     class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
     class_weights = {i: class_weights[i] for i in range(len(class_weights))}
 
-    features = ['landmarks_3d', 'hog', 'nonrigid_face_shape','facs', 'embedded']
+    features = ['landmarks_3d', 'hog', 'nonrigid_face_shape','facs', 'embeddings']
     #classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']
     classifier_names = ['LogisticRegression', 'NN', 'SVC', 'MLP', 'RandomForest']
 
