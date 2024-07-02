@@ -231,19 +231,26 @@ if __name__ == '__main__':
         #gc.collect()
         logger.info(f'Best parameters for {clf_name}: {best_params}')
 
-        #X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
-        if clf_name in ['NN', 'MLP']:
-            y_pred = np.argmax(best_classifiers[clf_name].predict_proba(X_val.compute().to_numpy()), axis=1)
-            logger.info(
-                f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred)}')
-        elif clf_name in ['RandomForest']:
-            y_pred = best_classifiers[clf_name].predict(X_val.compute().to_numpy())
-            logger.info(
-                f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred)}')
-        else:
-            y_pred = best_classifiers[clf_name].predict(X_val.compute())
-            logger.info(
-                f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred.to_numpy())}')
+        try:
+            #X_val = np.load(f'{args.experiment_dir}/{args.feature}/X_val.npy')
+            if clf_name in ['NN', 'MLP']:
+                y_pred = np.argmax(best_classifiers[clf_name].predict_proba(X_val.compute().to_numpy()), axis=1)
+                logger.info(
+                    f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred)}')
+            elif clf_name in ['RandomForest']:
+                y_pred = best_classifiers[clf_name].predict(X_val.compute().to_numpy())
+                logger.info(
+                    f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred)}')
+            else:
+                y_pred = best_classifiers[clf_name].predict(X_val.compute())
+                logger.info(
+                    f'Validation score for {clf_name}: {balanced_accuracy_score(y_val.compute().to_numpy(), y_pred.to_numpy())}')
+        except MemoryError:
+            logger.error(f'Memory error occurred while evaluating {clf_name} on validation set')
+        except Exception as e:
+            logger.error(f'Error occurred while evaluating {clf_name} on validation set')
+            logger.error(e)
+        
 
     for clf_name, best_clf in best_classifiers.items():
         if clf_name in ['NN', 'MLP','LinearSVC']:
