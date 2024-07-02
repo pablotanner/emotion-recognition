@@ -69,9 +69,9 @@ if __name__ == '__main__':
 
     # Start with hog probabilities, then add pdm, then add landmarks_3d, then add embedded and finally facs
     #models = ['hog', 'pdm', 'landmarks_3d', 'embedded', 'facs', 'concat']
-
+    models = ['hog', 'pdm', 'landmarks_3d', 'embeddings', 'facs']
     # Take the important ones
-    models = ['hog', 'pdm', 'embedded', 'facs']
+    #models = ['hog', 'pdm', 'embedded', 'facs']
 
 
     def do_experiment():
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
         return increased_accuracy
 
-    do_experiment_subset()
+    #do_experiment_subset()
 
 
 

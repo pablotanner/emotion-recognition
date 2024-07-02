@@ -79,15 +79,17 @@ if __name__ == '__main__':
         return pipeline
 
     def prepare_emb():
-        #input_dim = np.load(get_data_path('test', 'embedded')).shape[1]
+        input_dim = np.load(get_data_path('test', 'embeddings')).shape[1]
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
-            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
+            #('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
+            ('mlp', MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                        num_classes=8, input_size=input_dim))
         ])
 
-        pipeline.fit(np.load(get_data_path('train', 'embedded')).astype(np.float32), y_train)
+        pipeline.fit(np.load(get_data_path('train', 'embeddings')).astype(np.float32), y_train)
 
         return pipeline
 
@@ -116,7 +118,7 @@ if __name__ == '__main__':
     lnd_pipeline = prepare_lnd()
     logger.info("Fitting PDM")
     pdm_pipeline = prepare_pdm()
-    logger.info("Fitting Embedded")
+    logger.info("Fitting embeddings")
     emb_pipeline = prepare_emb()
     logger.info("Fitting HOG")
     hog_pipeline = prepare_hog()
@@ -124,7 +126,7 @@ if __name__ == '__main__':
     probabilities_val['facs'] = facs_pipeline.predict_proba(np.load(get_data_path('val', 'facs')).astype(np.float32))
     probabilities_val['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(get_data_path('val', 'landmarks_3d')).astype(np.float32))
     probabilities_val['pdm'] = pdm_pipeline.predict_proba(np.load(get_data_path('val', 'nonrigid_face_shape')).astype(np.float32))
-    probabilities_val['embedded'] = emb_pipeline.predict_proba(np.load(get_data_path('val', 'embedded')).astype(np.float32))
+    probabilities_val['embeddings'] = emb_pipeline.predict_proba(np.load(get_data_path('val', 'embeddings')).astype(np.float32))
     probabilities_val['hog'] = hog_pipeline.predict_proba(np.load(get_data_path('val', 'hog')).astype(np.float32))
 
     for model in probabilities_val:
@@ -136,7 +138,7 @@ if __name__ == '__main__':
     probabilities_test['facs'] = facs_pipeline.predict_proba(np.load(get_data_path('test', 'facs')).astype(np.float32))
     probabilities_test['landmarks_3d'] = lnd_pipeline.predict_proba(np.load(get_data_path('test', 'landmarks_3d')).astype(np.float32))
     probabilities_test['pdm'] = pdm_pipeline.predict_proba(np.load(get_data_path('test', 'nonrigid_face_shape')).astype(np.float32))
-    probabilities_test['embedded'] = emb_pipeline.predict_proba(np.load(get_data_path('test', 'embedded')).astype(np.float32))
+    probabilities_test['embeddings'] = emb_pipeline.predict_proba(np.load(get_data_path('test', 'embeddings')).astype(np.float32))
     probabilities_test['hog'] = hog_pipeline.predict_proba(np.load(get_data_path('test', 'hog')).astype(np.float32))
 
     np.save(f'{args.experiment_dir}/probabilities_val.npy', probabilities_val)

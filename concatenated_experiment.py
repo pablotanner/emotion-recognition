@@ -287,6 +287,30 @@ if __name__ == '__main__':
     X_test = np.load(X_test_path)
     y_test = np.load(f'y_test.npy')
 
+
+    mlp.fit(X_train, y_train)
+    proba = mlp.predict_proba(X_val)
+    bal_acc_val = balanced_accuracy_score(y_val, np.argmax(proba, axis=1))
+    logger.info(f'Balanced Accuracy of {mlp.__class__.__name__} (Validation Set): {bal_acc_val}')
+    probabilities_val[mlp.__class__.__name__] = proba
+
+    proba_test = mlp.predict_proba(X_test)
+    bal_acc_test = balanced_accuracy_score(y_test, np.argmax(proba_test, axis=1))
+    logger.info(f'Balanced Accuracy of {mlp.__class__.__name__} (Test Set): {bal_acc_test}')
+    probabilities_test[mlp.__class__.__name__] = proba_test
+
+    from sklearn.metrics import confusion_matrix
+    cm = confusion_matrix(y_test, np.argmax(proba_test, axis=1))
+    # Standardize the confusion matrix
+    cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    np.save(f'{args.experiment_dir}/cm_concat.npy', cm)
+    np.save(f'{args.experiment_dir}/cm_concat_norm.npy', cm_norm)
+
+
+    exit(0)
+
+
     for model in models:
         #if os.path.exists(f'{args.experiment_dir}/models/{model.__class__.__name__}.joblib'):
             #logger.info(f'Loading {model.__class__.__name__}...')
