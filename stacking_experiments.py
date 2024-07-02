@@ -54,6 +54,10 @@ if __name__ == '__main__':
     #single_feature_results = {feature: {} for feature in ['nonrigid_face_shape','hog','landmarks_3d','facs', 'embedded']}
     #single_classifier_results = {clf_name: {} for clf_name in ['LogisticRegression', 'NN', 'SVC', 'MLP', 'LinearSVC', 'RandomForest']}
 
+    del single_feature_results['embedded']
+
+    for clf_name in classifier_names:
+        del single_classifier_results[clf_name]['embedded']
 
     if 'predicted_probabilities_val.npy' not in os.listdir(args.experiment_dir):
         predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
