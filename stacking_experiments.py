@@ -73,6 +73,14 @@ if __name__ == '__main__':
         predicted_probabilities_val = np.load(f'{args.experiment_dir}/predicted_probabilities_val.npy', allow_pickle=True).item()
         predicted_probabilities_test = np.load(f'{args.experiment_dir}/predicted_probabilities_test.npy', allow_pickle=True).item()
 
+
+    for clf_name in classifier_names:
+        del predicted_probabilities_val[clf_name]['embedded']
+        del predicted_probabilities_test[clf_name]['embedded']
+        predicted_probabilities_val[clf_name]['embeddings'] = None
+        predicted_probabilities_test[clf_name]['embeddings'] = None
+
+
     #predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
     #predicted_probabilities_test = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
     def single_feature_experiment(feature):
