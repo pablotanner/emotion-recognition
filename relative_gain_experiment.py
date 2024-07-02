@@ -36,8 +36,8 @@ if __name__ == '__main__':
 
     conc_path = '/local/scratch/ptanner/concatenated_experiment'
 
-    probabilities_val['concat'] = np.load(f'{conc_path}/probabilities_val.npy')
-    probabilities_test['concat'] = np.load(f'{conc_path}/probabilities_test.npy')
+    probabilities_val['concat'] = np.load(f'{conc_path}/probabilities_val.npy', allow_pickle=True).item()['MLP']
+    probabilities_test['concat'] = np.load(f'{conc_path}/probabilities_test.npy', allow_pickle=True).item()['MLP']
 
     y_val = np.load('y_val.npy')
     y_test = np.load('y_test.npy')
