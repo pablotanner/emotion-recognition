@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import compute_class_weight
 from src.model_training import SVC
 from src.model_training.torch_neural_network import NeuralNetwork
+from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
 
 
 # Experiment to get the raw confusion matrices for the individual features again
@@ -46,13 +47,14 @@ if __name__ == '__main__':
 
         y_pred = pipeline.predict(np.load('test_spatial_features.npy').astype(np.float32))
 
-    elif args.feature == 'embedded':
-        X_train = np.load('train_embedded_features.npy').astype(np.float32)
+    elif args.feature == 'embeddings':
+        X_train = np.load('train_embeddings.npy').astype(np.float32)
         input_dim = X_train.shape[1]
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('nn', NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim))
+            ('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                       num_classes=8, input_size=input_dim))
         ])
 
         pipeline.fit(X_train, y_train)
@@ -78,7 +80,8 @@ if __name__ == '__main__':
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('nn', NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim))
+            ('mlp', MLP(hidden_size=256, batch_size=128, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                        num_classes=8, input_size=input_dim))
         ])
 
         pipeline.fit(X_train, y_train)

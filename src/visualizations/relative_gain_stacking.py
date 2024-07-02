@@ -6,23 +6,23 @@ from color_mapping import color_mappings
 INCLUDE_CONCAT = True
 
 classifiers = {
-    'HOG': 'SequentialNN',
-    'Embeddings': 'SVC',
+    'HOG': 'MLP',
+    'Embeddings': 'MLP',
     'PDM': 'SVC',
     '3D Landmarks': 'SVC',
     'FAUs': 'MLP',
-    'Mixed': 'SequentialNN'
+    'Mixed': 'MLP'
 }
 
 # The models, a subset starting with i=1 (only hog) and ending with i=5 (all models) are used to train a stacking classifier
-models = ['HOG', 'PDM', 'Embeddings', 'FAUs'] # HOG, PDM, Embedded Facs
+models = ['HOG', 'Embeddings', 'PDM', 'FAUs'] # HOG, PDM, Embedded Facs
 
 # The relative gain in accuracy for each added classifier, starting with only hog and ending with all
-test_accuracies = [0.5105167488963905, 0.5318099195014282,  0.5492079979226175, 0.5538821085432355]
+test_accuracies = [0.5040249285899766, 0.5333679563749676, 0.5447935601142561, 0.549467670734874]
 
 if INCLUDE_CONCAT:
-    models = ['HOG', 'Mixed', 'Embeddings', '3D Landmarks', 'FAUs']
-    test_accuracies = [0.5105167488963905, 0.5476499610490781, 0.555959491041288, 0.5564788366658011, 0.5616722929109322]
+    models = ['Mixed', 'Embeddings','3D Landmarks', 'HOG', 'FAUs']
+    test_accuracies = [0.5627109841599585,  0.5642690210334977, 0.5679044404050896, 0.5684237860296028, 0.5689431316541158]
 # Same as above but uses the validation set bal accs, just for comparison
 #val_bal_acc = [0.5216863128236839,0.5532726368952153,0.5564732083637857, 0.5680217733510686,0.56829543150788]
 
@@ -57,7 +57,7 @@ ax1.set_ylim(0, max(percent_gains) + 2)
 ax1.grid(True, dashes=(5, 5))
 
 # Set vlim from 0 to 8
-ax1.set_ylim(0, 8)
+ax1.set_ylim(0, 7)
 
 # Plot absolute accuracy values in the second subplot
 bars2 = ax2.bar(models, [acc * 100 for acc in test_accuracies], color='palegreen')
