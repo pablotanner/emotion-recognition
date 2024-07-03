@@ -44,8 +44,9 @@ if __name__ == '__main__':
             #('log_reg', LogisticRegression(C=0.1, class_weight='balanced'))
             #('rf', RandomForestClassifier(n_estimators=400, max_depth=20, class_weight='balanced'))
              # min_samples_split=2, criterion='gini', class_weight='balanced'))
-            ('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
-                        num_classes=8, input_size=input_dim))
+            #('mlp', MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
+                        #num_classes=8, input_size=input_dim))
+            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
         pipeline.fit(np.load(get_data_path('train', 'facs')).astype(np.float32), y_train)
@@ -58,7 +59,7 @@ if __name__ == '__main__':
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('nn', NeuralNetwork(batch_size=128, num_epochs=50, class_weight=class_weights, input_dim=input_dim))
-            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
+            ('svc', SVC(C=10, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
         pipeline.fit(np.load(get_data_path('train', 'landmarks_3d')).astype(np.float32), y_train)
@@ -85,8 +86,7 @@ if __name__ == '__main__':
             ('scaler', StandardScaler()),
             #('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
             #('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
-            ('mlp', MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
-                        num_classes=8, input_size=input_dim))
+            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
         pipeline.fit(np.load(get_data_path('train', 'embeddings')).astype(np.float32), y_train)
@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('nn', NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim))
+            ('svc', SVC(C=1, probability=True, kernel='rbf', class_weight='balanced'))
         ])
 
 
