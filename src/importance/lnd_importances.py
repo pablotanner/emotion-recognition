@@ -115,9 +115,14 @@ def plot_face_image(emo):
         for point in top_dict.keys():
             # Use normalized value to set size, use
             # get 'position' of point in all values
-            size = normalized_values[list(top_dict.keys()).index(point)] * 20
+            size = normalized_values[list(top_dict.keys()).index(point)] * 50
             x, y = points[point]
-            plt.scatter(x, y, s=size, color='red')
+            color = 'red'
+            # If value is in top 5, color green
+            if point in sorted(top_dict, key=top_dict.get, reverse=True)[:5]:
+                color = 'lawngreen'
+
+            plt.scatter(x, y, s=size, color=color)
 
     # Hide Axis
     plt.title(emo, fontsize=26)

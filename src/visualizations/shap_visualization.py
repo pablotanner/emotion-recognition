@@ -96,7 +96,7 @@ def bar_plot():
     # add gray background
     plt.gca().set_facecolor('lightgray')
 
-    plt.savefig('shap_values.png')
+    plt.savefig('shap_values.pdf')
     plt.show()
 
 def violin_plot():

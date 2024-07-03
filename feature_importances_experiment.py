@@ -5,7 +5,7 @@ import joblib
 import numpy as np
 import shap
 from sklearn.model_selection import train_test_split
-#from src.model_training import SVC
+from src.model_training import SVC
 from src.util.data_paths import get_data_path
 from imblearn.under_sampling import RandomUnderSampler
 #from cuml.ensemble import RandomForestClassifier as cuRF
@@ -71,12 +71,12 @@ if __name__ == '__main__':
         clf = joblib.load(f'{experiment_dir}/{feature}/classifier.joblib')
     else:
         logger.info(f"Training classifier on {args.feature} features")
-        #svc = SVC(C=1, kernel='rbf', class_weight='balanced')
+        clf = SVC(C=10, kernel='rbf', class_weight='balanced')
         # Fit SVC
-        #clf.fit(X_train, y_train)
-        clf = LogisticRegression(C=1)
-        #clf = RandomForestClassifier(n_estimators=400, max_depth=20)
         clf.fit(X_train, y_train)
+        #clf = LogisticRegression(C=1)
+        #clf = RandomForestClassifier(n_estimators=400, max_depth=20)
+        #clf.fit(X_train, y_train)
         print(f'Accuracy: {clf.score(X_test, y_test)}')
         joblib.dump(clf, f'{experiment_dir}/{feature}/classifier.joblib')
 
@@ -89,8 +89,9 @@ if __name__ == '__main__':
         # Generate Explainer
         #explainer = KernelExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
         #explainer = PermutationExplainer(model=svc.predict, data=X_train, random_state=42, is_gpu_model=True, dtype=np.float32)
-        explainer = shap.Explainer(clf, X_train)
-        explainer = shap.TreeExplainer(clf)
+        #explainer = shap.Explainer(clf, X_train)
+        explainer = shap.KernelExplainer(clf.predict, X_train)
+        #explainer = shap.TreeExplainer(clf)
         #explainer = KernelExplainer(model=svc.predict,data=X_train,is_gpu_model=True,random_state=42,dtype=np.float32)
         joblib.dump(explainer, f'{experiment_dir}/{feature}/explainer.joblib')
 

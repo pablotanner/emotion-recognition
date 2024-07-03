@@ -67,18 +67,18 @@ if __name__ == '__main__':
 
     scaler = StandardScaler()
 
-    X_train = np.load(f'train_{args.feature}.npy').astype(np.float32)
-    X_val = np.load(f'val_{args.feature}.npy').astype(np.float32)
-    X_test = np.load(f'test_{args.feature}.npy').astype(np.float32)
+    #X_train = np.load(f'train_{args.feature}.npy').astype(np.float32)
+    #X_val = np.load(f'val_{args.feature}.npy').astype(np.float32)
+    #X_test = np.load(f'test_{args.feature}.npy').astype(np.float32)
+    X_train = np.load(get_data_path('train', args.feature)).astype(np.float32)
+    X_val = np.load(get_data_path('val', args.feature)).astype(np.float32)
+    X_test = np.load(get_data_path('test', args.feature)).astype(np.float32)
 
     X_train = scaler.fit_transform(X_train)
     X_val = scaler.transform(X_val)
     X_test = scaler.transform(X_test)
 
 
-    #X_train = np.load(get_data_path('train', args.feature)).astype(np.float32)
-    #X_val = np.load(get_data_path('val', args.feature)).astype(np.float32)
-    #X_test = np.load(get_data_path('test', args.feature)).astype(np.float32)
     y_train = np.load('y_train.npy')
     y_val = np.load('y_val.npy')
     y_test = np.load('y_test.npy')
@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     parameters = {
         #'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf'], 'probability': [True], 'class_weight':['balanced']},
-        'SVC': {'C': [0.1, 1], 'kernel': ['rbf'], 'probability': [True], 'class_weight': ['balanced']},
+        'SVC': {'C': [0.1, 1, 10], 'kernel': ['rbf'], 'probability': [True], 'class_weight': ['balanced']},
         'LinearSVC': {'C': [0.1, 1, 10], 'class_weight':['balanced']},
         'RandomForest': {'n_estimators': [200, 300, 400], 'max_depth': [15, 20, None], 'min_samples_split': [2, 4], 'criterion': ['gini','entropy']},
         'LogisticRegression': {'C': [0.1, 1, 10, 100], 'class_weight':['balanced']},
@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
     balanced_accuracy_scorer = make_scorer(balanced_accuracy_score)
 
-    checkpoint_file = f'{args.experiment_dir}/checkpoints/{args.feature}.json'
+    checkpoint_file = f'{args.experiment_dir}/checkpoints/{args.feature}2.json'
     grid_search_state = load_checkpoint(checkpoint_file)
 
 
@@ -138,8 +138,6 @@ if __name__ == '__main__':
 
 
     for clf_name, clf_class in classifiers.items():
-        if clf_name != 'NN' and args.feature == 'embeddings':
-            continue
         logger.info(f'Running experiments for classifier {clf_name}')
         param_grid = list(ParameterGrid(parameters[clf_name]))
 
