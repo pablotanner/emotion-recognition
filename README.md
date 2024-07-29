@@ -4,10 +4,10 @@
 - Author: Pablo Tanner (**mail@pablotanner.com**, feel free to message me for any questions)
 - Supervisor: Prof. Dr. Manuel Günther
 ## Dataset
-AffectNet
+[AffectNet](http://mohammadmahoor.com/affectnet/)
 ## Libraries and Frameworks
-- OpenFace: For facial feature extraction
-- DeepFace: For facial recognition embedding extraction
+- [OpenFace](https://github.com/TadasBaltrusaitis/OpenFace): For facial feature extraction
+- [DeepFace](https://github.com/serengil/deepface): For facial recognition embedding extraction
 - cuML: For GPU-accelerated machine learning models
 - scikit-learn: For any other machine learning models not supported by cuML
 - PyTorch: For deep learning models (MLP and SequentialNN)
