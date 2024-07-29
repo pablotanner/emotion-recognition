@@ -1,3 +1,6 @@
+"""
+Generates visualization of AffectNet class/emotion distribution
+"""
 from matplotlib import pyplot as plt
 
 counts = [75374, 134915, 25959, 14590, 6878, 4303, 25382, 4250]

@@ -1,11 +1,16 @@
+"""
+Generates visualization of classifier performance per feature type, used in Section 6.3.2
+data was manually copied from experiment results
+"""
+
+
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
 # Visualize the performance of a classifier per feature, classifier params were always optimized for each feature
 
-NewSVC = {
+SVC = {
     'facs':0.4375747580746948,
     'landmarks_3d': 0.48464970042099553,
     #'embedded': 0.4597618607618611,
@@ -14,30 +19,6 @@ NewSVC = {
     'pdm':0.4901139641136941
 }
 
-SVC = {
-    'facs':0.43858737723542457,
-    'landmarks_3d':0.47852156857211503,
-    #'embedded':0.45714285714285713,
-    'embedded':0.5208743814139565,
-    'hog': 0.5181242336010964,
-    'pdm':0.4887116144381338
-}
-
-LinearSVC = {
-    'facs':0.4167163289630512,
-    'landmarks_3d':0.42795282402245377,
-    'embedded':0.4302276189389127,
-    'hog':0.5011751608059447,
-    'pdm':0.426429374571
-}
-
-ProbaSVC = {
-    'facs':0.2960017958081935,
-    'landmarks_3d':0.29660846986469863,
-    'embedded':0.40380037930425716,
-    'hog': 0.4130294820198,
-    'pdm':0.3317595501334409
-}
 
 RandomForest = {
     'facs':0.43169672036602713,
@@ -78,7 +59,7 @@ SequentialNN = {
 data = {
     #'SVC': SVC,
     #'ProbaSVC': ProbaSVC,
-    'SVC': NewSVC,
+    'SVC': SVC,
     #'LinearSVC': LinearSVC,
     'RandomForest': RandomForest,
     'LogisticRegression': LogisticRegression,

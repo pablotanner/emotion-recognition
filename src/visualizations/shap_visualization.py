@@ -99,34 +99,5 @@ def bar_plot():
     plt.savefig('shap_values.pdf')
     plt.show()
 
-def violin_plot():
-    features = {f: shap_values[:, i] for i, f in enumerate(real_feature_names)}
-
-    plt.figure(figsize=(14, 9))
-
-    num_models = len(models)
-
-    fig, axis = plt.subplots(1, num_models, figsize=(14, 7))
-
-    for i, model in enumerate(models):
-        for j in range(8):
-            axis[i].violinplot(features[model + ' ' + emotions[j]], vert=False, positions=[j], showmeans=False,
-                               showmedians=True)
-            axis[i].set_yticks(range(8))
-            axis[i].set_yticklabels(emotions)
-            axis[i].set_title(model, fontsize=16)
-            axis[i].grid(True)
-            # Make all have same x-axis
-            axis[i].set_xlim(-0.25, 0.25)
-            axis[i].set_xlabel('SHAP Value')
-
-    plt.subplots_adjust(wspace=0.55, top=0.85)
-
-    plt.suptitle('SHAP Value Distribution by Feature Type', fontsize=20, y=0.95)
-
-    plt.savefig('shap_values_violin.png')
-
-    plt.show()
 
 bar_plot()
-#violin_plot()

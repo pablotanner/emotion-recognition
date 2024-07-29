@@ -1,7 +1,7 @@
 # General Information
 ## Bachelor Thesis
 - Title: Automatic Facial Emotion Recognition through Information Fusion
-- Author: Pablo Tanner (mail@pablotanner.com)
+- Author: Pablo Tanner (**mail@pablotanner.com**, feel free to message me for any questions)
 - Supervisor: Prof. Dr. Manuel Günther
 ## Dataset
 AffectNet
@@ -14,4 +14,6 @@ AffectNet
 
 ## Important Notes
 - This repository contains all the files and code used for the experiments, even if not included/utilized in the final thesis.
-- The code utilized for the visualizations can be found in /src/visualizations and /src/
+- Code that wasn't used should have a comment indicating so (e.g. "This was not used in final version")
+- The code utilized for the visualizations can be found in /src/visualizations 
+- I did my best to add comments indicating in what Section/for what Experiments the different code files were used
