@@ -1,8 +1,12 @@
+"""
+Calculates the importance of each FAU for each emotion using SHAP values (Section 7.3.1)
+The visualization/mapping of the FAUs to face shape image was done manually, for help/photoshop files/more info,
+feel free to contact me.
+"""
+
 import joblib
-import shap
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
 
 feature_names = [
     'AU01_r', 'AU02_r', 'AU04_r', 'AU05_r', 'AU06_r', 'AU07_r', 'AU09_r', 'AU10_r', 'AU12_r', 'AU14_r', 'AU15_r',

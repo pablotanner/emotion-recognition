@@ -1,3 +1,7 @@
+"""
+Generates SHAP visualization for 3D Landmark points, Section 7.3.2
+"""
+
 import joblib
 import numpy as np
 import pandas as pd
