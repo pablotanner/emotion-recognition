@@ -3,6 +3,9 @@ import numpy as np
 from lime import lime_tabular
 import math
 
+"""
+Early code for model explanation, not used in the final thesis
+"""
 
 def create_explainer(X_train, y_train, feature_names):
     class_names = ['Neutral', 'Happy', 'Sad', 'Surprise', 'Fear', 'Disgust', 'Angry', 'Contempt']

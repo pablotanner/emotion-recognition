@@ -4,6 +4,11 @@ from sklearn.feature_selection import SelectFromModel, SequentialFeatureSelector
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 
+
+"""
+Feature selection methods, were not used in the final thesis
+"""
+
 def select_embedded_adaboost(X, y, n_top_features=50):
     clf = AdaBoostClassifier(n_estimators=50, random_state=42)
     clf = clf.fit(X, y)
@@ -25,7 +30,7 @@ def select_features_adaboost(X, y, n_top_features=50):
     # Extract feature importances
     importances = np.mean([tree.feature_importances_ for tree in ada.estimators_], axis=0)
 
-    # Sort features by importance
+    # Sort features by importance_visualizations
     top_features_indices = np.argsort(importances)[::-1][:n_top_features]
 
     # Reduce X to top features
@@ -48,7 +53,7 @@ def select_features_adaboost_new(X_train, X_test, y, n_top_features=50):
     # Extract feature importances
     importances = np.mean([tree.feature_importances_ for tree in ada.estimators_], axis=0)
 
-    # Sort features by importance
+    # Sort features by importance_visualizations
     top_features_indices = np.argsort(importances)[::-1][:n_top_features]
 
     # Reduce X to top features

@@ -1,40 +1,11 @@
 import numpy as np
 import dask.dataframe as dd
 import pandas as pd
-import cudf
 import dask_cudf
 
 
+# Used during gpu memory optimization attempts, not sure if it's useful
 
-
-def convert_to_dask_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10):
-    """
-    Convert NumPy arrays or Pandas DataFrames to Dask DataFrames.
-
-    Parameters:
-    X_train, X_val, X_test: Features for training, validation, and testing.
-    y_train, y_val, y_test: Labels for training, validation, and testing.
-    npartitions: Number of partitions for the Dask DataFrames (default is 10).
-
-    Returns:
-    A dictionary containing the converted Dask DataFrames.
-    """
-
-    def to_dask(df, npartitions):
-        if isinstance(df, np.ndarray):
-            df = pd.DataFrame(df)
-        return dd.from_pandas(df, npartitions=npartitions)
-
-    dask_data = {
-        'X_train': to_dask(X_train, npartitions),
-        'X_val': to_dask(X_val, npartitions),
-        'X_test': to_dask(X_test, npartitions),
-        'y_train': to_dask(y_train, npartitions),
-        'y_val': to_dask(y_val, npartitions),
-        'y_test': to_dask(y_test, npartitions)
-    }
-
-    return dask_data
 
 def convert_to_cudf_df(X_train, X_val, X_test, y_train, y_val, y_test, npartitions=10):
     """

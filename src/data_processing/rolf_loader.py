@@ -1,3 +1,7 @@
+"""
+Used to load the data on the ROLF server, if nothing goes wrong only needs to be used once, afterwards
+data is stored on disk as npy files (e.g. train_landmarks_3d.npy) for faster loading
+"""
 import os
 import numpy as np
 

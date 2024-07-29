@@ -1,12 +1,15 @@
 import itertools
-
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-
 from src.data_processing.data_loader import DataLoader
+import pandas as pd
+"""
+Determine the best subset of embeddings (combination/concatenation), Section 6.1.4
+"""
 
+# Load and prepare data
 data_loader = DataLoader("./data", "./data", exclude=['landmarks', 'hog'])
 
 y = data_loader.emotions
@@ -57,9 +60,7 @@ print(20 * "-")
 print(f"Best subset: {best_subset}, Best accuracy: {best_accuracy}")
 
 
-# Create df for results
-import pandas as pd
-
+# Create a dataframe from the results
 df = pd.DataFrame(results, columns=['Subset', 'Accuracy'])
 
 # save to csv

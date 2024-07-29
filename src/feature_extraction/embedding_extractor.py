@@ -1,3 +1,6 @@
+"""
+This code uses DeepFace to extract embeddings from images using different facial recognition models.
+"""
 from deepface import DeepFace
 import glob
 import numpy as np
@@ -64,8 +67,8 @@ models = [
 
 
 if __name__ == "__main__":
-    #useful_models = ['SFace', 'Facenet', 'ArcFace'] # These are the models that don't have terrible accuracy for emo rec
-    useful_models = ['ArcFace', 'VGG-Face']
+    # Models to extract embeddings from
+    useful_models = ['SFace', 'Facenet', 'ArcFace','VGG-Face']
     # Get all images from the given path
     face_images = glob.glob(args.image_path + '/*.jpg')
 

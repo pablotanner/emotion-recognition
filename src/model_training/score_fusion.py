@@ -1,5 +1,7 @@
-import copy
+"""
+For early score fusion experiments, was not used for final experiments on ROLF
 
+"""
 import numpy as np
 from numpy import ndarray
 from scipy.stats import mode

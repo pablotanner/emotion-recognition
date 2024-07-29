@@ -9,11 +9,12 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from src.model_training import SVC
 from sklearn.utils import compute_class_weight
-from src.model_training.torch_neural_network import NeuralNetwork
-from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
+from src.model_training.sequentialnn_classifier import SequentialNN
+from src.model_training.mlp_classifier import MLP as MLP
 from src.util.data_paths import get_data_path
 
-# Experiment where I use hybrid of different features and classifiers to basically optimize score fusion results
+# Experiment where I perform score fusion on all feature types, exact classifiers/parameters might not
+# be the ones I actually used, but the general idea/code is the same
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Hybrid Fusion Experiment')
@@ -38,7 +39,6 @@ if __name__ == '__main__':
 
 
     def prepare_facs():
-        input_dim = np.load(get_data_path('test', 'facs')).shape[1]
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             #('log_reg', LogisticRegression(C=0.1, class_weight='balanced'))

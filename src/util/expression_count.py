@@ -1,11 +1,13 @@
 import glob
-
 import numpy as np
 
 annotations = glob.glob("../../data/annotations/*_exp.npy")
 
 images = glob.glob("../../data/images/*.jpg")
 
+"""
+This function returns a dictionary with the count of each expression in the dataset.
+"""
 
 def get_expression_count():
     expressions = {}

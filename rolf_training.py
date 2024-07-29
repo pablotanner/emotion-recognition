@@ -5,7 +5,12 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.utils import compute_class_weight
 from torch.utils.data import DataLoader, TensorDataset
-from src.model_training.neural_network import NeuralNetwork
+
+from src.model_training.sequentialnn_classifier import SequentialNN
+
+"""
+Contains very basic experiment for checking if code runs on ROLF
+"""
 
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
@@ -36,7 +41,7 @@ if __name__ == "__main__":
     # Train the model
     logger.info("Initializing model")
     input_dim = X_train.shape[1]
-    model = NeuralNetwork(input_dim)
+    model = SequentialNN(input_dim)
 
     criterion = nn.CrossEntropyLoss(weight=class_weights)  # For multi-class classification
     optimizer = optim.Adam(model.parameters(), lr=0.001)

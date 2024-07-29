@@ -19,8 +19,13 @@ from sklearn.utils import compute_class_weight
 from src.data_processing.rolf_loader import RolfLoader
 import joblib
 from datetime import datetime
-from src.model_training.torch_mlp import PyTorchMLPClassifier
-from src.model_training.torch_neural_network import NeuralNetwork
+from src.model_training.mlp_classifier import MLP
+from src.model_training.sequentialnn_classifier import SequentialNN
+
+
+"""
+Early code that was used for saving the feature types to disk
+"""
 
 parser = argparse.ArgumentParser(description='Model training and evaluation (GPU)')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')
@@ -180,8 +185,8 @@ if __name__ == "__main__":
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('mlp',
-             PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=300, num_classes=len(np.unique(y)), num_epochs=200,
-                                  batch_size=32, learning_rate=0.001, class_weight=class_weights)
+             MLP(input_size=X.shape[1], hidden_size=300, num_classes=len(np.unique(y)), num_epochs=200,
+                 batch_size=32, learning_rate=0.001, class_weight=class_weights)
              )])
 
         pipeline.fit(X, y)
@@ -191,7 +196,7 @@ if __name__ == "__main__":
         return pipeline
 
     def nn_model(X, y):
-        model = NeuralNetwork(input_dim=X.shape[1], class_weight=class_weights)
+        model = SequentialNN(input_dim=X.shape[1], class_weight=class_weights)
         model.compile(optim.Adam(model.parameters(), lr=0.001))
         model.fit(X, y)
 
@@ -242,7 +247,7 @@ if __name__ == "__main__":
     def pdm_model(X, y):
         pipeline = Pipeline([
             #('scaler', StandardScaler()),
-            ('mlp', PyTorchMLPClassifier(input_size=X.shape[1], hidden_size=300, num_classes=len(np.unique(y)), num_epochs=200, batch_size=32, learning_rate=0.01, class_weight=class_weights)
+            ('mlp', MLP(input_size=X.shape[1], hidden_size=300, num_classes=len(np.unique(y)), num_epochs=200, batch_size=32, learning_rate=0.01, class_weight=class_weights)
              )])
 
         pipeline.fit(X, y)

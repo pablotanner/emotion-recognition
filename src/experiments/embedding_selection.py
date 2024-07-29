@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.svm import SVC
 
-from src import EmbeddingLoader, DataSplitter, select_features
+from src import EmbeddingLoader, DataSplitter
 
 embedding_loader = EmbeddingLoader("../../data")
 

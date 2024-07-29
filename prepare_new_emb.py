@@ -6,8 +6,11 @@ import os
 from sklearn.decomposition import IncrementalPCA as skIPCA
 from cuml.decomposition import IncrementalPCA as cuMLIPCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-
 from src.data_processing.rolf_loader import RolfLoader
+
+
+
+# This code is not used in final version of thesis
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')

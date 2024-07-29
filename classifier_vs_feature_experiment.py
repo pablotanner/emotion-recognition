@@ -11,8 +11,10 @@ from sklearn.preprocessing import StandardScaler as SKStandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from cuml.linear_model import LogisticRegression
 from sklearn.utils import compute_class_weight
-from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
-from src.model_training.torch_neural_network import NeuralNetwork
+from src.model_training.mlp_classifier import MLP as MLP
+from src.model_training.sequentialnn_classifier import SequentialNN
+
+# This code was mainly used to store the tuned classifiers for each feature type
 
 def get_tuned_classifiers(feature, class_weights, input_dim):
     """
@@ -29,7 +31,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
             'LogisticRegression': LogisticRegression(C=10, class_weight='balanced'),
             'MLP': MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
                        num_classes=8, input_size=input_dim),
-            'NN': NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim)
+            'NN': SequentialNN(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim)
         }
     elif feature == 'facs':
         return {
@@ -40,7 +42,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
             'LogisticRegression': LogisticRegression(C=0.1, class_weight='balanced'),
             'MLP': MLP(hidden_size=256, batch_size=32, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
                        num_classes=8, input_size=input_dim),
-            'NN': NeuralNetwork(batch_size=128, num_epochs=10, class_weight=class_weights, input_dim=input_dim)
+            'NN': SequentialNN(batch_size=128, num_epochs=10, class_weight=class_weights, input_dim=input_dim)
         }
     elif feature == 'landmarks_3d':
         return {
@@ -52,7 +54,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
             'LogisticRegression': LogisticRegression(C=10, class_weight='balanced'),
             'MLP': MLP(hidden_size=128, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
                        num_classes=8, input_size=input_dim),
-            'NN': NeuralNetwork(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim)
+            'NN': SequentialNN(batch_size=128, num_epochs=30, class_weight=class_weights, input_dim=input_dim)
 
         }
     elif feature == 'embedded':
@@ -64,7 +66,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
             'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
             'MLP': MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=30,
                        num_classes=8, input_size=input_dim),
-            'NN': NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim)
+            'NN': SequentialNN(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim)
         }
     elif feature == 'embeddings':
         return {
@@ -75,7 +77,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
             'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
             'MLP': MLP(hidden_size=256, batch_size=128, class_weight=class_weights, learning_rate=0.01, num_epochs=20,
                        num_classes=8, input_size=input_dim),
-            'NN': NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim)
+            'NN': SequentialNN(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim)
         }
     elif feature == 'hog':
         return {
@@ -86,7 +88,7 @@ def get_tuned_classifiers(feature, class_weights, input_dim):
             'LogisticRegression': LogisticRegression(C=1, class_weight='balanced'),
             'MLP': MLP(hidden_size=256, batch_size=64, class_weight=class_weights, learning_rate=0.01, num_epochs=20,
                        num_classes=8, input_size=input_dim),
-            'NN': NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim)
+            'NN': SequentialNN(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim)
         }
     else:
         raise ValueError(f"Feature {feature} not supported.")

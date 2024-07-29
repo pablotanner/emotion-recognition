@@ -1,6 +1,6 @@
 
 
-# Map different matplot colors to different classifiers
+# Map different matplot colors to different classifiers (for the thesis)
 
 color_mappings = {
     'SVC': 'cornflowerblue',

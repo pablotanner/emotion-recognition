@@ -10,6 +10,10 @@ from sklearn.utils import compute_class_weight
 from classifier_vs_feature_experiment import get_tuned_classifiers
 from src.util.data_paths import get_data_path
 
+""" 
+Code for the "Classifier Stacking Approaches" experiments, Section 6.3.1,
+results were manually retrieved from logs
+"""
 
 
 if __name__ == '__main__':
@@ -81,8 +85,6 @@ if __name__ == '__main__':
         predicted_probabilities_test[clf_name]['embeddings'] = None
 
 
-    #predicted_probabilities_val = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
-    #predicted_probabilities_test = {clf_name: {feature: None for feature in features} for clf_name in classifier_names}
     def single_feature_experiment(feature):
         logger.info(f"Training on feature: {feature}")
         # Load data

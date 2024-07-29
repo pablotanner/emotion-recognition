@@ -6,8 +6,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import compute_class_weight
 from src.model_training import SVC
-from src.model_training.torch_neural_network import NeuralNetwork
-from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
+from src.model_training.sequentialnn_classifier import SequentialNN
+from src.model_training.mlp_classifier import MLP as MLP
 
 
 # Experiment to get the raw confusion matrices for the individual features again
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
-            ('nn', NeuralNetwork(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim))
+            ('nn', SequentialNN(batch_size=128, num_epochs=20, class_weight=class_weights, input_dim=input_dim))
         ])
 
         pipeline.fit(X_train, y_train)

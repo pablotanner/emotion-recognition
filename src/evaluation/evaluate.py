@@ -1,3 +1,6 @@
+"""
+Used for evaluation in early experiments
+"""
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, \
     balanced_accuracy_score, classification_report
 

@@ -5,9 +5,13 @@ from src.model_training import SVC
 from sklearn.utils import compute_class_weight
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from src.model_training.torch_mlp import PyTorchMLPClassifier as MLP
-from src.model_training.torch_neural_network import NeuralNetwork
+from src.model_training.mlp_classifier import MLP as MLP
+from src.model_training.sequentialnn_classifier import SequentialNN
 from src.data_processing.rolf_loader import RolfLoader
+
+"""
+Code for preliminary experiments for "Normalization via StandardScaler" in Section 6.1.1
+"""
 
 parser = argparse.ArgumentParser(description='Scaling Experiment')
 parser.add_argument('--main_annotations_dir', type=str, help='Path to /annotations folder (train and val)', default='/local/scratch/datasets/AffectNet/train_set/annotations')
@@ -59,8 +63,8 @@ if __name__ == '__main__':
 
         print(f"MLP: {unscaled_results['MLP']}")
 
-        nn = NeuralNetwork(batch_size=64, num_epochs=20, class_weight=class_weights, input_dim=X_test.shape[1],
-                           learning_rate=0.01, )
+        nn = SequentialNN(batch_size=64, num_epochs=20, class_weight=class_weights, input_dim=X_test.shape[1],
+                          learning_rate=0.01, )
         nn.fit(X_train, y_train)
         unscaled_results['SequentialNN'] = nn.score(X_test, y_test)
 

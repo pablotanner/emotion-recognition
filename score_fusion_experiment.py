@@ -13,6 +13,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.svm import SVC
 
+
+"""
+This code contains early code, not used in final thesis (local tests)
+"""
+
 from src import evaluate_results
 from src.data_processing.data_split_loader import DataSplitLoader
 

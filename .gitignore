@@ -167,10 +167,10 @@ data/embeddings/*
 
 # Stores models joblib (trained models)
 models/store
-src/importance/post_pca_shap_values.joblib
-src/importance/shap_facs.joblib
-src/importance/shap_values_NEW.joblib
-src/importance/test_lnd.npy
+src/visualizations/importance_visualizations/post_pca_shap_values.joblib
+src/visualizations/importance_visualizations/shap_facs.joblib
+src/visualizations/importance_visualizations/shap_values_NEW.joblib
+src/visualizations/importance_visualizations/test_lnd.npy
 src/importance/*.png
 embedding_subset_results.csv
 src/visualizations/relative_gain_stacking.pdf

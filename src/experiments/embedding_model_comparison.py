@@ -1,9 +1,7 @@
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.svm import SVC
 
-from src import EmbeddingLoader, DataSplitter
+from src import EmbeddingLoader
 from src.model_training.score_fusion import perform_score_fusion
 
 embedding_loader = EmbeddingLoader("../../data")

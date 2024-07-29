@@ -1,3 +1,7 @@
+"""
+Code for standardizing 3D landmarks using pose information.
+Introduced in Section 4.1
+"""
 from matplotlib import image as mpimg
 
 import numpy as np
@@ -68,6 +72,9 @@ def reshape_3d_landmarks(landmarks):
 
 
 def visualize_landmark_difference(landmarks1, landmarks2):
+    """
+    Visualizes the differences between two sets of 3D Landmarks, was used to evaluate effectiveness of standardization.
+    """
     global image
     x1 = landmarks1[:, 0]
     y1 = landmarks1[:, 1]
